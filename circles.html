@@ -4615,6 +4615,8 @@ function splitApart(){
 // GRAVITY
 // ══════════════════════════════════════════
 function startGravity(){
+  // If gravity is already running, don't stack another loop
+  if(gravityActive) return;
   gravityActive=true;
   gravVels=[{x:0,y:0},{x:0,y:0},{x:0,y:0}];
   const GRAVITY=0.38;
@@ -8118,18 +8120,6 @@ const OF={
     const ctx=this.ctx;
     ctx.clearRect(0,0,this.W,this.H);
 
-    // ── Omniversal Pull zoom effect — scales EVERYTHING on the canvas ──
-    const apexZoom=(APEX.active&&APEX._omniPullActive&&APEX._omniPullZoom<1)?APEX._omniPullZoom:1;
-    if(apexZoom<1){
-      ctx.save();
-      // Scale from center of canvas
-      const cx=this.W/2,cy=this.H/2;
-      ctx.translate(cx*(1-apexZoom),cy*(1-apexZoom));
-      ctx.scale(apexZoom,apexZoom);
-      // Darken edges to show zoom
-      ctx.fillStyle='rgba(0,0,20,.3)';ctx.fillRect(0,0,this.W,this.H);
-    }
-
     // Team zone tints (background color comes from #orbfight-overlay CSS)
     ctx.fillStyle='rgba(255,60,40,.04)';ctx.fillRect(0,0,this.W,this.H);
     ctx.fillStyle='rgba(40,80,255,.04)';ctx.fillRect(this.W/2,0,this.W/2,this.H);
@@ -8244,8 +8234,6 @@ const OF={
       });
     }
 
-    // ── Close Omniversal Pull zoom transform ──
-    if(apexZoom<1) ctx.restore();
   },
 
   _drawBossHPBar(ctx,cx,cy,hp,maxHp,label,barCol){
@@ -9540,7 +9528,6 @@ const APEX={
   deathSequence:false,
   _omniPullActive:false,
   _omniPullTimer:0,
-  _omniPullZoom:1,
   _projectiles:[],
 
   setup(){
@@ -9567,7 +9554,6 @@ const APEX={
     this._distortT=0;
     this._omniPullActive=false;
     this._omniPullTimer=0;
-    this._omniPullZoom=1;
     this._projectiles=[];
 
     // Apex is a giant orb — 20% of canvas smaller dimension
@@ -9578,6 +9564,13 @@ const APEX={
 
     // Remove red orbs
     OF.orbs=OF.orbs.filter(o=>o.team==='blue');
+
+    // Shrink all player orbs to 1/5 size — the Apex is god-tier
+    OF.orbs.forEach(o=>{
+      o.r=Math.max(4,Math.round(o.r/5));
+      // Reposition orbs to the right side
+      o.x=Math.max(OF.W*0.5+o.r,Math.min(OF.W-o.r,o.x));
+    });
 
     document.getElementById('of-ms-hpbar').style.display='none';
     document.getElementById('of-start-btn').style.display='none';
@@ -9668,7 +9661,6 @@ const APEX={
     this.deathSequence=false;
     this.minions=[];
     this._omniPullActive=false;
-    this._omniPullZoom=1;
     this._projectiles=[];
     document.getElementById('apex-arrival-text')?.remove();
     document.getElementById('of-ms-hpbar').style.display='none';
@@ -9798,14 +9790,9 @@ const APEX={
     }
     if(this._omniPullActive){
       this._omniPullTimer++;
-      // Phase 1: zoom out to 1/5 scale (0-60 frames)
-      if(this._omniPullTimer<=60){
-        const prog=this._omniPullTimer/60;
-        this._omniPullZoom=1-prog*0.8; // scale down to 0.2 (1/5)
-      }
-      // Phase 2: pull EVERYTHING in (60-180 frames) — including Infinites and Prismatics
-      if(this._omniPullTimer>60&&this._omniPullTimer<=180){
-        const pullStr=3+this.phase*1.5;
+      // Pull phase (0-120 frames) — pull EVERYTHING in including Infinites and Prismatics
+      if(this._omniPullTimer<=120){
+        const pullStr=4+this.phase*2;
         blueOrbs.forEach(o=>{
           const d=Math.hypot(o.x-this.x,o.y-this.y);
           const a=Math.atan2(this.y-o.y,this.x-o.x);
@@ -9827,8 +9814,8 @@ const APEX={
         }
         if(this._omniPullTimer%20===0) shake('md');
       }
-      // Phase 3: FLING everything outward at 180 frames — 8k damage
-      if(this._omniPullTimer===180){
+      // FLING phase at 120 frames — 8k damage
+      if(this._omniPullTimer===120){
         shake('lg');setTimeout(()=>shake('lg'),80);setTimeout(()=>shake('lg'),180);
         flashScreen('rgba(255,100,255,1)',120);
         setTimeout(()=>flashScreen('rgba(200,50,200,.7)',80),100);
@@ -9854,15 +9841,9 @@ const APEX={
         OF.orbs=OF.orbs.filter(o=>!o.dead);
         OF.updateHUD();
       }
-      // Phase 4: zoom back in (180-240 frames)
-      if(this._omniPullTimer>180&&this._omniPullTimer<=240){
-        const prog=(this._omniPullTimer-180)/60;
-        this._omniPullZoom=0.2+prog*0.8; // scale back to 1.0
-      }
-      // Done
-      if(this._omniPullTimer>=240){
+      // Done at 150 frames
+      if(this._omniPullTimer>=150){
         this._omniPullActive=false;
-        this._omniPullZoom=1;
         if(this.active) document.getElementById('of-status-text').textContent='🌌 DESTROY THE OMNIVERSAL APEX!';
       }
     }
@@ -10187,7 +10168,6 @@ const APEX={
   _beginOmniPull(){
     this._omniPullActive=true;
     this._omniPullTimer=0;
-    this._omniPullZoom=1;
     SFX.cannonCharge();setTimeout(()=>SFX.portalOpen(),200);
     shake('lg');
     flashScreen('rgba(200,0,255,.5)',100);
@@ -10444,7 +10424,7 @@ const APEX={
 
     // ── Omniversal Pull visual ──
     if(this._omniPullActive){
-      const pullProg=Math.min(1,this._omniPullTimer/180);
+      const pullProg=Math.min(1,this._omniPullTimer/120);
       const pullR=r*2+OF.W*0.4*pullProg;
       // Massive spiraling void
       ctx.save();ctx.translate(x,y);ctx.rotate(-t*3);
@@ -10472,7 +10452,7 @@ const APEX={
         ctx.fillStyle=`rgba(255,100,255,${pullProg})`;
         ctx.font='bold 12px Orbitron,monospace';ctx.textAlign='center';
         ctx.shadowColor='#ff44ff';ctx.shadowBlur=15;
-        ctx.fillText(this._omniPullTimer<=180?'🌀 OMNIVERSAL PULL':'💥 FLUNG!',x,y-r-25);
+        ctx.fillText(this._omniPullTimer<=120?'🌀 OMNIVERSAL PULL':'💥 FLUNG!',x,y-r-25);
       }
     }
 
