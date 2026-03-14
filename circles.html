@@ -897,10 +897,7 @@ body.adv-mars-bg #adv-overlay{background:radial-gradient(ellipse at 50% 80%,#200
 }
 
 #of-ms-hpbar{
-  position:absolute;top:52px;left:50%;transform:translateX(-50%);z-index:22;
-  width:min(500px,80%);display:flex;flex-direction:column;gap:4px;align-items:center;
-  background:rgba(0,0,0,.75);border:1px solid rgba(255,80,0,.3);border-radius:10px;
-  padding:8px 16px;
+  display:none !important;
 }
 #of-ms-hpbar-label{
   font-family:'Orbitron',monospace;font-size:.65rem;letter-spacing:.3em;color:#ff6633;
@@ -8121,13 +8118,16 @@ const OF={
     const ctx=this.ctx;
     ctx.clearRect(0,0,this.W,this.H);
 
-    // ── Omniversal Pull zoom effect ──
-    const apexZoom=APEX.active&&APEX._omniPullActive?APEX._omniPullZoom:1;
+    // ── Omniversal Pull zoom effect — scales EVERYTHING on the canvas ──
+    const apexZoom=(APEX.active&&APEX._omniPullActive&&APEX._omniPullZoom<1)?APEX._omniPullZoom:1;
     if(apexZoom<1){
       ctx.save();
+      // Scale from center of canvas
       const cx=this.W/2,cy=this.H/2;
       ctx.translate(cx*(1-apexZoom),cy*(1-apexZoom));
       ctx.scale(apexZoom,apexZoom);
+      // Darken edges to show zoom
+      ctx.fillStyle='rgba(0,0,20,.3)';ctx.fillRect(0,0,this.W,this.H);
     }
 
     // Team zone tints (background color comes from #orbfight-overlay CSS)
@@ -8211,6 +8211,20 @@ const OF={
       });
     }
 
+    // ── Boss HP bars drawn on canvas above the boss ──
+    if(MS.active&&!MS.spawning){
+      const bx=MS.x+MS.w/2, by=MS.y-30;
+      this._drawBossHPBar(ctx,bx,by,MS.hp,MS.maxHp,'👾 MOTHERSHIP',
+        MS.hp/MS.maxHp>0.5?'#ff6600':MS.hp/MS.maxHp>0.25?'#cc2200':'#880000',
+        'linear-gradient(90deg,#aa0000,#ff4400,#ff8800,#ffcc00)');
+    }
+    if(APEX.active&&!APEX.spawning){
+      const bx=APEX.x, by=APEX.y-APEX.r-45;
+      const phase=APEX.phase;
+      const barCol=phase===1?'#aa66ff':phase===2?'#ff4466':phase===3?'#ff8800':'#ff0000';
+      this._drawBossHPBar(ctx,bx,by,APEX.hp,APEX.maxHp,'🌌 OMNIVERSAL APEX',barCol);
+    }
+
     // ── Floating damage numbers ──
     if(OF._dmgNums&&OF._dmgNums.length){
       OF._dmgNums=OF._dmgNums.filter(n=>{
@@ -8232,6 +8246,42 @@ const OF={
 
     // ── Close Omniversal Pull zoom transform ──
     if(apexZoom<1) ctx.restore();
+  },
+
+  _drawBossHPBar(ctx,cx,cy,hp,maxHp,label,barCol){
+    const pct=Math.max(0,hp/maxHp);
+    const bw=220,bh=14;
+    const bx=cx-bw/2,by=cy;
+    ctx.save();
+    // Background panel
+    ctx.fillStyle='rgba(0,0,0,.75)';
+    ctx.strokeStyle='rgba(255,255,255,.15)';ctx.lineWidth=1;
+    const panelH=42;
+    const rx=bx-12,ry=by-18;
+    ctx.beginPath();
+    ctx.roundRect(rx,ry,bw+24,panelH,6);
+    ctx.fill();ctx.stroke();
+    // Label
+    ctx.fillStyle=barCol;ctx.font='bold 8px Orbitron,monospace';
+    ctx.textAlign='center';ctx.shadowColor=barCol;ctx.shadowBlur=8;
+    ctx.fillText(label,cx,by-5);
+    // Track
+    ctx.fillStyle='rgba(0,0,0,.5)';
+    ctx.strokeStyle='rgba(255,255,255,.2)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.roundRect(bx,by,bw,bh,4);ctx.fill();ctx.stroke();
+    // Fill
+    if(pct>0){
+      ctx.shadowBlur=12;ctx.shadowColor=barCol;
+      ctx.fillStyle=barCol;
+      ctx.beginPath();ctx.roundRect(bx,by,bw*pct,bh,4);ctx.fill();
+    }
+    // Value text
+    ctx.shadowBlur=0;
+    ctx.fillStyle='rgba(255,255,255,.7)';ctx.font='bold 7px Orbitron,monospace';
+    const hpStr=hp>=1e6?(hp/1e6).toFixed(2)+'M':hp>=1e3?(hp/1e3).toFixed(1)+'K':Math.ceil(hp).toLocaleString();
+    const maxStr=maxHp>=1e6?(maxHp/1e6).toFixed(0)+'M':maxHp>=1e3?(maxHp/1e3).toFixed(0)+'K':maxHp.toLocaleString();
+    ctx.fillText(`${hpStr} / ${maxStr}  (${Math.ceil(pct*100)}%)`,cx,by+bh+10);
+    ctx.restore();
   },
 
   _drawOrb(ctx,o){
@@ -9488,6 +9538,10 @@ const APEX={
   ringAngle:0,
   crackLines:[],
   deathSequence:false,
+  _omniPullActive:false,
+  _omniPullTimer:0,
+  _omniPullZoom:1,
+  _projectiles:[],
 
   setup(){
     this.active=true;
