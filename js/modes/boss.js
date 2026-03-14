@@ -11,7 +11,7 @@ import SFX from '../sfx.js';
 export const BOSS_TIERS=[
   {name:'GOLD TYRANT',  color:'#f5c842',color2:'#c87800',glow:'rgba(245,200,66,',ring:'#ffcc00',hp:100,ringSize:1.5},
   {name:'GIANT OVERLORD',color:'#ff8800',color2:'#cc4400',glow:'rgba(255,120,0,', ring:'#ff6600',hp:150,ringSize:1.6},
-  {name:'PRISMATIC RGB', color:'#ff44ff',color2:'#4444ff',glow:'rgba(200,100,255,',ring:'#aa44ff',hp:200,ringSize:1.7},
+  {name:'RAINBOW CHAOS', color:'#ff44ff',color2:'#4444ff',glow:'rgba(200,100,255,',ring:'#aa44ff',hp:200,ringSize:1.7},
   {name:'VOID EMPEROR',  color:'#222244',color2:'#000011',glow:'rgba(80,40,200,', ring:'#6644ff',hp:250,ringSize:1.8},
 ];
 
@@ -328,7 +328,7 @@ function bossDefeat(){
   if(bossGrowAnim)clearInterval(bossGrowAnim);
 
   const tier=getBossTier();
-  // bossRun at this point: 1=Gold Tyrant, 2=Giant, 3=Prismatic RGB, 4=Void, 5=Ultimate
+  // bossRun at this point: 1=Gold Tyrant, 2=Giant, 3=Rainbow Chaos, 4=Void, 5=Ultimate
   const isUltimate = state.bossRun===5;
 
   // MEGA explosion
@@ -362,7 +362,7 @@ function bossDefeat(){
 
     // ── All 4 normal bosses defeated → spawn Ultimate ──
     const allNormalDefeated = state.bossRun >= 4;
-    const rewards=['','⚔ WARRIOR TITLE','🏆 GIANT SLAYER','✦ CHAOS MASTER','🌑 VOID BREAKER'];
+    const rewards=['','⚔ WARRIOR TITLE','🏆 GIANT SLAYER','🌈 CHAOS MASTER','🌑 VOID BREAKER'];
     els.rewardTitle.textContent='BOSS DEFEATED!';
     els.rewardTitle.style.color=tier.color;
     els.rewardDesc.innerHTML=`<span style="color:${tier.color}">${tier.name}</span> has fallen<br><span style="color:#ffddaa">${rewards[Math.min(state.bossRun,4)]}</span>`;

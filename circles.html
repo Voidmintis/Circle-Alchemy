@@ -1511,7 +1511,7 @@ body.adv-mars-bg #adv-overlay{background:radial-gradient(ellipse at 50% 80%,#200
       <div class="admin-items">
         <button class="admin-item admin-item-boss" onclick="adminSelect('boss_1')">☠ Gold Tyrant</button>
         <button class="admin-item admin-item-boss" onclick="adminSelect('boss_2')">☠ Giant Overlord</button>
-        <button class="admin-item admin-item-boss" onclick="adminSelect('boss_3')">☠ Prismatic RGB</button>
+        <button class="admin-item admin-item-boss" onclick="adminSelect('boss_3')">☠ Rainbow Chaos</button>
         <button class="admin-item admin-item-boss" onclick="adminSelect('boss_4')">☠ Void Emperor</button>
         <button class="admin-item admin-item-boss" onclick="adminSelect('boss_5')">⬡ THE ULTIMATE</button>
         <button class="admin-item admin-item-boss" onclick="adminSelect('infinite')">∞ INFINITE CIRCLE</button>
@@ -3209,7 +3209,7 @@ function triggerBlackHole(cx,cy){
 const BOSS_TIERS=[
   {name:'GOLD TYRANT',  color:'#f5c842',color2:'#c87800',glow:'rgba(245,200,66,',ring:'#ffcc00',hp:100,ringSize:1.5},
   {name:'GIANT OVERLORD',color:'#ff8800',color2:'#cc4400',glow:'rgba(255,120,0,', ring:'#ff6600',hp:150,ringSize:1.6},
-  {name:'PRISMATIC RGB', color:'#ff44ff',color2:'#4444ff',glow:'rgba(200,100,255,',ring:'#aa44ff',hp:200,ringSize:1.7},
+  {name:'RAINBOW CHAOS', color:'#ff44ff',color2:'#4444ff',glow:'rgba(200,100,255,',ring:'#aa44ff',hp:200,ringSize:1.7},
   {name:'VOID EMPEROR',  color:'#222244',color2:'#000011',glow:'rgba(80,40,200,', ring:'#6644ff',hp:250,ringSize:1.8},
 ];
 
@@ -3521,7 +3521,7 @@ function bossDefeat(){
   if(bossGrowAnim)clearInterval(bossGrowAnim);
 
   const tier=getBossTier();
-  // bossRun at this point: 1=Gold Tyrant, 2=Giant, 3=Prismatic RGB, 4=Void, 5=Ultimate
+  // bossRun at this point: 1=Gold Tyrant, 2=Giant, 3=Rainbow Chaos, 4=Void, 5=Ultimate
   const isUltimate = bossRun===5;
 
   // MEGA explosion
@@ -3555,7 +3555,7 @@ function bossDefeat(){
 
     // ── All 4 normal bosses defeated → spawn Ultimate ──
     const allNormalDefeated = bossRun >= 4;
-    const rewards=['','⚔ WARRIOR TITLE','🏆 GIANT SLAYER','✦ CHAOS MASTER','🌑 VOID BREAKER'];
+    const rewards=['','⚔ WARRIOR TITLE','🏆 GIANT SLAYER','🌈 CHAOS MASTER','🌑 VOID BREAKER'];
     els.rewardTitle.textContent='BOSS DEFEATED!';
     els.rewardTitle.style.color=tier.color;
     els.rewardDesc.innerHTML=`<span style="color:${tier.color}">${tier.name}</span> has fallen<br><span style="color:#ffddaa">${rewards[Math.min(bossRun,4)]}</span>`;
@@ -6479,7 +6479,7 @@ const ADMIN_ITEMS={
   singularity:{label:'◉ Singularity',  color:'#cc44ff', type:'fusion'},
   boss_1:     {label:'Gold Tyrant',    color:'#f5c842', type:'boss', run:1},
   boss_2:     {label:'Giant Overlord', color:'#ff8800', type:'boss', run:2},
-  boss_3:     {label:'Prismatic RGB',  color:'#ff44ff', type:'boss', run:3},
+  boss_3:     {label:'Rainbow Chaos',  color:'#ff44ff', type:'boss', run:3},
   boss_4:     {label:'Void Emperor',   color:'#6644ff', type:'boss', run:4},
   boss_5:     {label:'THE ULTIMATE',   color:'#cc88ff', type:'boss', run:5},
   infinite:   {label:'∞ INFINITE CIRCLE',color:'#8855ff',type:'infinite'},
@@ -8427,6 +8427,20 @@ const MS={
     OF.orbs.forEach(o=>{
       if(o.team!=='blue')return;
       o.projectiles=o.projectiles.filter(p=>{
+        // Homing: curve toward target (mothership center)
+        if(p.homing&&p.homingStr){
+          const htx=this.x+this.w/2, hty=this.y+this.h/2;
+          const da=Math.atan2(hty-p.y,htx-p.x);
+          const curA=Math.atan2(p.vy,p.vx);
+          let diff=da-curA;
+          while(diff>Math.PI) diff-=Math.PI*2;
+          while(diff<-Math.PI) diff+=Math.PI*2;
+          const turn=Math.min(p.homingStr,Math.abs(diff))*Math.sign(diff);
+          const newA=curA+turn;
+          const spd=Math.hypot(p.vx,p.vy);
+          p.vx=Math.cos(newA)*spd;
+          p.vy=Math.sin(newA)*spd;
+        }
         p.x+=p.vx; p.y+=p.vy; p.life--;
         if(p.life<=0) return false;
         // Hit mothership body?
@@ -8449,7 +8463,7 @@ const MS={
     });
 
     // Blue orbs move toward mothership
-    OF.orbs.filter(o=>o.team==='blue'&&!o.dead&&!o.isInfinite).forEach(o=>{
+    OF.orbs.filter(o=>o.team==='blue'&&!o.dead&&!o.isInfinite&&!o.isPrismatic).forEach(o=>{
       const tx=this.x+this.w*.8, ty=this.y+this.h/2;
       const ang=Math.atan2(ty-o.y,tx-o.x);
       const dist=Math.hypot(o.x-tx, o.y-ty);
@@ -8483,6 +8497,52 @@ const MS={
         }
         SFX.infiniteShoot();
       }
+    });
+
+    // Prismatic orbs attack mothership with full RGB spray
+    OF.orbs.filter(o=>o.team==='blue'&&o.isPrismatic&&!o.dead).forEach(o=>{
+      o.attackTimer++;
+      if(o.attackTimer>=o.attackRate){
+        o.attackTimer=0;
+        const hue=o.hueShift||0;
+        const tx=this.x+this.w/2, ty=this.y+this.h/2;
+        const ang=Math.atan2(ty-o.y,tx-o.x);
+        // Spray ring of homing RGB bullets
+        for(let i=0;i<32;i++){
+          const a=(i/32)*Math.PI*2+o.pulseT*0.5;
+          const gh=(hue+i*(360/32))%360;
+          const spd=11*(0.85+Math.random()*0.3);
+          o.projectiles.push({
+            x:o.x,y:o.y,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,
+            dmg:o.dmg*0.9,r:8,life:220,
+            color:`hsl(${gh},100%,65%)`,
+            homing:true,homingStr:0.18,tx,ty,
+          });
+        }
+        // Dense focused burst toward mothership
+        for(let i=-8;i<=8;i++){
+          const a=ang+i*0.12;
+          const gh=(hue+i*40+180)%360;
+          const spd=14*(0.9+Math.random()*0.2);
+          o.projectiles.push({
+            x:o.x,y:o.y,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,
+            dmg:o.dmg*1.5,r:12,life:240,
+            color:`hsl(${gh},100%,70%)`,
+            homing:true,homingStr:0.22,tx,ty,
+          });
+        }
+        SFX.laserFire();
+      }
+      // Also run prismatic abilities (aura, spectrum beam, etc.)
+      o.abilityTimer=(o.abilityTimer||0)+1;
+      const col=`hsl(${o.hueShift||0},100%,60%)`;
+      o.color=col;
+      // Passive sparks
+      if(Math.random()<.25) spawnSparks(
+        o.x+(-o.r+Math.random()*o.r*2),
+        o.y+(-o.r+Math.random()*o.r*2),
+        `hsl(${Math.random()*360},100%,70%)`,2
+      );
     });
 
     // Victory check — all blue dead
