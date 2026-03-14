@@ -8121,8 +8121,17 @@ const OF={
     const ctx=this.ctx;
     ctx.clearRect(0,0,this.W,this.H);
 
+    // ── Omniversal Pull zoom effect ──
+    const apexZoom=APEX.active&&APEX._omniPullActive?APEX._omniPullZoom:1;
+    if(apexZoom<1){
+      ctx.save();
+      const cx=this.W/2,cy=this.H/2;
+      ctx.translate(cx*(1-apexZoom),cy*(1-apexZoom));
+      ctx.scale(apexZoom,apexZoom);
+    }
+
     // Team zone tints (background color comes from #orbfight-overlay CSS)
-    ctx.fillStyle='rgba(255,60,40,.04)';ctx.fillRect(0,0,this.W/2,this.H);
+    ctx.fillStyle='rgba(255,60,40,.04)';ctx.fillRect(0,0,this.W,this.H);
     ctx.fillStyle='rgba(40,80,255,.04)';ctx.fillRect(this.W/2,0,this.W/2,this.H);
 
     // Center divider (only when not battling)
@@ -8179,6 +8188,29 @@ const OF={
     // Draw orbs (on top of mothership)
     this.orbs.forEach(o=>this._drawOrb(ctx,o));
 
+    // ── Draw APEX projectiles (annihilation barrage) ──
+    if(APEX.active&&APEX._projectiles&&APEX._projectiles.length){
+      APEX._projectiles.forEach(p=>{
+        ctx.save();
+        const alpha=Math.min(1,p.life/40);
+        ctx.globalAlpha=alpha;
+        // Comet tail
+        const spd=Math.hypot(p.vx,p.vy);
+        if(spd>0.5){
+          const tailLen=p.r*3+spd*2;
+          const tx2=p.x-p.vx/spd*tailLen,ty2=p.y-p.vy/spd*tailLen;
+          const grad=ctx.createLinearGradient(p.x,p.y,tx2,ty2);
+          grad.addColorStop(0,p.color);grad.addColorStop(1,'rgba(0,0,0,0)');
+          ctx.strokeStyle=grad;ctx.lineWidth=p.r*0.8;ctx.lineCap='round';
+          ctx.shadowColor=p.color;ctx.shadowBlur=18;
+          ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(tx2,ty2);ctx.stroke();
+        }
+        ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+        ctx.fillStyle=p.color;ctx.shadowColor=p.color;ctx.shadowBlur=25;ctx.fill();
+        ctx.restore();
+      });
+    }
+
     // ── Floating damage numbers ──
     if(OF._dmgNums&&OF._dmgNums.length){
       OF._dmgNums=OF._dmgNums.filter(n=>{
@@ -8197,6 +8229,9 @@ const OF={
         return true;
       });
     }
+
+    // ── Close Omniversal Pull zoom transform ──
+    if(apexZoom<1) ctx.restore();
   },
 
   _drawOrb(ctx,o){
@@ -9476,6 +9511,10 @@ const APEX={
     this._omnibeamLife=0;
     this._omnibeamAngle=0;
     this._distortT=0;
+    this._omniPullActive=false;
+    this._omniPullTimer=0;
+    this._omniPullZoom=1;
+    this._projectiles=[];
 
     // Apex is a giant orb — 20% of canvas smaller dimension
     const dim=Math.min(OF.W,OF.H);
@@ -9574,6 +9613,9 @@ const APEX={
     this.cataclysmCharging=false;
     this.deathSequence=false;
     this.minions=[];
+    this._omniPullActive=false;
+    this._omniPullZoom=1;
+    this._projectiles=[];
     document.getElementById('apex-arrival-text')?.remove();
     document.getElementById('of-ms-hpbar').style.display='none';
     document.getElementById('of-ms-hpbar-label').textContent='👾 MOTHERSHIP';
@@ -9642,14 +9684,27 @@ const APEX={
     // Phase-scaled attack frequency
     const atkMult=1-(this.phase-1)*0.15; // faster attacks each phase
 
-    // ── OMNIBEAM — giant multicolored beam ──
-    const omniRate=Math.floor(360*atkMult);
+    // ── CONSTANT AURA DAMAGE — 7k+ DPS to nearby orbs ──
+    if(this.attackTimer%6===0){
+      const auraRange=this.r*2.5;
+      blueOrbs.forEach(o=>{
+        const d=Math.hypot(o.x-this.x,o.y-this.y);
+        if(d<auraRange+o.r){
+          const dmg=(700+this.phase*300); // ~7k-16k per sec at 60fps (fires every 6 frames = 10x/s)
+          MS._dmgOrb(o,dmg);
+          if(Math.random()<.15) spawnSparks(o.x,o.y,`hsl(${this.hueShift},100%,60%)`,3);
+        }
+      });
+    }
+
+    // ── OMNIBEAM — giant multicolored beam (7k+ damage) ──
+    const omniRate=Math.floor(300*atkMult);
     if(this.attackTimer%omniRate===0&&this.attackTimer>0){
       this._fireOmnibeam();
     }
 
     // ── REALITY COLLAPSE — gravity vortex ──
-    if(!this.vortexActive&&this.attackTimer%Math.floor(480*atkMult)===Math.floor(240*atkMult)){
+    if(!this.vortexActive&&this.attackTimer%Math.floor(420*atkMult)===Math.floor(210*atkMult)){
       this.vortexActive=true;
       this.vortexTimer=0;
       SFX.cannonCharge();
@@ -9657,47 +9712,160 @@ const APEX={
     }
     if(this.vortexActive){
       this.vortexTimer++;
-      const vortexRange=this.r*4+this.vortexTimer*0.5;
+      const vortexRange=this.r*5+this.vortexTimer*0.8;
       blueOrbs.forEach(o=>{
         const d=Math.hypot(o.x-this.x,o.y-this.y);
         if(d<vortexRange){
-          const pull=(0.8+this.phase*0.3)*(1-d/vortexRange);
+          const pull=(1.5+this.phase*0.5)*(1-d/vortexRange);
           const a=Math.atan2(this.y-o.y,this.x-o.x);
           o.vx+=Math.cos(a)*pull;o.vy+=Math.sin(a)*pull;
-          // Constant damage while in vortex
-          const dmg=(15+this.phase*10)*(1-d/vortexRange);
+          // Heavy constant damage — 7k+/sec
+          const dmg=(700+this.phase*300)*(1-d*0.5/vortexRange);
           MS._dmgOrb(o,dmg);
-          if(Math.random()<.1) spawnSparks(o.x,o.y,'#aa44ff',2);
+          if(Math.random()<.15) spawnSparks(o.x,o.y,'#aa44ff',3);
         }
       });
-      if(this.vortexTimer>=180+this.phase*30){
+      if(this.vortexTimer>=200+this.phase*40){
         this.vortexActive=false;
         spawnShockwave(this.x,this.y,'rgba(150,80,255,',vortexRange,8);
-        shake('md');
+        shake('lg');
         if(this.active) document.getElementById('of-status-text').textContent='🌌 DESTROY THE OMNIVERSAL APEX!';
       }
     }
 
-    // ── COSMIC DETONATION — massive explosion ──
-    if(this.attackTimer%Math.floor(540*atkMult)===Math.floor(400*atkMult)){
+    // ── COSMIC DETONATION — massive explosion (7k+ damage) ──
+    if(this.attackTimer%Math.floor(420*atkMult)===Math.floor(300*atkMult)){
       this._cosmicDetonation();
     }
 
+    // ── OMNIVERSAL PULL — grabs ALL orbs including Infinites/Prismatics, flings them (8k damage) ──
+    if(!this._omniPullActive&&this.attackTimer%Math.floor(600*atkMult)===Math.floor(500*atkMult)){
+      this._beginOmniPull();
+    }
+    if(this._omniPullActive){
+      this._omniPullTimer++;
+      // Phase 1: zoom out to 1/5 scale (0-60 frames)
+      if(this._omniPullTimer<=60){
+        const prog=this._omniPullTimer/60;
+        this._omniPullZoom=1-prog*0.8; // scale down to 0.2 (1/5)
+      }
+      // Phase 2: pull EVERYTHING in (60-180 frames) — including Infinites and Prismatics
+      if(this._omniPullTimer>60&&this._omniPullTimer<=180){
+        const pullStr=3+this.phase*1.5;
+        blueOrbs.forEach(o=>{
+          const d=Math.hypot(o.x-this.x,o.y-this.y);
+          const a=Math.atan2(this.y-o.y,this.x-o.x);
+          // Pull force — even Infinites and Prismatics get pulled
+          o.vx+=Math.cos(a)*pullStr;o.vy+=Math.sin(a)*pullStr;
+          // Damage while being pulled
+          if(d<this.r*6){
+            MS._dmgOrb(o,500+this.phase*200);
+            if(Math.random()<.2) spawnSparks(o.x,o.y,'#ff44ff',3);
+          }
+        });
+        // Swirling particles
+        if(this._omniPullTimer%4===0){
+          for(let i=0;i<5;i++){
+            const a=Math.random()*Math.PI*2;
+            const d=this.r*3+Math.random()*200;
+            spawnSparks(this.x+Math.cos(a)*d,this.y+Math.sin(a)*d,`hsl(${this.hueShift+Math.random()*120},100%,70%)`,3);
+          }
+        }
+        if(this._omniPullTimer%20===0) shake('md');
+      }
+      // Phase 3: FLING everything outward at 180 frames — 8k damage
+      if(this._omniPullTimer===180){
+        shake('lg');setTimeout(()=>shake('lg'),80);setTimeout(()=>shake('lg'),180);
+        flashScreen('rgba(255,100,255,1)',120);
+        setTimeout(()=>flashScreen('rgba(200,50,200,.7)',80),100);
+        SFX.cannonFire();setTimeout(()=>SFX.bossExplode(),100);setTimeout(()=>SFX.mothershipDestroy(),200);
+        spawnShockwave(this.x,this.y,'rgba(255,100,255,',OF.W,14);
+        for(let i=0;i<6;i++){
+          setTimeout(()=>spawnShockwave(this.x,this.y,`hsla(${(this.hueShift+i*60)%360},100%,60%,`,OF.W*(0.3+i*0.15),8),i*50);
+        }
+        spawnParticles(this.x,this.y,'#ffffff',100,18);
+        spawnParticles(this.x,this.y,'#ff44ff',80,16);
+        document.getElementById('of-status-text').textContent='💥 OMNIVERSAL FLING — 8,000 DAMAGE!';
+        blueOrbs.forEach(o=>{
+          // 8000 damage to EVERYTHING including Infinites and Prismatics
+          MS._dmgOrb(o,8000);
+          // Fling across the map
+          const flingA=Math.atan2(o.y-this.y,o.x-this.x);
+          const flingSpd=20+Math.random()*15;
+          o.vx=Math.cos(flingA)*flingSpd;
+          o.vy=Math.sin(flingA)*flingSpd;
+          spawnParticles(o.x,o.y,'#ff88ff',15,6);
+          spawnSparks(o.x,o.y,'#ffffff',6);
+        });
+        OF.orbs=OF.orbs.filter(o=>!o.dead);
+        OF.updateHUD();
+      }
+      // Phase 4: zoom back in (180-240 frames)
+      if(this._omniPullTimer>180&&this._omniPullTimer<=240){
+        const prog=(this._omniPullTimer-180)/60;
+        this._omniPullZoom=0.2+prog*0.8; // scale back to 1.0
+      }
+      // Done
+      if(this._omniPullTimer>=240){
+        this._omniPullActive=false;
+        this._omniPullZoom=1;
+        if(this.active) document.getElementById('of-status-text').textContent='🌌 DESTROY THE OMNIVERSAL APEX!';
+      }
+    }
+
+    // ── ANNIHILATION BARRAGE — rapid-fire homing projectiles doing massive damage ──
+    if(this.attackTimer%Math.floor(180*atkMult)===0&&this.attackTimer>0){
+      this._annihilationBarrage();
+    }
+
     // ── ORB GENESIS — spawn minion orbs ──
-    const spawnRate=Math.floor(300*atkMult);
+    const spawnRate=Math.floor(250*atkMult);
     if(this.spawnTimer>=spawnRate){
       this.spawnTimer=0;
       this._spawnMinions();
     }
 
-    // ── OMNIVERSAL CATACLYSM — ultimate attack (Phase 3+ only, every ~15s) ──
-    if(this.phase>=3&&!this.cataclysmCharging&&this.attackTimer%Math.floor(900*atkMult)===Math.floor(800*atkMult)){
+    // ── OMNIVERSAL CATACLYSM — ultimate attack (Phase 2+ only) ──
+    if(this.phase>=2&&!this.cataclysmCharging&&this.attackTimer%Math.floor(720*atkMult)===Math.floor(600*atkMult)){
       this._beginCataclysm();
     }
     if(this.cataclysmCharging){
       this.cataclysmT++;
       if(this.cataclysmT>=180) this._fireCataclysm();
     }
+
+    // ── Resolve APEX projectiles (annihilation barrage) ──
+    this._projectiles=(this._projectiles||[]).filter(p=>{
+      // Homing
+      if(p.homing&&p.homingStr){
+        const nearest=blueOrbs.filter(o=>!o.dead)[0];
+        if(nearest){p.tx=nearest.x;p.ty=nearest.y;}
+        const da=Math.atan2(p.ty-p.y,p.tx-p.x);
+        const curA=Math.atan2(p.vy,p.vx);
+        let diff=da-curA;while(diff>Math.PI)diff-=Math.PI*2;while(diff<-Math.PI)diff+=Math.PI*2;
+        const turn=Math.min(p.homingStr,Math.abs(diff))*Math.sign(diff);
+        const newA=curA+turn;const spd=Math.hypot(p.vx,p.vy);
+        p.vx=Math.cos(newA)*spd;p.vy=Math.sin(newA)*spd;
+      }
+      p.x+=p.vx;p.y+=p.vy;p.life--;
+      if(p.life<=0)return false;
+      if(p.x<-50||p.x>OF.W+50||p.y<-50||p.y>OF.H+50)return false;
+      // Hit blue orbs
+      const hit=blueOrbs.find(o=>!o.dead&&Math.hypot(o.x-p.x,o.y-p.y)<o.r+p.r);
+      if(hit){
+        MS._dmgOrb(hit,p.dmg);
+        spawnSparks(p.x,p.y,p.color,5);
+        spawnParticles(p.x,p.y,p.color,6,4);
+        shake('sm');
+        OF._dmgNums=OF._dmgNums||[];
+        const dl=p.dmg>=1000?(p.dmg/1000).toFixed(1)+'K':Math.round(p.dmg)+'';
+        OF._dmgNums.push({x:p.x,y:p.y-10,label:dl,life:1,vy:-1.2,col:'#ff4488'});
+        return false;
+      }
+      return true;
+    });
+    OF.orbs=OF.orbs.filter(o=>!o.dead);
+    OF.updateHUD();
 
     // ── Move minions toward blue orbs ──
     this.minions=this.minions.filter(m=>{
@@ -9906,23 +10074,23 @@ const APEX={
     if(blueOrbs.length===0)return;
     const target=blueOrbs[Math.floor(Math.random()*blueOrbs.length)];
     this._omnibeamAngle=Math.atan2(target.y-this.y,target.x-this.x);
-    this._omnibeamLife=30;
-    shake('lg');setTimeout(()=>shake('md'),100);
-    flashScreen(`rgba(${Math.floor(Math.random()*255)},${Math.floor(Math.random()*255)},255,.6)`,80);
-    SFX.cannonFire();
-    document.getElementById('of-status-text').textContent='🌈 OMNIBEAM FIRED!';
-    // Damage in beam path
+    this._omnibeamLife=40;
+    shake('lg');setTimeout(()=>shake('lg'),100);setTimeout(()=>shake('md'),200);
+    flashScreen(`rgba(${Math.floor(Math.random()*255)},${Math.floor(Math.random()*255)},255,.8)`,100);
+    SFX.cannonFire();setTimeout(()=>SFX.cannonFire(),150);
+    document.getElementById('of-status-text').textContent='🌈 OMNIBEAM — 7,000+ DAMAGE!';
+    // Massive damage in beam path
     const beamLen=OF.W;
-    const beamW=40+this.phase*15;
+    const beamW=60+this.phase*20;
     blueOrbs.forEach(o=>{
-      // Check if orb is in beam rectangle
       const dx=o.x-this.x,dy=o.y-this.y;
       const along=dx*Math.cos(this._omnibeamAngle)+dy*Math.sin(this._omnibeamAngle);
       const perp=Math.abs(-dx*Math.sin(this._omnibeamAngle)+dy*Math.cos(this._omnibeamAngle));
       if(along>0&&along<beamLen&&perp<beamW+o.r){
-        const dmg=200+this.phase*100;
+        const dmg=7000+this.phase*2000;
         MS._dmgOrb(o,dmg);
-        spawnSparks(o.x,o.y,'#ffffff',6);
+        spawnSparks(o.x,o.y,'#ffffff',8);
+        spawnParticles(o.x,o.y,'#ffaa00',10,5);
       }
     });
     OF.orbs=OF.orbs.filter(o=>!o.dead);
@@ -9930,32 +10098,78 @@ const APEX={
     setTimeout(()=>{if(this.active)document.getElementById('of-status-text').textContent='🌌 DESTROY THE OMNIVERSAL APEX!';},2000);
   },
 
-  // ── ATTACK: COSMIC DETONATION ──
+  // ── ATTACK: COSMIC DETONATION — 7k+ damage ──
   _cosmicDetonation(){
-    shake('lg');setTimeout(()=>shake('lg'),120);setTimeout(()=>shake('lg'),250);
-    flashScreen('rgba(255,200,100,.8)',100);
-    setTimeout(()=>flashScreen('rgba(255,100,50,.5)',80),130);
-    SFX.bossExplode();setTimeout(()=>SFX.bossExplode(),200);
-    spawnShockwave(this.x,this.y,'rgba(255,200,100,',OF.W*0.8,12);
-    spawnParticles(this.x,this.y,'#ffaa44',60,12);
-    spawnParticles(this.x,this.y,'#ff6600',40,10);
-    document.getElementById('of-status-text').textContent='💥 COSMIC DETONATION!';
-    // Damage everything on screen
+    shake('lg');setTimeout(()=>shake('lg'),100);setTimeout(()=>shake('lg'),200);setTimeout(()=>shake('lg'),320);
+    flashScreen('rgba(255,200,100,.9)',120);
+    setTimeout(()=>flashScreen('rgba(255,100,50,.7)',100),100);
+    setTimeout(()=>flashScreen('rgba(255,50,0,.5)',80),220);
+    SFX.bossExplode();setTimeout(()=>SFX.bossExplode(),150);setTimeout(()=>SFX.cannonFire(),300);
+    spawnShockwave(this.x,this.y,'rgba(255,200,100,',OF.W*0.9,14);
+    spawnShockwave(this.x,this.y,'rgba(255,100,0,',OF.W*0.6,10);
+    spawnParticles(this.x,this.y,'#ffaa44',80,14);
+    spawnParticles(this.x,this.y,'#ff6600',60,12);
+    spawnParticles(this.x,this.y,'#ffffff',40,10);
+    document.getElementById('of-status-text').textContent='💥 COSMIC DETONATION — 7,000+ DAMAGE!';
     const blueOrbs=OF.orbs.filter(o=>o.team==='blue'&&!o.dead);
-    const detRange=OF.W*0.7;
+    const detRange=OF.W*0.85;
     blueOrbs.forEach(o=>{
       const d=Math.hypot(o.x-this.x,o.y-this.y);
       if(d<detRange){
-        const dmg=(150+this.phase*80)*(1-d/detRange);
+        const dmg=(7000+this.phase*2500)*(1-d*0.3/detRange);
         MS._dmgOrb(o,dmg);
         const knockA=Math.atan2(o.y-this.y,o.x-this.x);
-        o.vx+=Math.cos(knockA)*6;o.vy+=Math.sin(knockA)*6;
-        spawnSparks(o.x,o.y,'#ffaa44',4);
+        o.vx+=Math.cos(knockA)*10;o.vy+=Math.sin(knockA)*10;
+        spawnSparks(o.x,o.y,'#ffaa44',6);
+        spawnParticles(o.x,o.y,'#ff8800',8,4);
       }
     });
     OF.orbs=OF.orbs.filter(o=>!o.dead);
     OF.updateHUD();
     setTimeout(()=>{if(this.active)document.getElementById('of-status-text').textContent='🌌 DESTROY THE OMNIVERSAL APEX!';},2500);
+  },
+
+  // ── ATTACK: OMNIVERSAL PULL — grabs everything, flings for 8k damage ──
+  _beginOmniPull(){
+    this._omniPullActive=true;
+    this._omniPullTimer=0;
+    this._omniPullZoom=1;
+    SFX.cannonCharge();setTimeout(()=>SFX.portalOpen(),200);
+    shake('lg');
+    flashScreen('rgba(200,0,255,.5)',100);
+    document.getElementById('of-status-text').textContent='🌀 OMNIVERSAL PULL — EVERYTHING IS BEING DRAWN IN!';
+  },
+
+  // ── ATTACK: ANNIHILATION BARRAGE — rapid homing projectiles ──
+  _annihilationBarrage(){
+    const blueOrbs=OF.orbs.filter(o=>o.team==='blue'&&!o.dead);
+    if(blueOrbs.length===0)return;
+    SFX.bossShoot();
+    document.getElementById('of-status-text').textContent='⚡ ANNIHILATION BARRAGE!';
+    const count=8+this.phase*4;
+    for(let i=0;i<count;i++){
+      setTimeout(()=>{
+        if(!this.active||!OF.battleRunning)return;
+        const target=blueOrbs.filter(o=>!o.dead)[0];
+        if(!target)return;
+        const a=Math.atan2(target.y-this.y,target.x-this.x)+(Math.random()-0.5)*0.8;
+        const spd=8+Math.random()*4;
+        const h=(this.hueShift+i*30)%360;
+        // Store as APEX projectiles
+        this._projectiles=this._projectiles||[];
+        this._projectiles.push({
+          x:this.x+Math.cos(a)*this.r,y:this.y+Math.sin(a)*this.r,
+          vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,
+          dmg:1500+this.phase*500,r:10+this.phase*2,life:200,
+          color:`hsl(${h},100%,65%)`,
+          homing:true,homingStr:0.08+this.phase*0.02,
+          tx:target.x,ty:target.y
+        });
+        spawnSparks(this.x+Math.cos(a)*this.r,this.y+Math.sin(a)*this.r,`hsl(${h},100%,70%)`,3);
+        if(i%3===0) SFX.orbShoot();
+      },i*40);
+    }
+    setTimeout(()=>{if(this.active)document.getElementById('of-status-text').textContent='🌌 DESTROY THE OMNIVERSAL APEX!';},2000);
   },
 
   // ── ATTACK: ORB GENESIS ──
@@ -10017,17 +10231,18 @@ const APEX={
     spawnParticles(this.x,this.y,'#ffffff',120,18);
     spawnParticles(this.x,this.y,'#ff44ff',80,14);
     spawnParticles(this.x,this.y,'#ffaa00',60,12);
-    // Damage ALL blue orbs heavily
-    const blueOrbs=OF.orbs.filter(o=>o.team==='blue'&&!o.dead);
-    blueOrbs.forEach(o=>{
+    // Damage ALL blue orbs — 15k+ damage
+    const blueOrbs2=OF.orbs.filter(o=>o.team==='blue'&&!o.dead);
+    blueOrbs2.forEach(o=>{
       const d=Math.hypot(o.x-this.x,o.y-this.y);
-      const maxRange=OF.W*0.9;
-      const dmg=d<maxRange?(500+this.phase*200)*(1-d*0.3/maxRange):0;
+      const maxRange=OF.W*0.95;
+      const dmg=d<maxRange?(15000+this.phase*5000)*(1-d*0.2/maxRange):0;
       if(dmg>0){
         MS._dmgOrb(o,dmg);
-        spawnSparks(o.x,o.y,'#ffffff',8);
+        spawnSparks(o.x,o.y,'#ffffff',10);
+        spawnParticles(o.x,o.y,'#ff44ff',8,5);
         const knockA=Math.atan2(o.y-this.y,o.x-this.x);
-        o.vx+=Math.cos(knockA)*10;o.vy+=Math.sin(knockA)*10;
+        o.vx+=Math.cos(knockA)*15;o.vy+=Math.sin(knockA)*15;
       }
     });
     OF.orbs=OF.orbs.filter(o=>!o.dead);
@@ -10171,6 +10386,40 @@ const APEX={
         ctx.stroke();
       }
       ctx.restore();
+    }
+
+    // ── Omniversal Pull visual ──
+    if(this._omniPullActive){
+      const pullProg=Math.min(1,this._omniPullTimer/180);
+      const pullR=r*2+OF.W*0.4*pullProg;
+      // Massive spiraling void
+      ctx.save();ctx.translate(x,y);ctx.rotate(-t*3);
+      for(let i=0;i<8;i++){
+        const a=(i/8)*Math.PI*2;
+        ctx.strokeStyle=`hsla(${(hue+i*45)%360},100%,60%,${0.4*pullProg})`;
+        ctx.lineWidth=3;ctx.shadowColor=`hsl(${(hue+i*45)%360},100%,60%)`;ctx.shadowBlur=20;
+        ctx.beginPath();
+        for(let s=0;s<60;s++){
+          const sa=a+s*0.12;const sr=r*0.3+s*(pullR/60);
+          const sx=Math.cos(sa)*sr,sy=Math.sin(sa)*sr;
+          s===0?ctx.moveTo(sx,sy):ctx.lineTo(sx,sy);
+        }
+        ctx.stroke();
+      }
+      ctx.restore();
+      // Dark pull center
+      const dg=ctx.createRadialGradient(x,y,0,x,y,r*1.5);
+      dg.addColorStop(0,`rgba(0,0,0,${0.7*pullProg})`);
+      dg.addColorStop(0.5,`rgba(80,0,160,${0.3*pullProg})`);
+      dg.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.beginPath();ctx.arc(x,y,r*1.5,0,Math.PI*2);ctx.fillStyle=dg;ctx.fill();
+      // "PULLING" warning
+      if(pullProg>0.2){
+        ctx.fillStyle=`rgba(255,100,255,${pullProg})`;
+        ctx.font='bold 12px Orbitron,monospace';ctx.textAlign='center';
+        ctx.shadowColor='#ff44ff';ctx.shadowBlur=15;
+        ctx.fillText(this._omniPullTimer<=180?'🌀 OMNIVERSAL PULL':'💥 FLUNG!',x,y-r-25);
+      }
     }
 
     // ── 3 orbiting energy rings ──
