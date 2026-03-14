@@ -887,6 +887,14 @@ body.adv-mars-bg #adv-overlay{background:radial-gradient(ellipse at 50% 80%,#200
 .of-rp-massive:hover{border-color:#ffcc44;background:rgba(100,60,0,.6);box-shadow:0 0 12px rgba(255,180,50,.3);}
 .of-rp-cancel{background:none;border:none;color:rgba(255,255,255,.3);font-size:.75rem;cursor:pointer;padding:2px 4px;border-radius:4px;transition:color .2s;}
 .of-rp-cancel:hover{color:#ff4444;}
+.of-apex-btn{border-color:rgba(200,150,255,.5) !important;color:#cc88ff !important;text-shadow:0 0 10px rgba(180,120,255,.6);}
+#of-boss-picker{
+  position:absolute;bottom:56px;left:50%;transform:translateX(-50%);z-index:22;
+  display:flex;align-items:center;gap:6px;
+  background:rgba(4,10,28,.96);border:1px solid rgba(180,120,255,.3);
+  border-radius:6px;padding:6px 10px;
+  box-shadow:0 0 16px rgba(140,80,255,.2);
+}
 
 #of-ms-hpbar{
   position:absolute;top:52px;left:50%;transform:translateX(-50%);z-index:22;
@@ -1402,7 +1410,7 @@ body.adv-mars-bg #adv-overlay{background:radial-gradient(ellipse at 50% 80%,#200
       <button class="of-ctrl-btn of-delete-btn" id="of-delete-btn" onclick="ofToggleDelete()">✕ DELETE MODE</button>
       <button class="of-ctrl-btn" onclick="ofClearAll()">🗑 CLEAR</button>
       <button class="of-ctrl-btn of-start-btn" id="of-start-btn" onclick="ofStartBattle()">▶ START BATTLE</button>
-      <button class="of-ctrl-btn of-mothership-btn" onclick="ofStartMothership()">🚀 FIGHT MOTHERSHIP</button>
+      <button class="of-ctrl-btn of-mothership-btn" onclick="ofShowBossPicker()">⚔ FIGHT BOSS</button>
       <button class="of-ctrl-btn of-random-btn" onclick="ofRandomizePrompt()">🎲 RANDOMIZE</button>
       <button class="of-ctrl-btn of-zoom-btn" id="of-zoom-btn" onclick="ofToggleZoom()">🔭 ZOOM OUT</button>
       <button class="of-ctrl-btn" onclick="ofReset()">↺ RESET</button>
@@ -1416,6 +1424,14 @@ body.adv-mars-bg #adv-overlay{background:radial-gradient(ellipse at 50% 80%,#200
       <button class="of-rp-btn" onclick="ofPickRandomize('big')">⚔⚔ Big</button>
       <button class="of-rp-btn of-rp-massive" onclick="ofPickRandomize('massive')">⚔⚔⚔ Massive</button>
       <button class="of-rp-cancel" onclick="document.getElementById('of-random-picker').style.display='none'">✕</button>
+    </div>
+
+    <!-- Boss picker -->
+    <div id="of-boss-picker" style="display:none">
+      <span class="of-rp-label">Choose your enemy:</span>
+      <button class="of-rp-btn" onclick="ofPickBoss('mothership')">👾 Mothership</button>
+      <button class="of-rp-btn of-rp-massive" onclick="ofPickBoss('apex')">🌌 Omniversal Apex</button>
+      <button class="of-rp-cancel" onclick="document.getElementById('of-boss-picker').style.display='none'">✕</button>
     </div>
 
     <!-- Mothership HP bar -->
@@ -6826,7 +6842,7 @@ const OF={
     this.active=false;
     this.battleRunning=false;
     this.deleteMode=false;
-    MS.stop();TB.remove();
+    MS.stop();APEX.stop();TB.remove();
     this._dmgNums=[];
     if(this.prismaticCdInterval){clearInterval(this.prismaticCdInterval);this.prismaticCdInterval=null;}
     if(this.loop){cancelAnimationFrame(this.loop);this.loop=null;}
@@ -7133,8 +7149,9 @@ const OF={
   },
 
   startBattle(){
-    if(this.orbs.length<1&&!MS.active)return;
+    if(this.orbs.length<1&&!MS.active&&!APEX.active)return;
     if(MS.active&&!OF.battleRunning){ MS.beginBattle(); return; }
+    if(APEX.active&&!OF.battleRunning){ APEX.beginBattle(); return; }
     this.battleRunning=true;
     document.getElementById('of-start-btn').style.display='none';
     document.getElementById('of-status-text').textContent='BATTLE IN PROGRESS';
@@ -7151,7 +7168,7 @@ const OF={
 
   reset(){
     this.battleRunning=false;
-    MS.stop();TB.remove();
+    MS.stop();APEX.stop();TB.remove();
     this._dmgNums=[];
     if(this.prismaticCdInterval){clearInterval(this.prismaticCdInterval);this.prismaticCdInterval=null;}
     this.prismaticCooldown=0;
@@ -7189,8 +7206,9 @@ const OF={
   },
 
   update(){
-    if(!this.battleRunning&&!MS.active&&!TB.active)return;
+    if(!this.battleRunning&&!MS.active&&!APEX.active&&!TB.active)return;
     if(MS.active){ MS.update(); return; }
+    if(APEX.active){ APEX.update(); return; }
     const alive=this.orbs.filter(o=>!o.dead);
     const redAlive=alive.filter(o=>o.team==='red');
     const blueAlive=alive.filter(o=>o.team==='blue');
@@ -8156,6 +8174,7 @@ const OF={
 
     // Draw mothership (behind orbs)
     if(MS.active) MS.draw(ctx);
+    if(APEX.active) APEX.draw(ctx);
 
     // Draw orbs (on top of mothership)
     this.orbs.forEach(o=>this._drawOrb(ctx,o));
@@ -9414,9 +9433,935 @@ MS._fireEnergyBlast=function(){
   _msFireEnergy();
 };
 
+// ═══════════════════════════════════════════════════════════════
+// OMNIVERSAL APEX — Ultimate god-tier orb boss
+// ═══════════════════════════════════════════════════════════════
+const APEX={
+  active:false,
+  hp:0, maxHp:500000,
+  x:0, y:0, r:0,
+  phase:1,
+  pulseT:0,
+  attackTimer:0,
+  hueShift:0,
+  spawnTimer:0,
+  vortexActive:false,
+  vortexTimer:0,
+  cataclysmCharging:false,
+  cataclysmT:0,
+  minions:[],
+  ringAngle:0,
+  crackLines:[],
+  deathSequence:false,
+
+  setup(){
+    this.active=true;
+    this.spawning=true;
+    this.hp=this.maxHp;
+    this.phase=1;
+    this.attackTimer=0;
+    this.spawnTimer=0;
+    this.hueShift=0;
+    this.pulseT=0;
+    this.ringAngle=0;
+    this.vortexActive=false;
+    this.vortexTimer=0;
+    this.cataclysmCharging=false;
+    this.cataclysmT=0;
+    this.minions=[];
+    this.crackLines=[];
+    this.deathSequence=false;
+    this._battleFrames=0;
+    this._peakBlueCount=0;
+    this._omnibeamLife=0;
+    this._omnibeamAngle=0;
+    this._distortT=0;
+
+    // Apex is a giant orb — 20% of canvas smaller dimension
+    const dim=Math.min(OF.W,OF.H);
+    this.r=dim*(OF.zoomedOut?0.1:0.2);
+    this.x=OF.W*0.22;
+    this.y=OF.H*0.5;
+
+    // Remove red orbs
+    OF.orbs=OF.orbs.filter(o=>o.team==='blue');
+
+    document.getElementById('of-ms-hpbar').style.display='none';
+    document.getElementById('of-start-btn').style.display='none';
+    document.getElementById('of-status-text').textContent='';
+
+    // Spawn sequence — screen darkens, boss materializes
+    this._spawnAlpha=0;
+    SFX.portalOpen();
+    let t=0;
+    const spawnAnim=setInterval(()=>{
+      if(!this.active){clearInterval(spawnAnim);return;}
+      t+=16;
+      this._spawnAlpha=Math.min(1,t/2000);
+      // Escalating shakes
+      if(t%400<16) shake('sm');
+      if(t>1000&&t%200<16) shake('md');
+      // Particles coalescing toward center
+      if(t%80<16){
+        const a=Math.random()*Math.PI*2;
+        const d=this.r*3+Math.random()*200;
+        spawnParticles(this.x+Math.cos(a)*d,this.y+Math.sin(a)*d,`hsl(${Math.random()*360},100%,70%)`,5,4);
+      }
+      if(t>=2500){
+        clearInterval(spawnAnim);
+        this._doArrival();
+      }
+    },16);
+  },
+
+  _doArrival(){
+    this.spawning=false;
+    // Massive arrival explosion
+    shake('lg');setTimeout(()=>shake('lg'),100);setTimeout(()=>shake('lg'),250);
+    flashScreen('rgba(255,255,255,.9)',100);
+    setTimeout(()=>flashScreen('rgba(180,100,255,.6)',80),120);
+    setTimeout(()=>flashScreen('rgba(100,50,200,.4)',60),280);
+
+    spawnParticles(this.x,this.y,'#ffffff',100,16);
+    spawnParticles(this.x,this.y,'#aa66ff',80,14);
+    spawnParticles(this.x,this.y,'#ff44aa',60,12);
+    spawnShockwave(this.x,this.y,'rgba(200,150,255,',OF.W,14);
+
+    SFX.mothershipArrive();
+    setTimeout(()=>SFX.bossDefeat(),200);
+
+    // Announcement
+    const ann=document.createElement('div');
+    ann.id='apex-arrival-text';
+    ann.style.cssText=`position:absolute;inset:0;z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;background:rgba(0,0,0,0);transition:background .4s;`;
+    ann.innerHTML=`<div style="font-family:'Orbitron',monospace;font-size:clamp(1.4rem,5vw,3rem);font-weight:900;letter-spacing:.25em;color:#cc88ff;text-align:center;text-shadow:0 0 40px rgba(180,100,255,1),0 0 80px rgba(140,60,255,.8);animation:ms-arrive-txt .15s ease-out forwards;line-height:1.3">🌌 OMNIVERSAL APEX<br>HAS AWAKENED</div>`;
+    document.getElementById('orbfight-overlay').appendChild(ann);
+    requestAnimationFrame(()=>{ann.style.background='rgba(0,0,0,.65)';});
+
+    setTimeout(()=>{
+      ann.style.transition='opacity .6s';ann.style.opacity='0';
+      setTimeout(()=>ann.remove(),700);
+      // Show HP bar
+      document.getElementById('of-ms-hpbar').style.display='flex';
+      document.getElementById('of-ms-hpbar-label').textContent='🌌 OMNIVERSAL APEX';
+      this._updateBar();
+      const sb=document.getElementById('of-start-btn');
+      sb.style.display='';sb.textContent='⚔ BEGIN BATTLE';
+      document.getElementById('of-status-text').textContent='🌌 OMNIVERSAL APEX DETECTED — BEGIN BATTLE WHEN READY';
+      ofCheckLaserBtn();
+    },2800);
+  },
+
+  beginBattle(){
+    OF.orbs.forEach(o=>{
+      o.x=Math.max(OF.W*0.52+o.r,Math.min(OF.W-o.r,o.x));
+      o.y=Math.max(o.r+50,Math.min(OF.H-o.r-50,o.y));
+    });
+    this._battleFrames=0;
+    this._peakBlueCount=0;
+    OF.battleRunning=true;
+    document.getElementById('of-start-btn').style.display='none';
+    document.getElementById('of-status-text').textContent='🌌 DESTROY THE OMNIVERSAL APEX!';
+    flashScreen('rgba(180,100,255,.7)');shake('lg');
+    setTimeout(()=>{shake('lg');flashScreen('rgba(140,60,255,.4)',60);},200);
+    SFX.bossDefeat();
+  },
+
+  stop(){
+    this.active=false;
+    this.spawning=false;
+    this.vortexActive=false;
+    this.cataclysmCharging=false;
+    this.deathSequence=false;
+    this.minions=[];
+    document.getElementById('apex-arrival-text')?.remove();
+    document.getElementById('of-ms-hpbar').style.display='none';
+    document.getElementById('of-ms-hpbar-label').textContent='👾 MOTHERSHIP';
+  },
+
+  _updateBar(){
+    const pct=Math.max(0,this.hp/this.maxHp);
+    const fill=document.getElementById('of-ms-hpbar-fill');
+    const val=document.getElementById('of-ms-hpbar-val');
+    if(fill){
+      fill.style.width=(pct*100)+'%';
+      // Phase-colored HP bar
+      if(this.phase===1) fill.style.background='linear-gradient(90deg,#6644aa,#aa66ff,#cc88ff)';
+      else if(this.phase===2) fill.style.background='linear-gradient(90deg,#aa2244,#ff4466,#ff88aa)';
+      else if(this.phase===3) fill.style.background='linear-gradient(90deg,#ff4400,#ff8800,#ffcc00)';
+      else fill.style.background='linear-gradient(90deg,#ff0000,#ff4400,#ffffff)';
+    }
+    if(val){
+      const hp=Math.ceil(this.hp);
+      const hpStr=hp>=1e6?(hp/1e6).toFixed(2)+'M':hp>=1e3?(hp/1e3).toFixed(1)+'K':hp.toLocaleString();
+      const maxStr=this.maxHp>=1e6?(this.maxHp/1e6).toFixed(2)+'M':this.maxHp>=1e3?(this.maxHp/1e3).toFixed(0)+'K':this.maxHp.toLocaleString();
+      val.textContent=`${hpStr} / ${maxStr}  (${Math.ceil(pct*100)}%)`;
+    }
+    // Phase transitions
+    const newPhase=pct>0.75?1:pct>0.5?2:pct>0.25?3:4;
+    if(newPhase!==this.phase){
+      const oldPhase=this.phase;
+      this.phase=newPhase;
+      this._onPhaseChange(oldPhase,newPhase);
+    }
+  },
+
+  _onPhaseChange(from,to){
+    const msgs=['','PHASE 2: DIMENSIONAL RAGE','PHASE 3: REALITY FRACTURE','PHASE 4: FINAL COLLAPSE'];
+    const colors=['','#ff4466','#ff8800','#ff0000'];
+    shake('lg');setTimeout(()=>shake('lg'),150);
+    flashScreen(`rgba(${to===2?'255,60,100':to===3?'255,140,0':'255,0,0'},.7)`,100);
+    spawnShockwave(this.x,this.y,`rgba(${to===2?'255,60,100':to===3?'255,140,0':'255,0,0'},`,this.r*4,10);
+    spawnParticles(this.x,this.y,colors[to-1]||'#ff44ff',60,12);
+    SFX.bossDefeat();
+    document.getElementById('of-status-text').textContent='🌌 '+msgs[to-1];
+    setTimeout(()=>{
+      if(this.active) document.getElementById('of-status-text').textContent='🌌 DESTROY THE OMNIVERSAL APEX!';
+    },3000);
+  },
+
+  update(){
+    if(!this.active||this.deathSequence)return;
+    this.pulseT+=0.04;
+    this.hueShift=(this.hueShift+1.2)%360;
+    this.ringAngle+=0.015+(this.phase-1)*0.008;
+    if(this.spawning)return;
+    // Gentle float
+    this.y+=Math.sin(this.pulseT*0.3)*0.5;
+    this.y=Math.max(this.r+20,Math.min(OF.H-this.r-20,this.y));
+
+    if(!OF.battleRunning)return;
+
+    this.attackTimer++;
+    this.spawnTimer++;
+    this._battleFrames++;
+    this._distortT+=0.02*this.phase;
+
+    const blueOrbs=OF.orbs.filter(o=>o.team==='blue'&&!o.dead);
+
+    // Phase-scaled attack frequency
+    const atkMult=1-(this.phase-1)*0.15; // faster attacks each phase
+
+    // ── OMNIBEAM — giant multicolored beam ──
+    const omniRate=Math.floor(360*atkMult);
+    if(this.attackTimer%omniRate===0&&this.attackTimer>0){
+      this._fireOmnibeam();
+    }
+
+    // ── REALITY COLLAPSE — gravity vortex ──
+    if(!this.vortexActive&&this.attackTimer%Math.floor(480*atkMult)===Math.floor(240*atkMult)){
+      this.vortexActive=true;
+      this.vortexTimer=0;
+      SFX.cannonCharge();
+      document.getElementById('of-status-text').textContent='🌀 REALITY COLLAPSE — GRAVITY VORTEX!';
+    }
+    if(this.vortexActive){
+      this.vortexTimer++;
+      const vortexRange=this.r*4+this.vortexTimer*0.5;
+      blueOrbs.forEach(o=>{
+        const d=Math.hypot(o.x-this.x,o.y-this.y);
+        if(d<vortexRange){
+          const pull=(0.8+this.phase*0.3)*(1-d/vortexRange);
+          const a=Math.atan2(this.y-o.y,this.x-o.x);
+          o.vx+=Math.cos(a)*pull;o.vy+=Math.sin(a)*pull;
+          // Constant damage while in vortex
+          const dmg=(15+this.phase*10)*(1-d/vortexRange);
+          MS._dmgOrb(o,dmg);
+          if(Math.random()<.1) spawnSparks(o.x,o.y,'#aa44ff',2);
+        }
+      });
+      if(this.vortexTimer>=180+this.phase*30){
+        this.vortexActive=false;
+        spawnShockwave(this.x,this.y,'rgba(150,80,255,',vortexRange,8);
+        shake('md');
+        if(this.active) document.getElementById('of-status-text').textContent='🌌 DESTROY THE OMNIVERSAL APEX!';
+      }
+    }
+
+    // ── COSMIC DETONATION — massive explosion ──
+    if(this.attackTimer%Math.floor(540*atkMult)===Math.floor(400*atkMult)){
+      this._cosmicDetonation();
+    }
+
+    // ── ORB GENESIS — spawn minion orbs ──
+    const spawnRate=Math.floor(300*atkMult);
+    if(this.spawnTimer>=spawnRate){
+      this.spawnTimer=0;
+      this._spawnMinions();
+    }
+
+    // ── OMNIVERSAL CATACLYSM — ultimate attack (Phase 3+ only, every ~15s) ──
+    if(this.phase>=3&&!this.cataclysmCharging&&this.attackTimer%Math.floor(900*atkMult)===Math.floor(800*atkMult)){
+      this._beginCataclysm();
+    }
+    if(this.cataclysmCharging){
+      this.cataclysmT++;
+      if(this.cataclysmT>=180) this._fireCataclysm();
+    }
+
+    // ── Move minions toward blue orbs ──
+    this.minions=this.minions.filter(m=>{
+      if(m.dead)return false;
+      m.pulseT+=0.05;
+      m.attackTimer++;
+      // Find nearest blue orb
+      let closest=null,closestD=Infinity;
+      blueOrbs.forEach(o=>{
+        const d=Math.hypot(o.x-m.x,o.y-m.y);
+        if(d<closestD){closest=o;closestD=d;}
+      });
+      if(closest){
+        const a=Math.atan2(closest.y-m.y,closest.x-m.x);
+        m.vx+=Math.cos(a)*0.2;m.vy+=Math.sin(a)*0.2;
+        const spd=Math.hypot(m.vx,m.vy);
+        if(spd>m.spd){m.vx=m.vx/spd*m.spd;m.vy=m.vy/spd*m.spd;}
+        // Melee damage on contact
+        if(closestD<m.r+closest.r){
+          MS._dmgOrb(closest,m.dmg*0.3);
+          spawnSparks(closest.x,closest.y,m.color,2);
+        }
+        // Ranged attack
+        if(m.attackTimer>=m.attackRate){
+          m.attackTimer=0;
+          const ang=Math.atan2(closest.y-m.y,closest.x-m.x);
+          m.projectiles.push({x:m.x,y:m.y,vx:Math.cos(ang)*6,vy:Math.sin(ang)*6,dmg:m.dmg*0.5,r:5,life:100,color:m.color});
+          SFX.orbShoot();
+        }
+      }
+      m.x+=m.vx;m.y+=m.vy;
+      m.x=Math.max(m.r,Math.min(OF.W-m.r,m.x));
+      m.y=Math.max(m.r+40,Math.min(OF.H-m.r-40,m.y));
+      // Resolve minion projectiles
+      m.projectiles=m.projectiles.filter(p=>{
+        p.x+=p.vx;p.y+=p.vy;p.life--;
+        if(p.life<=0)return false;
+        const hit=blueOrbs.find(o=>Math.hypot(o.x-p.x,o.y-p.y)<o.r+p.r);
+        if(hit){
+          MS._dmgOrb(hit,p.dmg);
+          spawnSparks(p.x,p.y,p.color,3);
+          return false;
+        }
+        return true;
+      });
+      return true;
+    });
+
+    // ── Blue orbs shoot at Apex ──
+    OF.orbs.forEach(o=>{
+      if(o.team!=='blue'||o.dead)return;
+      // Resolve projectiles hitting Apex
+      o.projectiles=o.projectiles.filter(p=>{
+        if(p.homing&&p.homingStr){
+          const da=Math.atan2(this.y-p.y,this.x-p.x);
+          const curA=Math.atan2(p.vy,p.vx);
+          let diff=da-curA;
+          while(diff>Math.PI)diff-=Math.PI*2;
+          while(diff<-Math.PI)diff+=Math.PI*2;
+          const turn=Math.min(p.homingStr,Math.abs(diff))*Math.sign(diff);
+          const newA=curA+turn;
+          const spd=Math.hypot(p.vx,p.vy);
+          p.vx=Math.cos(newA)*spd;p.vy=Math.sin(newA)*spd;
+        }
+        p.x+=p.vx;p.y+=p.vy;p.life--;
+        if(p.life<=0)return false;
+        // Hit Apex?
+        if(Math.hypot(p.x-this.x,p.y-this.y)<this.r+p.r){
+          const actualDmg=p.dmg*2;
+          this.hp=Math.max(0,this.hp-actualDmg);
+          this._updateBar();
+          SFX.mothershipHit();
+          spawnSparks(p.x,p.y,`hsl(${this.hueShift},100%,70%)`,4);
+          OF._dmgNums=OF._dmgNums||[];
+          const dmgLabel=actualDmg>=1000?(actualDmg/1000).toFixed(1)+'K':Math.round(actualDmg)+'';
+          OF._dmgNums.push({x:p.x+(-15+Math.random()*30),y:p.y-8,label:dmgLabel,life:1,vy:-(1+Math.random()*0.7),col:'#cc88ff'});
+          if(this.hp<=0){this._destroy();return false;}
+          return false;
+        }
+        // Hit a minion?
+        const hitMinion=this.minions.find(m=>!m.dead&&Math.hypot(m.x-p.x,m.y-p.y)<m.r+p.r);
+        if(hitMinion){
+          hitMinion.hp=Math.max(0,hitMinion.hp-p.dmg);
+          spawnSparks(p.x,p.y,hitMinion.color,3);
+          if(hitMinion.hp<=0){
+            hitMinion.dead=true;
+            spawnParticles(hitMinion.x,hitMinion.y,hitMinion.color,20,6);
+            SFX.orbExplode();
+          }
+          return false;
+        }
+        if(p.x<0||p.x>OF.W||p.y<0||p.y>OF.H)return false;
+        return true;
+      });
+    });
+
+    // ── Blue orbs move toward Apex ──
+    OF.orbs.filter(o=>o.team==='blue'&&!o.dead&&!o.isInfinite&&!o.isPrismatic).forEach(o=>{
+      const ang=Math.atan2(this.y-o.y,this.x-o.x);
+      const dist=Math.hypot(o.x-this.x,o.y-this.y);
+      if(dist>this.r+o.r+60){
+        o.vx+=Math.cos(ang)*0.15;o.vy+=Math.sin(ang)*0.15;
+        const spd=Math.hypot(o.vx,o.vy);
+        if(spd>o.spd){o.vx=o.vx/spd*o.spd;o.vy=o.vy/spd*o.spd;}
+      } else {o.vx*=0.85;o.vy*=0.85;}
+      o.x+=o.vx;o.y+=o.vy;
+      o.x=Math.max(OF.W*0.4+o.r,Math.min(OF.W-o.r,o.x));
+      o.y=Math.max(o.r+40,Math.min(OF.H-o.r-40,o.y));
+      // Auto-attack Apex
+      o.attackTimer++;
+      if(o.attackTimer>=o.attackRate){
+        o.attackTimer=0;
+        const ang2=Math.atan2(this.y-o.y,this.x-o.x);
+        o.projectiles.push({x:o.x,y:o.y,vx:Math.cos(ang2)*6,vy:Math.sin(ang2)*6,dmg:o.dmg*.6,r:5,life:120,color:o.color});
+        if(o.isBoss)SFX.bossShoot();else SFX.orbShoot();
+      }
+    });
+
+    // ── Infinite orbs attack Apex ──
+    OF.orbs.filter(o=>o.team==='blue'&&o.isInfinite&&!o.dead).forEach(o=>{
+      o.attackTimer++;
+      if(o.attackTimer>=45){
+        o.attackTimer=0;
+        for(let i=0;i<8;i++){
+          const a=Math.atan2(this.y-o.y,this.x-o.x)+(i-3.5)*.2;
+          o.projectiles.push({x:o.x,y:o.y,vx:Math.cos(a)*8,vy:Math.sin(a)*8,dmg:o.dmg*.8,r:9,life:130,color:'#aa66ff'});
+        }
+        SFX.infiniteShoot();
+      }
+    });
+
+    // ── Prismatic orbs attack Apex with full RGB spray ──
+    OF.orbs.filter(o=>o.team==='blue'&&o.isPrismatic&&!o.dead).forEach(o=>{
+      o.attackTimer++;
+      if(o.attackTimer>=o.attackRate){
+        o.attackTimer=0;
+        const hue=o.hueShift||0;
+        const ang=Math.atan2(this.y-o.y,this.x-o.x);
+        for(let i=0;i<32;i++){
+          const a=(i/32)*Math.PI*2+o.pulseT*0.5;
+          const gh=(hue+i*(360/32))%360;
+          const spd=11*(0.85+Math.random()*0.3);
+          o.projectiles.push({x:o.x,y:o.y,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,dmg:o.dmg*0.9,r:8,life:220,color:`hsl(${gh},100%,65%)`,homing:true,homingStr:0.18,tx:this.x,ty:this.y});
+        }
+        for(let i=-8;i<=8;i++){
+          const a=ang+i*0.12;
+          const gh=(hue+i*40+180)%360;
+          const spd=14*(0.9+Math.random()*0.2);
+          o.projectiles.push({x:o.x,y:o.y,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,dmg:o.dmg*1.5,r:12,life:240,color:`hsl(${gh},100%,70%)`,homing:true,homingStr:0.22,tx:this.x,ty:this.y});
+        }
+        SFX.laserFire();
+      }
+      // Prismatic abilities
+      o.abilityTimer=(o.abilityTimer||0)+1;
+      o.color=`hsl(${o.hueShift||0},100%,60%)`;
+      const alive=OF.orbs.filter(e=>!e.dead);
+      const auraRange=o.r*2.2;
+      // Aura on minions
+      this.minions.filter(m=>!m.dead).forEach(m=>{
+        if(Math.hypot(m.x-o.x,m.y-o.y)<auraRange+m.r){
+          m.hp=Math.max(0,m.hp-o.dmg*0.02);
+          if(m.hp<=0){m.dead=true;spawnParticles(m.x,m.y,m.color,15,5);SFX.orbExplode();}
+        }
+      });
+      if(o.abilityTimer%240===0&&o.abilityTimer>0) OF._prismaticSpectrumBeam(o,alive);
+      if(o.abilityTimer%240===80) OF._prismaticRGBStorm(o,alive);
+      if(o.abilityTimer%240===160) OF._prismaticPrismBurst(o,alive);
+      if(o.abilityTimer%240===200) OF._prismaticColorSingularity(o,alive);
+      if(Math.random()<.25) spawnSparks(o.x+(-o.r+Math.random()*o.r*2),o.y+(-o.r+Math.random()*o.r*2),`hsl(${Math.random()*360},100%,70%)`,2);
+    });
+
+    // ── Celestial orbs attack Apex ──
+    OF.orbs.filter(o=>o.team==='blue'&&o.isCelestial&&!o.dead).forEach(o=>{
+      o.attackTimer++;
+      if(o.attackTimer>=o.attackRate){
+        o.attackTimer=0;
+        const ang=Math.atan2(this.y-o.y,this.x-o.x);
+        const count=o.ability==='stellar'?5:o.ability==='astral'?8:4;
+        for(let i=0;i<count;i++){
+          const a=ang+(i-(count-1)/2)*0.12;
+          o.projectiles.push({x:o.x,y:o.y,vx:Math.cos(a)*8,vy:Math.sin(a)*8,dmg:o.dmg*.8,r:8,life:140,color:o.color,homing:true,homingStr:0.06,tx:this.x,ty:this.y});
+        }
+        SFX.bossShoot();
+      }
+    });
+
+    // ── Victory check — all blue dead ──
+    const blueLeft=OF.orbs.filter(o=>o.team==='blue'&&!o.dead);
+    if(blueLeft.length===0&&this._battleFrames>180&&this._peakBlueCount>0&&this.hp>0){
+      this.active=false;
+      OF.battleRunning=false;
+      this.stop();
+      document.getElementById('of-victory').style.display='flex';
+      document.getElementById('of-victory-icon').textContent='🌌';
+      document.getElementById('of-victory-title').textContent='OMNIVERSAL APEX WINS!';
+      document.getElementById('of-victory-title').style.color='#aa66ff';
+      document.getElementById('of-victory-sub').textContent='Your fleet was consumed by cosmic energy.';
+      SFX.bossDefeat();shake('lg');
+    }
+    if(blueLeft.length>this._peakBlueCount)this._peakBlueCount=blueLeft.length;
+  },
+
+  // ── ATTACK: OMNIBEAM ──
+  _fireOmnibeam(){
+    const blueOrbs=OF.orbs.filter(o=>o.team==='blue'&&!o.dead);
+    if(blueOrbs.length===0)return;
+    const target=blueOrbs[Math.floor(Math.random()*blueOrbs.length)];
+    this._omnibeamAngle=Math.atan2(target.y-this.y,target.x-this.x);
+    this._omnibeamLife=30;
+    shake('lg');setTimeout(()=>shake('md'),100);
+    flashScreen(`rgba(${Math.floor(Math.random()*255)},${Math.floor(Math.random()*255)},255,.6)`,80);
+    SFX.cannonFire();
+    document.getElementById('of-status-text').textContent='🌈 OMNIBEAM FIRED!';
+    // Damage in beam path
+    const beamLen=OF.W;
+    const beamW=40+this.phase*15;
+    blueOrbs.forEach(o=>{
+      // Check if orb is in beam rectangle
+      const dx=o.x-this.x,dy=o.y-this.y;
+      const along=dx*Math.cos(this._omnibeamAngle)+dy*Math.sin(this._omnibeamAngle);
+      const perp=Math.abs(-dx*Math.sin(this._omnibeamAngle)+dy*Math.cos(this._omnibeamAngle));
+      if(along>0&&along<beamLen&&perp<beamW+o.r){
+        const dmg=200+this.phase*100;
+        MS._dmgOrb(o,dmg);
+        spawnSparks(o.x,o.y,'#ffffff',6);
+      }
+    });
+    OF.orbs=OF.orbs.filter(o=>!o.dead);
+    OF.updateHUD();
+    setTimeout(()=>{if(this.active)document.getElementById('of-status-text').textContent='🌌 DESTROY THE OMNIVERSAL APEX!';},2000);
+  },
+
+  // ── ATTACK: COSMIC DETONATION ──
+  _cosmicDetonation(){
+    shake('lg');setTimeout(()=>shake('lg'),120);setTimeout(()=>shake('lg'),250);
+    flashScreen('rgba(255,200,100,.8)',100);
+    setTimeout(()=>flashScreen('rgba(255,100,50,.5)',80),130);
+    SFX.bossExplode();setTimeout(()=>SFX.bossExplode(),200);
+    spawnShockwave(this.x,this.y,'rgba(255,200,100,',OF.W*0.8,12);
+    spawnParticles(this.x,this.y,'#ffaa44',60,12);
+    spawnParticles(this.x,this.y,'#ff6600',40,10);
+    document.getElementById('of-status-text').textContent='💥 COSMIC DETONATION!';
+    // Damage everything on screen
+    const blueOrbs=OF.orbs.filter(o=>o.team==='blue'&&!o.dead);
+    const detRange=OF.W*0.7;
+    blueOrbs.forEach(o=>{
+      const d=Math.hypot(o.x-this.x,o.y-this.y);
+      if(d<detRange){
+        const dmg=(150+this.phase*80)*(1-d/detRange);
+        MS._dmgOrb(o,dmg);
+        const knockA=Math.atan2(o.y-this.y,o.x-this.x);
+        o.vx+=Math.cos(knockA)*6;o.vy+=Math.sin(knockA)*6;
+        spawnSparks(o.x,o.y,'#ffaa44',4);
+      }
+    });
+    OF.orbs=OF.orbs.filter(o=>!o.dead);
+    OF.updateHUD();
+    setTimeout(()=>{if(this.active)document.getElementById('of-status-text').textContent='🌌 DESTROY THE OMNIVERSAL APEX!';},2500);
+  },
+
+  // ── ATTACK: ORB GENESIS ──
+  _spawnMinions(){
+    const count=2+this.phase;
+    const types=[
+      {r:16,hp:200,dmg:20,spd:2.0,color:'#6622aa',ability:'void',label:'Void Drone'},
+      {r:14,hp:150,dmg:15,spd:2.5,color:'#ff44ff',ability:'prism',label:'Prism Drone'},
+      {r:12,hp:120,dmg:25,spd:2.8,color:'#44ffcc',ability:'energy',label:'Energy Drone'},
+    ];
+    SFX.missileLaunch();
+    document.getElementById('of-status-text').textContent='🌀 ORB GENESIS — MINIONS SPAWNING!';
+    for(let i=0;i<count;i++){
+      const t=types[Math.floor(Math.random()*types.length)];
+      const a=(i/count)*Math.PI*2+Math.random()*0.5;
+      const zoom=OF.zoomedOut;
+      const zf=zoom?0.5:1;
+      this.minions.push({
+        ...t,r:Math.round(t.r*zf),
+        x:this.x+Math.cos(a)*(this.r+20),
+        y:this.y+Math.sin(a)*(this.r+20),
+        maxHp:t.hp,hp:t.hp,
+        vx:Math.cos(a)*3,vy:Math.sin(a)*3,
+        attackTimer:0,attackRate:80,
+        pulseT:Math.random()*Math.PI*2,
+        projectiles:[],dead:false,
+        id:Date.now()+Math.random(),
+      });
+    }
+    spawnParticles(this.x,this.y,'#aa44ff',20,6);
+    setTimeout(()=>{if(this.active)document.getElementById('of-status-text').textContent='🌌 DESTROY THE OMNIVERSAL APEX!';},2000);
+  },
+
+  // ── ULTIMATE: OMNIVERSAL CATACLYSM ──
+  _beginCataclysm(){
+    this.cataclysmCharging=true;
+    this.cataclysmT=0;
+    SFX.cannonCharge();
+    document.getElementById('of-status-text').textContent='☠ OMNIVERSAL CATACLYSM CHARGING...';
+    flashScreen('rgba(100,0,200,.4)',100);
+  },
+
+  _fireCataclysm(){
+    this.cataclysmCharging=false;
+    this.cataclysmT=0;
+    // MASSIVE omnidirectional blast
+    shake('lg');setTimeout(()=>shake('lg'),80);setTimeout(()=>shake('lg'),180);setTimeout(()=>shake('lg'),300);
+    flashScreen('rgba(255,255,255,1)',150);
+    setTimeout(()=>flashScreen('rgba(200,100,255,.8)',100),100);
+    setTimeout(()=>flashScreen('rgba(255,50,50,.6)',80),220);
+    SFX.cannonFire();setTimeout(()=>SFX.bossExplode(),150);setTimeout(()=>SFX.mothershipDestroy(),300);
+    document.getElementById('of-status-text').textContent='☠ OMNIVERSAL CATACLYSM!';
+    // Massive shockwaves
+    for(let i=0;i<5;i++){
+      setTimeout(()=>{
+        spawnShockwave(this.x,this.y,`hsla(${(this.hueShift+i*72)%360},100%,60%,`,OF.W*(0.5+i*0.15),10);
+      },i*80);
+    }
+    spawnParticles(this.x,this.y,'#ffffff',120,18);
+    spawnParticles(this.x,this.y,'#ff44ff',80,14);
+    spawnParticles(this.x,this.y,'#ffaa00',60,12);
+    // Damage ALL blue orbs heavily
+    const blueOrbs=OF.orbs.filter(o=>o.team==='blue'&&!o.dead);
+    blueOrbs.forEach(o=>{
+      const d=Math.hypot(o.x-this.x,o.y-this.y);
+      const maxRange=OF.W*0.9;
+      const dmg=d<maxRange?(500+this.phase*200)*(1-d*0.3/maxRange):0;
+      if(dmg>0){
+        MS._dmgOrb(o,dmg);
+        spawnSparks(o.x,o.y,'#ffffff',8);
+        const knockA=Math.atan2(o.y-this.y,o.x-this.x);
+        o.vx+=Math.cos(knockA)*10;o.vy+=Math.sin(knockA)*10;
+      }
+    });
+    OF.orbs=OF.orbs.filter(o=>!o.dead);
+    OF.updateHUD();
+    setTimeout(()=>{if(this.active)document.getElementById('of-status-text').textContent='🌌 DESTROY THE OMNIVERSAL APEX!';},3000);
+  },
+
+  // ── DEFEAT SEQUENCE ──
+  _destroy(){
+    this.deathSequence=true;
+    OF.battleRunning=false;
+    document.getElementById('of-status-text').textContent='🌌 THE APEX IS COLLAPSING...';
+
+    // Generate crack lines
+    this.crackLines=[];
+    for(let i=0;i<12;i++){
+      const a=Math.random()*Math.PI*2;
+      const len=this.r*(0.5+Math.random()*0.5);
+      this.crackLines.push({angle:a,len,width:1+Math.random()*2});
+    }
+
+    let t=0;
+    const deathAnim=setInterval(()=>{
+      t++;
+      // Explosions across the body
+      const ea=Math.random()*Math.PI*2;
+      const ed=Math.random()*this.r*0.8;
+      const ex=this.x+Math.cos(ea)*ed,ey=this.y+Math.sin(ea)*ed;
+      spawnParticles(ex,ey,`hsl(${Math.random()*360},100%,70%)`,15,6);
+      spawnShockwave(ex,ey,`hsla(${Math.random()*360},100%,60%,`,50+Math.random()*60,4);
+      if(Math.random()<.5) flashScreen(`rgba(${Math.floor(Math.random()*255)},${Math.floor(Math.random()*255)},255,.3)`,40);
+      shake(t<15?'sm':t<25?'md':'lg');
+      SFX.orbExplode();
+
+      // Cracks grow
+      this.crackLines.forEach(c=>c.len+=2);
+
+      // Cosmic energy leaking
+      for(let i=0;i<3;i++){
+        const la=Math.random()*Math.PI*2;
+        spawnSparks(this.x+Math.cos(la)*this.r,this.y+Math.sin(la)*this.r,`hsl(${Math.random()*360},100%,80%)`,3);
+      }
+
+      if(t>=30){
+        clearInterval(deathAnim);
+        // FINAL MEGABLAST
+        flashScreen('rgba(255,255,255,1)',200);
+        setTimeout(()=>flashScreen('rgba(200,150,255,.8)',120),100);
+        setTimeout(()=>flashScreen('rgba(100,50,200,.5)',80),250);
+        shake('lg');setTimeout(()=>shake('lg'),100);setTimeout(()=>shake('lg'),220);
+        spawnParticles(this.x,this.y,'#ffffff',150,20);
+        spawnParticles(this.x,this.y,'#cc88ff',100,16);
+        spawnParticles(this.x,this.y,'#ff44aa',80,14);
+        spawnParticles(this.x,this.y,'#4444ff',60,12);
+        for(let i=0;i<8;i++){
+          setTimeout(()=>spawnShockwave(this.x,this.y,`hsla(${i*45},100%,60%,`,OF.W*(0.4+i*0.1),10),i*60);
+        }
+        SFX.mothershipDestroy();
+        setTimeout(()=>SFX.bossDefeat(),300);
+
+        // Remove minions
+        this.minions.forEach(m=>{
+          spawnParticles(m.x,m.y,m.color,15,5);
+        });
+        this.minions=[];
+
+        this.stop();
+
+        setTimeout(()=>{
+          document.getElementById('of-victory').style.display='flex';
+          document.getElementById('of-victory-icon').textContent='🌌';
+          document.getElementById('of-victory-title').textContent='THE OMNIVERSAL APEX HAS FALLEN';
+          document.getElementById('of-victory-title').style.color='#cc88ff';
+          document.getElementById('of-victory-sub').textContent='The ultimate cosmic entity has been vanquished. You are the true champion.';
+          SFX.bossDefeat();shake('lg');
+        },600);
+      }
+    },100);
+  },
+
+  // ── DRAW ──
+  draw(ctx){
+    if(!this.active)return;
+
+    // ── Spawn phase — coalescing energy ──
+    if(this.spawning){
+      const a=this._spawnAlpha||0;
+      ctx.save();
+      ctx.globalAlpha=a;
+      // Swirling void
+      const sg=ctx.createRadialGradient(this.x,this.y,0,this.x,this.y,this.r*2);
+      sg.addColorStop(0,`rgba(180,100,255,${a*0.5})`);
+      sg.addColorStop(0.5,`rgba(80,20,160,${a*0.3})`);
+      sg.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.beginPath();ctx.arc(this.x,this.y,this.r*2,0,Math.PI*2);ctx.fillStyle=sg;ctx.fill();
+      // Flickering proto-sphere
+      ctx.beginPath();ctx.arc(this.x,this.y,this.r*a,0,Math.PI*2);
+      ctx.fillStyle=`rgba(200,150,255,${a*0.4})`;ctx.shadowColor='#aa66ff';ctx.shadowBlur=40;ctx.fill();
+      ctx.restore();
+      return;
+    }
+
+    const x=this.x,y=this.y,r=this.r;
+    const hue=this.hueShift;
+    const t=this.pulseT;
+    const phase=this.phase;
+
+    ctx.save();
+
+    // ── Phase 3+ screen distortion effect (subtle color overlay) ──
+    if(phase>=3){
+      const distAlpha=0.03+(phase-3)*0.04;
+      ctx.fillStyle=`rgba(${Math.floor(128+127*Math.sin(this._distortT))},0,${Math.floor(128+127*Math.cos(this._distortT))},${distAlpha})`;
+      ctx.fillRect(0,0,OF.W,OF.H);
+    }
+
+    // ── Massive outer aura ──
+    for(let i=3;i>=0;i--){
+      const aR=r*(2+i*0.6+0.15*Math.sin(t*1.2+i));
+      const ag=ctx.createRadialGradient(x,y,r,x,y,aR);
+      const ah=(hue+i*90)%360;
+      ag.addColorStop(0,`hsla(${ah},80%,50%,${0.08-i*0.015})`);
+      ag.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.beginPath();ctx.arc(x,y,aR,0,Math.PI*2);ctx.fillStyle=ag;ctx.fill();
+    }
+
+    // ── Vortex visual ──
+    if(this.vortexActive){
+      const vR=r*4+this.vortexTimer*0.5;
+      ctx.save();ctx.translate(x,y);ctx.rotate(t*2);
+      for(let i=0;i<6;i++){
+        const a=(i/6)*Math.PI*2;
+        ctx.strokeStyle=`hsla(${(hue+i*60)%360},100%,60%,${0.3-this.vortexTimer*0.001})`;
+        ctx.lineWidth=2;ctx.shadowColor=`hsl(${(hue+i*60)%360},100%,60%)`;ctx.shadowBlur=15;
+        ctx.beginPath();
+        for(let s=0;s<40;s++){
+          const sa=a+s*0.15;const sr=r*0.5+s*(vR-r*0.5)/40;
+          const sx=Math.cos(sa)*sr,sy=Math.sin(sa)*sr;
+          s===0?ctx.moveTo(sx,sy):ctx.lineTo(sx,sy);
+        }
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    // ── 3 orbiting energy rings ──
+    for(let ring=0;ring<3;ring++){
+      ctx.save();ctx.translate(x,y);
+      const ringSpeed=(1+ring*0.5)*(1+(phase-1)*0.3);
+      const ra=this.ringAngle*ringSpeed+ring*2.1;
+      ctx.rotate(ra);
+      ctx.scale(1,0.3+ring*0.05);
+      const ringR=r*(1.3+ring*0.25);
+      const rh=(hue+ring*120)%360;
+      ctx.beginPath();ctx.arc(0,0,ringR,0,Math.PI*2);
+      ctx.strokeStyle=`hsla(${rh},100%,70%,${0.5+0.2*Math.sin(t*2+ring)})`;
+      ctx.lineWidth=2+ring;ctx.shadowColor=`hsl(${rh},100%,60%)`;ctx.shadowBlur=15;ctx.stroke();
+      // Ring particles
+      for(let p=0;p<8;p++){
+        const pa=(p/8)*Math.PI*2+ra*0.5;
+        const px=Math.cos(pa)*ringR,py=Math.sin(pa)*ringR;
+        ctx.beginPath();ctx.arc(px,py,2+ring,0,Math.PI*2);
+        ctx.fillStyle=`hsla(${(rh+p*45)%360},100%,80%,0.7)`;ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    // ── Cosmic star particles around the orb ──
+    for(let i=0;i<12;i++){
+      const sa=t*0.3+i*(Math.PI*2/12);
+      const sd=r*(1.2+0.3*Math.sin(t*1.5+i*0.8));
+      const sx=x+Math.cos(sa)*sd,sy=y+Math.sin(sa)*sd;
+      const ss=1.5+Math.sin(t*3+i)*1;
+      ctx.beginPath();ctx.arc(sx,sy,ss,0,Math.PI*2);
+      ctx.fillStyle=`hsla(${(hue+i*30)%360},100%,85%,${0.5+0.3*Math.sin(t*2+i)})`;
+      ctx.shadowColor='#ffffff';ctx.shadowBlur=6;ctx.fill();
+    }
+
+    // ── Main body — enormous shifting sphere ──
+    // Dark void base
+    const bg=ctx.createRadialGradient(x-r*0.15,y-r*0.15,0,x,y,r);
+    bg.addColorStop(0,`hsl(${hue},60%,20%)`);
+    bg.addColorStop(0.3,`hsl(${(hue+60)%360},50%,12%)`);
+    bg.addColorStop(0.7,'#0a0015');
+    bg.addColorStop(1,`hsl(${(hue+180)%360},40%,8%)`);
+    ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle=bg;
+    ctx.shadowColor=`hsl(${hue},100%,50%)`;ctx.shadowBlur=50;ctx.fill();
+
+    // Color-shifting overlay
+    const og=ctx.createRadialGradient(x,y,0,x,y,r);
+    og.addColorStop(0,`hsla(${hue},100%,70%,0.25)`);
+    og.addColorStop(0.4,`hsla(${(hue+120)%360},100%,50%,0.15)`);
+    og.addColorStop(0.8,`hsla(${(hue+240)%360},80%,40%,0.1)`);
+    og.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle=og;ctx.fill();
+
+    // White core flash (periodic intense power display)
+    const coreFlash=Math.pow(Math.max(0,Math.sin(t*1.5)),8);
+    if(coreFlash>0.01){
+      const fg=ctx.createRadialGradient(x,y,0,x,y,r*0.6);
+      fg.addColorStop(0,`rgba(255,255,255,${coreFlash*0.8})`);
+      fg.addColorStop(0.5,`rgba(200,180,255,${coreFlash*0.4})`);
+      fg.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.beginPath();ctx.arc(x,y,r*0.6,0,Math.PI*2);ctx.fillStyle=fg;ctx.fill();
+    }
+
+    // ── Surface energy veins ──
+    for(let i=0;i<8;i++){
+      const va=t*0.4+i*(Math.PI/4);
+      const vh=(hue+i*45)%360;
+      ctx.save();ctx.translate(x,y);ctx.rotate(va);
+      ctx.strokeStyle=`hsla(${vh},100%,65%,${0.3+0.2*Math.sin(t*2+i)})`;
+      ctx.lineWidth=1.5;ctx.shadowColor=`hsl(${vh},100%,60%)`;ctx.shadowBlur=10;
+      ctx.beginPath();
+      ctx.moveTo(0,0);
+      const cx1=r*0.4,cy1=r*0.3*Math.sin(t+i);
+      ctx.quadraticCurveTo(cx1,cy1,r*0.85,r*0.1*Math.sin(t*1.5+i));
+      ctx.stroke();ctx.restore();
+    }
+
+    // ── Cataclysm charge visual ──
+    if(this.cataclysmCharging){
+      const cp=this.cataclysmT/180;
+      // Growing dark sphere
+      const chargeR=r*(1+cp*0.5);
+      const cg2=ctx.createRadialGradient(x,y,0,x,y,chargeR);
+      cg2.addColorStop(0,`rgba(100,0,200,${cp*0.5})`);
+      cg2.addColorStop(0.5,`rgba(200,50,255,${cp*0.3})`);
+      cg2.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.beginPath();ctx.arc(x,y,chargeR,0,Math.PI*2);ctx.fillStyle=cg2;ctx.fill();
+      // Stars swirling in
+      for(let i=0;i<Math.floor(cp*20);i++){
+        const sa2=t*3+i*(Math.PI*2/20);
+        const sd2=chargeR*(2-cp)+Math.sin(t*5+i)*20;
+        const sx2=x+Math.cos(sa2)*sd2,sy2=y+Math.sin(sa2)*sd2;
+        ctx.beginPath();ctx.arc(sx2,sy2,2+cp*2,0,Math.PI*2);
+        ctx.fillStyle=`rgba(255,255,255,${cp})`;ctx.shadowColor='#ffffff';ctx.shadowBlur=10;ctx.fill();
+      }
+      // Warning text
+      if(cp>0.4){
+        ctx.fillStyle=`rgba(255,100,200,${(cp-0.4)*1.5})`;
+        ctx.font=`bold ${12+cp*6}px Orbitron,monospace`;ctx.textAlign='center';ctx.shadowBlur=15;ctx.shadowColor='#ff44aa';
+        ctx.fillText('☠ CATACLYSM',x,y-r-20);
+      }
+    }
+
+    // ── Death cracks ──
+    if(this.deathSequence&&this.crackLines.length>0){
+      this.crackLines.forEach(c=>{
+        ctx.save();ctx.translate(x,y);ctx.rotate(c.angle);
+        ctx.strokeStyle=`rgba(255,200,255,0.8)`;ctx.lineWidth=c.width;
+        ctx.shadowColor='#ffffff';ctx.shadowBlur=15;
+        ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(c.len,c.len*0.1*Math.sin(t*5));ctx.stroke();
+        ctx.restore();
+      });
+    }
+
+    // ── Omnibeam visual ──
+    if(this._omnibeamLife>0){
+      this._omnibeamLife--;
+      const ba=this._omnibeamLife/30;
+      ctx.save();ctx.globalAlpha=ba;
+      ctx.translate(x,y);ctx.rotate(this._omnibeamAngle);
+      // Outer bloom — rainbow
+      for(let i=2;i>=0;i--){
+        const bw=60-i*15+this.phase*8;
+        const bh=(hue+i*120)%360;
+        ctx.fillStyle=`hsla(${bh},100%,60%,${0.3*ba})`;
+        ctx.shadowColor=`hsl(${bh},100%,60%)`;ctx.shadowBlur=30;
+        ctx.fillRect(0,-bw/2,OF.W,bw);
+      }
+      // Core beam — white
+      ctx.fillStyle=`rgba(255,255,255,${0.9*ba})`;ctx.shadowBlur=20;ctx.shadowColor='#ffffff';
+      ctx.fillRect(0,-10,OF.W,20);
+      ctx.restore();
+    }
+
+    // ── Draw minions ──
+    this.minions.forEach(m=>{
+      if(m.dead)return;
+      const mp=0.93+0.07*Math.sin(m.pulseT);
+      const mr=m.r*mp;
+      ctx.save();
+      const mg=ctx.createRadialGradient(m.x,m.y,0,m.x,m.y,mr*2);
+      mg.addColorStop(0,m.color+'cc');mg.addColorStop(1,m.color+'00');
+      ctx.beginPath();ctx.arc(m.x,m.y,mr*2,0,Math.PI*2);ctx.fillStyle=mg;ctx.fill();
+      ctx.beginPath();ctx.arc(m.x,m.y,mr,0,Math.PI*2);
+      ctx.fillStyle=m.color;ctx.shadowColor=m.color;ctx.shadowBlur=15;ctx.fill();
+      // HP bar
+      const bw=mr*2.5;const bh=3;const bx=m.x-bw/2;const by=m.y-mr-8;
+      ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(bx,by,bw,bh);
+      ctx.fillStyle=m.color;ctx.fillRect(bx,by,bw*(m.hp/m.maxHp),bh);
+      // Projectiles
+      m.projectiles.forEach(p=>{
+        ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+        ctx.fillStyle=p.color;ctx.shadowColor=p.color;ctx.shadowBlur=8;ctx.fill();
+      });
+      ctx.restore();
+    });
+
+    // ── Label ──
+    ctx.fillStyle=`hsla(${hue},100%,80%,0.7)`;
+    ctx.font='bold 10px Orbitron,monospace';ctx.textAlign='center';
+    ctx.shadowColor=`hsl(${hue},100%,60%)`;ctx.shadowBlur=10;
+    ctx.fillText('OMNIVERSAL APEX',x,y+r+18);
+    if(this.phase>1){
+      const phaseNames=['','COSMIC ENTITY','DIMENSIONAL RAGE','REALITY FRACTURE','FINAL COLLAPSE'];
+      ctx.fillStyle=`hsla(${(hue+180)%360},100%,70%,0.5)`;
+      ctx.font='bold 8px Orbitron,monospace';
+      ctx.fillText(phaseNames[this.phase],x,y+r+30);
+    }
+
+    ctx.restore();
+  }
+};
+
 function ofStartMothership(){
   if(TB.active){ toast('Remove the Test Boss first!','#ffaa44'); return; }
   MS.setup();
+  ofCheckLaserBtn();
+}
+
+function ofShowBossPicker(){
+  if(TB.active){ toast('Remove the Test Boss first!','#ffaa44'); return; }
+  document.getElementById('of-boss-picker').style.display='flex';
+}
+function ofPickBoss(type){
+  document.getElementById('of-boss-picker').style.display='none';
+  if(type==='mothership') ofStartMothership();
+  else if(type==='apex') ofStartApex();
+}
+function ofStartApex(){
+  if(TB.active){ toast('Remove the Test Boss first!','#ffaa44'); return; }
+  APEX.setup();
   ofCheckLaserBtn();
 }
 
