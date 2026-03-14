@@ -844,6 +844,7 @@ body.adv-mars-bg #adv-overlay{background:radial-gradient(ellipse at 50% 80%,#200
 .of-ctrl-btn:hover{border-color:rgba(255,255,255,.4);color:#fff;background:rgba(30,40,80,.9);}
 .of-start-btn{border-color:rgba(80,220,80,.4);color:#88ff88;background:rgba(20,80,20,.5);}
 .of-start-btn:hover{border-color:#88ff88;background:rgba(30,120,30,.5);box-shadow:0 0 16px rgba(80,220,80,.3);}
+.of-delete-btn.active{border-color:#ff4444;color:#ff6666;background:rgba(200,30,30,.35);box-shadow:0 0 14px rgba(255,60,60,.4);}
 
 /* Victory */
 #of-victory{
@@ -1353,23 +1354,19 @@ body.adv-mars-bg #adv-overlay{background:radial-gradient(ellipse at 50% 80%,#200
       <div class="of-spawn-grid">
         <button class="of-spawn-btn of-boss-btn" data-key="boss_tyrant"   onclick="ofSelectOrb('boss_tyrant')">☠ Tyrant</button>
         <button class="of-spawn-btn of-boss-btn" data-key="boss_giant"    onclick="ofSelectOrb('boss_giant')">☠ Overlord</button>
-        <button class="of-spawn-btn of-boss-btn" data-key="boss_rainbow"  onclick="ofSelectOrb('boss_rainbow')">☠ Rainbow</button>
+        <button class="of-spawn-btn of-boss-btn" data-key="boss_rainbow"  onclick="ofSelectOrb('boss_rainbow')">☠ Prismatic</button>
         <button class="of-spawn-btn of-boss-btn" data-key="boss_void"     onclick="ofSelectOrb('boss_void')">☠ Void</button>
         <button class="of-spawn-btn of-boss-btn" data-key="boss_ultimate" onclick="ofSelectOrb('boss_ultimate')">⬡ Ultimate</button>
         <button class="of-spawn-btn of-boss-btn of-inf-btn" data-key="infinite" onclick="ofSelectOrb('infinite')">∞ Infinite</button>
-        <button class="of-spawn-btn of-prismatic-btn" data-key="prismatic" onclick="ofSelectOrb('prismatic')">🌈 Prismatic</button>
+        <button class="of-spawn-btn of-prismatic-btn" data-key="prismatic" onclick="ofSelectOrb('prismatic')">✦ Prismatic</button>
       </div>
       <!-- Prismatic cooldown bar -->
       <div id="of-prismatic-cd" style="display:none">
-        <div class="of-rp-label">🌈 RGB COOLDOWN</div>
+        <div class="of-rp-label">✦ RGB COOLDOWN</div>
         <div id="of-prismatic-cd-track"><div id="of-prismatic-cd-fill"></div></div>
         <div id="of-prismatic-cd-val">30s</div>
       </div>
-      <div id="of-selected-label">Click an orb above, then click the battlefield</div>
-      <div id="of-team-row">
-        <button class="of-team-btn of-team-red active" id="of-team-red" onclick="ofSetTeam('red')">🔴 Red</button>
-        <button class="of-team-btn of-team-blue" id="of-team-blue" onclick="ofSetTeam('blue')">🔵 Blue</button>
-      </div>
+      <div id="of-selected-label">Select an orb, then click left (Red) or right (Blue) to place</div>
     </div>
 
     <!-- Top HUD -->
@@ -1381,6 +1378,7 @@ body.adv-mars-bg #adv-overlay{background:radial-gradient(ellipse at 50% 80%,#200
 
     <!-- Bottom controls -->
     <div id="of-controls">
+      <button class="of-ctrl-btn of-delete-btn" id="of-delete-btn" onclick="ofToggleDelete()">✕ DELETE MODE</button>
       <button class="of-ctrl-btn" onclick="ofClearAll()">🗑 CLEAR</button>
       <button class="of-ctrl-btn of-start-btn" id="of-start-btn" onclick="ofStartBattle()">▶ START BATTLE</button>
       <button class="of-ctrl-btn of-mothership-btn" onclick="ofStartMothership()">🚀 FIGHT MOTHERSHIP</button>
@@ -1513,7 +1511,7 @@ body.adv-mars-bg #adv-overlay{background:radial-gradient(ellipse at 50% 80%,#200
       <div class="admin-items">
         <button class="admin-item admin-item-boss" onclick="adminSelect('boss_1')">☠ Gold Tyrant</button>
         <button class="admin-item admin-item-boss" onclick="adminSelect('boss_2')">☠ Giant Overlord</button>
-        <button class="admin-item admin-item-boss" onclick="adminSelect('boss_3')">☠ Rainbow Chaos</button>
+        <button class="admin-item admin-item-boss" onclick="adminSelect('boss_3')">☠ Prismatic RGB</button>
         <button class="admin-item admin-item-boss" onclick="adminSelect('boss_4')">☠ Void Emperor</button>
         <button class="admin-item admin-item-boss" onclick="adminSelect('boss_5')">⬡ THE ULTIMATE</button>
         <button class="admin-item admin-item-boss" onclick="adminSelect('infinite')">∞ INFINITE CIRCLE</button>
@@ -1874,8 +1872,8 @@ function endDrag(){
     }
     dragHistory=[];
     dragging.style.zIndex='';dragging=null;
+    checkCollisions();
   }
-  checkCollisions();
 }
 
 // ══════════════════════════════════════════
@@ -1888,6 +1886,8 @@ function isNear(a,b,extraPx=60){
 
 function checkCollisions(){
   if(merged||blackHoleActive)return;
+  // Skip if circles are hidden (adventure map, orbfight overlay, etc.)
+  if(els.red.classList.contains('hidden'))return;
   const rb=isTouching(els.red,els.blue),bg=isTouching(els.blue,els.green),rg=isTouching(els.red,els.green);
   const all=rb&&bg&&rg;
   setPips(rb,bg,rg);
@@ -3209,7 +3209,7 @@ function triggerBlackHole(cx,cy){
 const BOSS_TIERS=[
   {name:'GOLD TYRANT',  color:'#f5c842',color2:'#c87800',glow:'rgba(245,200,66,',ring:'#ffcc00',hp:100,ringSize:1.5},
   {name:'GIANT OVERLORD',color:'#ff8800',color2:'#cc4400',glow:'rgba(255,120,0,', ring:'#ff6600',hp:150,ringSize:1.6},
-  {name:'RAINBOW CHAOS', color:'#ff44ff',color2:'#4444ff',glow:'rgba(200,100,255,',ring:'#aa44ff',hp:200,ringSize:1.7},
+  {name:'PRISMATIC RGB', color:'#ff44ff',color2:'#4444ff',glow:'rgba(200,100,255,',ring:'#aa44ff',hp:200,ringSize:1.7},
   {name:'VOID EMPEROR',  color:'#222244',color2:'#000011',glow:'rgba(80,40,200,', ring:'#6644ff',hp:250,ringSize:1.8},
 ];
 
@@ -3521,7 +3521,7 @@ function bossDefeat(){
   if(bossGrowAnim)clearInterval(bossGrowAnim);
 
   const tier=getBossTier();
-  // bossRun at this point: 1=Gold Tyrant, 2=Giant, 3=Rainbow, 4=Void, 5=Ultimate
+  // bossRun at this point: 1=Gold Tyrant, 2=Giant, 3=Prismatic RGB, 4=Void, 5=Ultimate
   const isUltimate = bossRun===5;
 
   // MEGA explosion
@@ -3555,7 +3555,7 @@ function bossDefeat(){
 
     // ── All 4 normal bosses defeated → spawn Ultimate ──
     const allNormalDefeated = bossRun >= 4;
-    const rewards=['','⚔ WARRIOR TITLE','🏆 GIANT SLAYER','🌈 CHAOS MASTER','🌑 VOID BREAKER'];
+    const rewards=['','⚔ WARRIOR TITLE','🏆 GIANT SLAYER','✦ CHAOS MASTER','🌑 VOID BREAKER'];
     els.rewardTitle.textContent='BOSS DEFEATED!';
     els.rewardTitle.style.color=tier.color;
     els.rewardDesc.innerHTML=`<span style="color:${tier.color}">${tier.name}</span> has fallen<br><span style="color:#ffddaa">${rewards[Math.min(bossRun,4)]}</span>`;
@@ -6479,7 +6479,7 @@ const ADMIN_ITEMS={
   singularity:{label:'◉ Singularity',  color:'#cc44ff', type:'fusion'},
   boss_1:     {label:'Gold Tyrant',    color:'#f5c842', type:'boss', run:1},
   boss_2:     {label:'Giant Overlord', color:'#ff8800', type:'boss', run:2},
-  boss_3:     {label:'Rainbow Chaos',  color:'#ff44ff', type:'boss', run:3},
+  boss_3:     {label:'Prismatic RGB',  color:'#ff44ff', type:'boss', run:3},
   boss_4:     {label:'Void Emperor',   color:'#6644ff', type:'boss', run:4},
   boss_5:     {label:'THE ULTIMATE',   color:'#cc88ff', type:'boss', run:5},
   infinite:   {label:'∞ INFINITE CIRCLE',color:'#8855ff',type:'infinite'},
@@ -6730,6 +6730,7 @@ const OF={
   prismaticCooldown:0,      // ms remaining
   prismaticCdInterval:null,
   zoomedOut:false,          // zoom out mode — orbs 3× smaller, higher limits
+  deleteMode:false,         // when true, clicking an orb removes it
 
   // Orb type definitions
   TYPES:{
@@ -6743,7 +6744,7 @@ const OF={
     quantum:      {label:'Quantum',   r:22, hp:100, dmg:10, spd:1.4, color:'#cc44ff', glow:'rgba(200,80,255,', team:null,   ability:'blink'},
     boss_tyrant:  {label:'Tyrant',    r:44, hp:500, dmg:25, spd:0.5, color:'#f5c842', glow:'rgba(245,200,66,', team:null,   ability:'shockwave', isBoss:true},
     boss_giant:   {label:'Overlord',  r:50, hp:700, dmg:30, spd:0.4, color:'#ff8800', glow:'rgba(255,120,0,',  team:null,   ability:'aoe',       isBoss:true},
-    boss_rainbow: {label:'Rainbow',   r:46, hp:600, dmg:28, spd:0.6, color:'#ff44ff', glow:'rgba(200,80,255,', team:null,   ability:'multishot',  isBoss:true},
+    boss_rainbow: {label:'Prismatic', r:46, hp:600, dmg:28, spd:0.6, color:'#ff44ff', glow:'rgba(200,80,255,', team:null,   ability:'multishot',  isBoss:true},
     boss_void:    {label:'Void',      r:48, hp:800, dmg:32, spd:0.35,color:'#4433cc', glow:'rgba(80,50,220,',  team:null,   ability:'gravity',    isBoss:true},
     boss_ultimate:{label:'Ultimate',  r:56, hp:1200,dmg:40, spd:0.3, color:'#cc88ff', glow:'rgba(200,150,255,',team:null,   ability:'shockwave',  isBoss:true, isUltimate:true},
     infinite:     {label:'Infinite',  r:0,  hp:9999, dmg:60,  spd:0.0, color:'#7744ff', glow:'rgba(140,80,255,',  team:null, ability:'infinite',   isInfinite:true},
@@ -6785,11 +6786,9 @@ const OF={
       e.style.opacity='';
       e.style.pointerEvents='none';
     });
-    // Sync team buttons to default blue
-    const rb=document.getElementById('of-team-red');
-    const bb=document.getElementById('of-team-blue');
-    if(rb) rb.classList.remove('active');
-    if(bb) bb.classList.add('active');
+    this.deleteMode=false;
+    const delBtn=document.getElementById('of-delete-btn');
+    if(delBtn) delBtn.classList.remove('active');
     this.init();
     this.updateHUD();
     this.startRenderLoop();
@@ -6798,6 +6797,7 @@ const OF={
   stop(){
     this.active=false;
     this.battleRunning=false;
+    this.deleteMode=false;
     MS.stop();TB.remove();
     this._dmgNums=[];
     if(this.prismaticCdInterval){clearInterval(this.prismaticCdInterval);this.prismaticCdInterval=null;}
@@ -6826,7 +6826,11 @@ const OF={
     this.selectedType=typeKey;
     document.querySelectorAll('.of-spawn-btn').forEach(b=>b.classList.remove('selected'));
     document.querySelector(`[data-key="${typeKey}"]`)?.classList.add('selected');
-    document.getElementById('of-selected-label').textContent=`Selected: ${this.TYPES[typeKey]?.label} — click battlefield`;
+    document.getElementById('of-selected-label').textContent=`Selected: ${this.TYPES[typeKey]?.label} — click left half for Red, right for Blue`;
+    // Exit delete mode when selecting an orb
+    this.deleteMode=false;
+    const delBtn=document.getElementById('of-delete-btn');
+    if(delBtn) delBtn.classList.remove('active');
   },
 
   getSelectedTeam(){
@@ -6834,12 +6838,31 @@ const OF={
   },
 
   onCanvasClick(e){
-    if(this.battleRunning||!this.selectedType)return;
+    if(this.battleRunning)return;
     const rect=this.canvas.getBoundingClientRect();
     const x=e.clientX-rect.left, y=e.clientY-rect.top;
-    const team=this.getSelectedTeam();
+
+    // Delete mode: find closest orb to click and remove it
+    if(this.deleteMode){
+      let closest=null,closestDist=Infinity;
+      this.orbs.forEach(o=>{
+        const d=Math.hypot(o.x-x,o.y-y);
+        if(d<o.r+10&&d<closestDist){closest=o;closestDist=d;}
+      });
+      if(closest){
+        this.orbs=this.orbs.filter(o=>o!==closest);
+        this.updateHUD();
+        ofCheckLaserBtn();
+        SFX.split();
+      }
+      return;
+    }
+
+    if(!this.selectedType)return;
     const def=this.TYPES[this.selectedType];
     if(!def)return;
+    // Auto-assign team based on which half was clicked
+    const team=x<this.W/2?'red':'blue';
 
     const zoom=this.zoomedOut;
     const zf=zoom?1/3:1; // size multiplier
@@ -6888,7 +6911,7 @@ const OF={
     // Prismatic Singularity rules
     if(def.isPrismatic){
       if(this.prismaticCooldown>0){
-        toast(`🌈 RGB Cooldown: ${Math.ceil(this.prismaticCooldown/1000)}s remaining`,'#ff8844');
+        toast(`✦ RGB Cooldown: ${Math.ceil(this.prismaticCooldown/1000)}s remaining`,'#ff8844');
         return;
       }
       const prisMax=zoom?3:1;
@@ -7016,7 +7039,7 @@ const OF={
       if(!isBoss) setTimeout(()=>SFX.laserFire(),250);
 
       // Show status message
-      document.getElementById('of-status-text').textContent='🌈 PRISMATIC SINGULARITY ARRIVED!';
+      document.getElementById('of-status-text').textContent='✦ PRISMATIC SINGULARITY ARRIVED!';
       setTimeout(()=>{
         if(!this.battleRunning)
           document.getElementById('of-status-text').textContent='PLACE ORBS — THEN START BATTLE';
@@ -7043,7 +7066,7 @@ const OF={
         clearInterval(this.prismaticCdInterval);
         this.prismaticCdInterval=null;
         if(valEl) valEl.style.color='#88ff88';
-        toast('🌈 PRISMATIC SINGULARITY READY!','#ffffff');
+        toast('✦ PRISMATIC SINGULARITY READY!','#ffffff');
       }
     },200);
   },
@@ -7094,7 +7117,7 @@ const OF={
   clearAll(){
     this.orbs=[];
     this.updateHUD();
-    document.getElementById('of-selected-label').textContent='Click an orb above, then click the battlefield';
+    document.getElementById('of-selected-label').textContent='Select an orb, then click left (Red) or right (Blue) to place';
   },
 
   reset(){
@@ -7115,7 +7138,7 @@ const OF={
     sb.style.display='';sb.textContent='▶ START BATTLE';
     document.getElementById('of-status-text').textContent='PLACE ORBS — THEN START BATTLE';
     document.getElementById('of-victory').style.display='none';
-    document.getElementById('of-selected-label').textContent='Click an orb above, then click the battlefield';
+    document.getElementById('of-selected-label').textContent='Select an orb, then click left (Red) or right (Blue) to place';
     this.updateHUD();
   },
 
@@ -7390,7 +7413,7 @@ const OF={
               spawnParticles(hit.x,hit.y,'#44ffff',50,10);
               spawnShockwave(hit.x,hit.y,'rgba(100,255,255,',hit.r*2.5,8);
               SFX.bossExplode();
-              document.getElementById('of-status-text').textContent='🌈 PRISMATIC SHIELD BROKEN!';
+              document.getElementById('of-status-text').textContent='✦ PRISMATIC SHIELD BROKEN!';
               setTimeout(()=>{if(OF.battleRunning)document.getElementById('of-status-text').textContent='BATTLE IN PROGRESS';},2000);
             }
             return false;
@@ -7452,7 +7475,7 @@ const OF={
 
     SFX.laserCharge(); shake('lg');
     flashScreen('rgba(255,255,255,.9)',80);
-    document.getElementById('of-status-text').textContent='🌈 SPECTRUM BEAM!';
+    document.getElementById('of-status-text').textContent='✦ SPECTRUM BEAM!';
 
     const loop=setInterval(()=>{
       if(!this.active){clearInterval(loop);lctx.clearRect(0,0,lcvs.width,lcvs.height);return;}
@@ -7704,8 +7727,10 @@ const OF={
       ctx.setLineDash([]);
       ctx.fillStyle='rgba(255,255,255,.06)';
       ctx.font='bold 11px Orbitron,monospace';ctx.textAlign='center';
-      ctx.fillText('🔴 RED',this.W*.25,this.H*.5);
-      ctx.fillText('🔵 BLUE',this.W*.75,this.H*.5);
+      ctx.fillStyle='rgba(255,80,60,.08)';
+      ctx.fillText('RED TEAM',this.W*.25,this.H*.5);
+      ctx.fillStyle='rgba(60,120,255,.08)';
+      ctx.fillText('BLUE TEAM',this.W*.75,this.H*.5);
       ctx.restore();
     }
 
@@ -7905,7 +7930,7 @@ const OF={
       ctx.fillStyle=`rgba(255,255,255,${0.75+0.25*Math.sin(t*4.5)})`;
       ctx.shadowColor='#ffffff';ctx.shadowBlur=40;ctx.fill();
 
-      // ── RAINBOW HP BAR (only during battle) ──
+      // ── RGB HP BAR (only during battle) ──
       if(this.battleRunning){
         const barW=o.r*2.6, barH=8;
         const bx=o.x-barW/2, by=o.y-r-22;
@@ -7988,7 +8013,7 @@ const OF={
       ctx.font=`bold ${Math.max(10,r*.17)}px Orbitron,monospace`;
       ctx.fillStyle=`hsla(${hue},100%,92%,0.95)`;
       ctx.shadowColor=`hsl(${hue},100%,70%)`;ctx.shadowBlur=16;
-      ctx.fillText('🌈',o.x,o.y-r*.20);
+      ctx.fillText('✦',o.x,o.y-r*.20);
       ctx.font=`bold ${Math.max(7,r*.10)}px Orbitron,monospace`;
       ctx.fillStyle='rgba(255,255,255,0.75)';ctx.shadowBlur=8;
       ctx.fillText('PRISMATIC',o.x,o.y+r*.28);
@@ -8092,11 +8117,12 @@ const OF={
       const bx=o.x-barW/2,by=o.y-r-14;
       ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(bx-1,by-1,barW+2,barH+2);
       const pct=Math.max(0,o.hp/o.maxHp);
-      const hpCol=pct>0.5?'#44ff88':pct>0.25?'#ffcc44':'#ff3322';
+      // Team-colored HP bar: red team=red, blue team=blue
+      const hpCol=o.team==='red'?`hsl(${2+pct*10},90%,${40+pct*15}%)`:`hsl(${215+pct*10},90%,${40+pct*15}%)`;
       ctx.fillStyle=hpCol;ctx.shadowColor=hpCol;ctx.shadowBlur=4;
       ctx.fillRect(bx,by,barW*pct,barH);
       ctx.shadowBlur=0;
-      ctx.strokeStyle='rgba(255,255,255,.12)';ctx.lineWidth=.5;ctx.strokeRect(bx,by,barW,barH);
+      ctx.strokeStyle=o.team==='red'?'rgba(255,100,80,.2)':'rgba(80,130,255,.2)';ctx.lineWidth=.5;ctx.strokeRect(bx,by,barW,barH);
       // HP number above bar
       const hpDisplay=o.hp>=1e6?(o.hp/1e6).toFixed(1)+'M':
                       o.hp>=1e3?(o.hp/1e3).toFixed(0)+'K':
@@ -8531,7 +8557,7 @@ const MS={
         spawnParticles(o.x,o.y,'#44ffff',50,10);
         spawnShockwave(o.x,o.y,'rgba(100,255,255,',o.r*2.5,8);
         SFX.bossExplode();
-        document.getElementById('of-status-text').textContent='🌈 PRISMATIC SHIELD BROKEN!';
+        document.getElementById('of-status-text').textContent='✦ PRISMATIC SHIELD BROKEN!';
         setTimeout(()=>{if(MS.active)document.getElementById('of-status-text').textContent='👾 DESTROY THE MOTHERSHIP!';},2000);
       }
       dmg-=absorbed;
@@ -8941,8 +8967,19 @@ function ofPickRandomize(mode){
 }
 function ofSetTeam(team){
   OF._selectedTeam=team;
-  document.getElementById('of-team-red').classList.toggle('active',team==='red');
-  document.getElementById('of-team-blue').classList.toggle('active',team==='blue');
+}
+function ofToggleDelete(){
+  OF.deleteMode=!OF.deleteMode;
+  const btn=document.getElementById('of-delete-btn');
+  btn.classList.toggle('active',OF.deleteMode);
+  if(OF.deleteMode){
+    // Deselect any spawn selection
+    OF.selectedType=null;
+    document.querySelectorAll('.of-spawn-btn').forEach(b=>b.classList.remove('selected'));
+    document.getElementById('of-selected-label').textContent='DELETE MODE — click an orb to remove it';
+  } else {
+    document.getElementById('of-selected-label').textContent='Select an orb, then click left (Red) or right (Blue) to place';
+  }
 }
 function ofToggleZoom(){
   OF.zoomedOut=!OF.zoomedOut;
@@ -8971,7 +9008,7 @@ function ofCheckLaserBtn(){
   btn.style.display=hasEither?'block':'none';
   if(!hasEither)return;
   if(hasInfinite&&hasPrismatic) btn.textContent='⚡ ACTIVATE LASER';
-  else if(hasPrismatic) btn.textContent='🌈 ACTIVATE SPECTRUM LASER';
+  else if(hasPrismatic) btn.textContent='✦ ACTIVATE SPECTRUM LASER';
   else btn.textContent='∞ ACTIVATE INFINITY LASER';
 }
 

@@ -1,0 +1,104 @@
+/* SCI-FI REACTOR OVERLAY */
+#scifi-overlay{
+  position:absolute;inset:0;z-index:12;pointer-events:none;
+  display:none;flex-direction:column;align-items:center;justify-content:center;
+}
+#scifi-overlay.show{display:flex;}
+
+#scifi-bg-canvas{position:absolute;inset:0;pointer-events:none;z-index:0;opacity:.4;}
+
+/* Reactor chamber */
+#reactor-chamber{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-52%);
+  width:220px;height:220px;z-index:2;pointer-events:none;
+}
+#reactor-door-left,#reactor-door-right{
+  position:absolute;top:0;width:50%;height:100%;z-index:4;
+  background:linear-gradient(135deg,#0a0e1a,#111828);
+  border:1px solid rgba(68,170,255,.25);
+  transition:transform .6s cubic-bezier(.77,0,.18,1);
+}
+#reactor-door-left{left:0;border-right:2px solid rgba(68,170,255,.5);transform-origin:left center;}
+#reactor-door-right{right:0;border-left:2px solid rgba(68,170,255,.5);transform-origin:right center;}
+#reactor-chamber.open #reactor-door-left{transform:translateX(-100%);}
+#reactor-chamber.open #reactor-door-right{transform:translateX(100%);}
+#reactor-chamber.doors-closing #reactor-door-left{transform:translateX(0);}
+#reactor-chamber.doors-closing #reactor-door-right{transform:translateX(0);}
+
+#reactor-inner{
+  position:absolute;inset:0;z-index:3;
+  border-radius:50%;overflow:hidden;
+  background:radial-gradient(circle,#030510 0%,#050a1e 60%,transparent);
+}
+#reactor-canvas{width:100%;height:100%;}
+#reactor-label{
+  position:absolute;bottom:-22px;left:50%;transform:translateX(-50%);
+  font-family:'Orbitron',monospace;font-size:.38rem;letter-spacing:.2em;
+  color:rgba(68,170,255,.4);white-space:nowrap;
+}
+
+/* AI Terminal */
+#ai-terminal{
+  position:absolute;left:16px;top:50%;transform:translateY(-50%);
+  width:240px;background:rgba(3,6,20,.95);
+  border:1px solid rgba(68,170,255,.35);border-radius:6px;
+  padding:12px 14px;z-index:5;pointer-events:none;
+  display:none;font-family:'Courier New',monospace;
+  box-shadow:0 0 20px rgba(68,170,255,.15);
+}
+#ai-terminal.show{display:block;}
+#ai-terminal-header{
+  font-family:'Orbitron',monospace;font-size:.55rem;letter-spacing:.2em;
+  color:rgba(68,170,255,.8);border-bottom:1px solid rgba(68,170,255,.2);
+  padding-bottom:6px;margin-bottom:8px;
+}
+#ai-terminal-lines{display:flex;flex-direction:column;gap:4px;min-height:80px;}
+.ai-line{
+  font-size:.55rem;letter-spacing:.08em;color:#44ff99;line-height:1.5;
+  animation:ai-type .3s steps(20,end);white-space:nowrap;overflow:hidden;
+}
+.ai-line.warn{color:#ffcc44;}
+.ai-line.err{color:#ff5555;}
+.ai-line.dim{color:rgba(68,255,153,.45);}
+@keyframes ai-type{from{max-width:0}to{max-width:100%}}
+#ai-cursor{font-size:.55rem;color:#44ff99;animation:blink .7s step-end infinite;margin-top:4px;}
+
+/* Core type badge */
+#core-type-badge{
+  position:absolute;right:16px;top:50%;transform:translateY(-80%);
+  background:rgba(3,6,20,.95);border:1px solid rgba(68,170,255,.3);
+  border-radius:8px;padding:14px 18px;z-index:5;
+  text-align:center;pointer-events:none;display:none;
+  min-width:170px;box-shadow:0 0 20px rgba(68,170,255,.15);
+}
+#core-type-badge.show{display:block;}
+#core-type-name{font-family:'Orbitron',monospace;font-size:.85rem;font-weight:700;letter-spacing:.15em;margin-bottom:8px;line-height:1.4;}
+#core-type-desc{font-family:'Rajdhani',sans-serif;font-size:.72rem;letter-spacing:.05em;color:rgba(255,255,255,.65);line-height:1.6;white-space:pre;}
+#core-type-rarity{font-family:'Orbitron',monospace;font-size:.5rem;letter-spacing:.2em;margin-top:8px;opacity:.85;}
+
+/* Reactor charge bar */
+#reactor-charge-bar{
+  position:absolute;bottom:60px;left:50%;transform:translateX(-50%);
+  width:320px;background:rgba(3,6,20,.95);border:1px solid rgba(68,170,255,.25);
+  border-radius:6px;padding:12px 16px;z-index:5;pointer-events:none;
+  display:none;box-shadow:0 0 20px rgba(68,170,255,.12);
+}
+#reactor-charge-bar.show{display:block;}
+#reactor-charge-label{font-family:'Orbitron',monospace;font-size:.55rem;letter-spacing:.2em;color:rgba(68,170,255,.8);margin-bottom:7px;}
+#reactor-charge-track{height:10px;background:rgba(255,255,255,.05);border-radius:4px;overflow:hidden;border:1px solid rgba(68,170,255,.15);}
+#reactor-charge-fill{height:100%;width:0%;border-radius:4px;background:linear-gradient(90deg,#0044ff,#44aaff,#44ffee);transition:width .08s;box-shadow:0 0 8px rgba(68,200,255,.6);}
+#reactor-charge-pct{font-family:'Orbitron',monospace;font-size:.5rem;color:#44aaff;text-align:right;margin-top:5px;}
+
+/* Launch tube */
+#launch-tube{
+  position:absolute;top:0;left:50%;transform:translateX(-50%);
+  width:60px;height:0;background:linear-gradient(180deg,rgba(68,200,255,.0),rgba(68,200,255,.15));
+  border-left:1px solid rgba(68,170,255,.2);border-right:1px solid rgba(68,170,255,.2);
+  z-index:2;pointer-events:none;transition:height .4s ease;overflow:hidden;
+}
+#launch-tube.open{height:45%;}
+#launch-tube-inner{width:100%;height:100%;background:repeating-linear-gradient(180deg,transparent,transparent 8px,rgba(68,170,255,.06) 8px,rgba(68,170,255,.06) 9px);}
+
+/* Body class for scifi active */
+body.scifi-active #scifi-overlay{display:flex;}
+body.scifi-active .circle{z-index:20!important;}

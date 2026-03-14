@@ -1,0 +1,92 @@
+/* BOSS HP BAR — full width at top of canvas */
+#boss-hpbar{
+  position:absolute;top:0;left:0;right:0;z-index:25;
+  display:none;flex-direction:column;gap:0;
+}
+#boss-hpbar.show{display:flex}
+#boss-hpbar-label{font-family:'Orbitron',monospace;font-size:.5rem;letter-spacing:.2em;color:#ff8844;text-align:center;padding:4px 0 3px;background:rgba(10,0,0,.7);text-shadow:0 0 8px rgba(255,80,20,.6)}
+#boss-hpbar-track{height:10px;background:rgba(0,0,0,.6);border-bottom:1px solid #551100;position:relative;overflow:hidden}
+#boss-hpbar-fill{height:100%;width:100%;background:linear-gradient(90deg,#ff1100,#ff5500,#ffaa00);transition:width .3s;position:relative}
+#boss-hpbar-fill::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,.15) 50%,transparent 100%);animation:hp-shine 1.5s linear infinite}
+@keyframes hp-shine{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+#boss-phase-indicator{font-family:'Orbitron',monospace;font-size:.42rem;letter-spacing:.15em;text-align:center;padding:2px;color:#ff6633;background:rgba(10,0,0,.8);border-bottom:1px solid #330800;transition:color .5s}
+
+/* BOSS AWAKENING OVERLAY */
+#boss-overlay{
+  position:fixed;inset:0;z-index:55;pointer-events:none;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;
+  opacity:0;transition:opacity .3s;
+}
+#boss-overlay.show{opacity:1}
+#boss-warning-text{
+  font-family:'Orbitron',monospace;font-weight:900;
+  font-size:clamp(1.5rem,6vw,3.5rem);letter-spacing:.3em;
+  color:#ff4400;text-align:center;
+  text-shadow:0 0 30px rgba(255,60,0,.8),0 0 60px rgba(255,60,0,.4);
+  animation:warning-pulse .5s ease-in-out infinite alternate;
+}
+@keyframes warning-pulse{from{opacity:.7;transform:scale(.98)}to{opacity:1;transform:scale(1.02)}}
+#boss-warning-sub{
+  font-family:'Rajdhani',sans-serif;font-size:clamp(.7rem,2vw,1rem);
+  letter-spacing:.35em;color:rgba(255,180,100,.7);text-align:center;
+}
+#boss-run-text{
+  font-family:'Orbitron',monospace;font-size:.6rem;letter-spacing:.25em;
+  color:#ff8866;opacity:.6;margin-top:6px;
+  animation:blink .8s ease-in-out infinite alternate;
+}
+
+/* BOSS REWARD BANNER */
+#reward-banner{
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);
+  z-index:62;pointer-events:none;text-align:center;
+  background:rgba(10,6,0,.92);border:2px solid var(--gold);border-radius:12px;
+  padding:24px 36px;opacity:0;
+  transition:transform .5s cubic-bezier(.175,.885,.32,1.5),opacity .5s;
+  box-shadow:0 0 60px rgba(245,200,66,.3),inset 0 1px 0 rgba(255,255,255,.05);
+}
+#reward-banner.show{transform:translate(-50%,-50%) scale(1);opacity:1}
+#reward-title{font-family:'Orbitron',monospace;font-size:clamp(1rem,3vw,1.6rem);font-weight:900;color:var(--gold);letter-spacing:.25em;text-shadow:0 0 20px rgba(245,200,66,.6)}
+#reward-desc{font-family:'Rajdhani',sans-serif;font-size:.85rem;letter-spacing:.15em;color:#ffddaa;margin-top:8px;line-height:1.6}
+#reward-score{font-family:'Orbitron',monospace;font-size:1.4rem;color:#fff;margin-top:10px;text-shadow:0 0 16px rgba(255,220,100,.5)}
+#reward-sub{font-family:'Rajdhani',sans-serif;font-size:.65rem;letter-spacing:.2em;color:rgba(255,200,100,.5);margin-top:6px}
+
+/* ULTIMATE / INFINITE BOSS */
+body.ultimate-arena{background:#000005}
+body.infinite-arena{background:#000}
+
+#infinite-orb{
+  position:absolute;border-radius:50%;z-index:8;opacity:0;transform:translate(-50%,-50%) scale(0);
+  background:radial-gradient(circle at 50%,#ffffff 0%,#aaaaff 30%,#5500ff 60%,#000 100%);
+  box-shadow:0 0 80px 30px rgba(120,80,255,.8),0 0 200px 80px rgba(60,0,200,.4),inset 0 0 40px rgba(255,255,255,.3);
+  transition:opacity .8s,transform .8s cubic-bezier(.175,.885,.32,1.4),width 2.5s ease,height 2.5s ease;
+  display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;pointer-events:none;
+}
+#infinite-orb.visible{opacity:1;transform:translate(-50%,-50%) scale(1);animation:pulse-inf 1.5s ease-in-out infinite}
+#infinite-orb .inf-label{font-family:'Orbitron',monospace;letter-spacing:.3em;color:rgba(220,200,255,.9);pointer-events:none;text-align:center;text-shadow:0 0 12px rgba(180,140,255,.8)}
+@keyframes pulse-inf{0%,100%{box-shadow:0 0 80px 30px rgba(120,80,255,.7),0 0 200px 80px rgba(60,0,200,.35)}50%{box-shadow:0 0 140px 70px rgba(180,120,255,1),0 0 350px 140px rgba(100,20,255,.6)}}
+
+#reveal-overlay{
+  position:fixed;inset:0;z-index:70;pointer-events:none;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;
+  opacity:0;transition:opacity .6s;background:rgba(0,0,0,.9);
+}
+#reveal-overlay.show{opacity:1}
+#reveal-line1{font-family:'Orbitron',monospace;font-size:clamp(.8rem,3vw,1.3rem);letter-spacing:.3em;color:#8866ff;opacity:0;transition:opacity 1.2s;text-align:center;padding:0 20px}
+#reveal-line2{font-family:'Orbitron',monospace;font-size:clamp(1.3rem,5vw,3rem);font-weight:900;letter-spacing:.25em;color:#fff;opacity:0;transition:opacity 1.2s;text-shadow:0 0 40px rgba(180,140,255,.9);text-align:center;padding:0 20px}
+#reveal-line3{font-family:'Rajdhani',sans-serif;font-size:clamp(.7rem,2vw,.9rem);letter-spacing:.3em;color:rgba(200,180,255,.55);opacity:0;transition:opacity 1.2s;text-align:center;padding:0 20px}
+
+#infinite-hpbar{position:absolute;top:0;left:0;right:0;z-index:25;display:none;flex-direction:column}
+#infinite-hpbar.show{display:flex}
+#infinite-hpbar-label{font-family:'Orbitron',monospace;font-size:.5rem;letter-spacing:.2em;color:#aa88ff;text-align:center;padding:4px 0 3px;background:rgba(0,0,0,.88);text-shadow:0 0 8px rgba(150,100,255,.6)}
+#infinite-hpbar-track{height:10px;background:rgba(0,0,0,.8);border-bottom:1px solid #330055;overflow:hidden;position:relative}
+#infinite-hpbar-fill{height:100%;width:100%;background:linear-gradient(90deg,#3300aa,#6600ff,#cc44ff,#fff);position:relative}
+#infinite-hpbar-fill::after{content:'∞';position:absolute;right:8px;top:-2px;font-family:'Orbitron',monospace;font-size:.55rem;color:rgba(255,255,255,.8);animation:blink .7s ease infinite alternate}
+#infinite-phase-ind{font-family:'Orbitron',monospace;font-size:.42rem;letter-spacing:.15em;text-align:center;padding:2px;color:#aa88ff;background:rgba(0,0,0,.92);border-bottom:1px solid #220044}
+
+#sep-meter{position:absolute;bottom:68px;left:50%;transform:translateX(-50%);z-index:22;display:none;flex-direction:column;align-items:center;gap:4px}
+#sep-meter.show{display:flex}
+#sep-label{font-family:'Orbitron',monospace;font-size:.48rem;letter-spacing:.2em;color:#aa88ff}
+#sep-track{width:200px;height:8px;background:rgba(255,255,255,.05);border:1px solid #440088;border-radius:4px;overflow:hidden}
+#sep-fill{height:100%;width:0%;border-radius:4px;background:linear-gradient(90deg,#6600ff,#aa44ff,#fff);transition:width .15s}
+#sep-val{font-family:'Orbitron',monospace;font-size:.45rem;color:#cc99ff}

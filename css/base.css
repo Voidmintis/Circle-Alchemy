@@ -1,0 +1,60 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#07080f;--gold:#f5c842;--text:#c8d8ff;--dim:#3a4a6a;--border:#1a2a4a;
+  --red:#ff4455;--blue:#4488ff;--green:#44ee88;--purple:#cc44ff;--yellow:#ffee44;--cyan:#44eeff;
+}
+html,body{width:100%;height:100%;overflow:hidden;touch-action:none;-webkit-tap-highlight-color:transparent;}
+body{background:var(--bg);font-family:'Rajdhani',sans-serif;color:var(--text);display:flex;flex-direction:column;position:relative;transition:background 1.5s}
+body.boss-arena{background:#0d0500}
+body.boss-phase2{background:#100300}
+body.boss-phase3{background:#0a0000}
+
+/* STARFIELD */
+#stars{position:fixed;inset:0;pointer-events:none;z-index:0}
+.star{position:absolute;border-radius:50%;background:#fff;animation:twinkle var(--d,3s) var(--delay,0s) ease-in-out infinite alternate}
+@keyframes twinkle{from{opacity:var(--a1,.1)}to{opacity:var(--a2,.6)}}
+#stars.pulling .star{animation:star-pull 2.2s ease-in forwards!important}
+#stars.restoring .star{animation:star-restore 3.5s ease-out forwards!important}
+@keyframes star-pull{0%{transform:translate(0,0) scale(1);opacity:var(--a2,.6)}100%{transform:translate(var(--pull-x,0),var(--pull-y,0)) scale(.05);opacity:0}}
+@keyframes star-restore{0%{transform:translate(var(--pull-x,0),var(--pull-y,0)) scale(.05);opacity:0}100%{transform:translate(0,0) scale(1);opacity:var(--a2,.6)}}
+
+/* SHAKES */
+@keyframes shake-sm{0%,100%{transform:translate(0)}20%{transform:translate(-4px,-2px)}40%{transform:translate(4px,2px)}60%{transform:translate(-3px,3px)}80%{transform:translate(3px,-3px)}}
+@keyframes shake-md{0%,100%{transform:translate(0)}10%{transform:translate(-7px,-4px)}30%{transform:translate(7px,4px)}50%{transform:translate(-5px,5px)}70%{transform:translate(5px,-5px)}90%{transform:translate(-3px,3px)}}
+@keyframes shake-lg{0%,100%{transform:translate(0)}10%{transform:translate(-12px,-8px)}20%{transform:translate(12px,8px)}30%{transform:translate(-10px,10px)}40%{transform:translate(10px,-8px)}50%{transform:translate(-8px,6px)}60%{transform:translate(8px,-6px)}70%{transform:translate(-6px,8px)}80%{transform:translate(6px,-6px)}90%{transform:translate(-4px,4px)}}
+body.shake-sm{animation:shake-sm .35s ease}
+body.shake-md{animation:shake-md .5s ease}
+body.shake-lg{animation:shake-lg .7s ease}
+
+/* HEADER */
+header{text-align:center;padding:14px 20px 9px;position:relative;z-index:20;border-bottom:1px solid var(--border);background:rgba(7,8,15,0.94);backdrop-filter:blur(6px);flex-shrink:0;transition:border-color .5s}
+header.boss-header{border-bottom-color:#551100}
+header h1{font-family:'Orbitron',monospace;font-size:clamp(.85rem,2.8vw,1.5rem);font-weight:900;letter-spacing:.3em;color:#fff;text-shadow:0 0 20px rgba(100,180,255,.5);transition:text-shadow .5s,color .5s}
+header.boss-header h1{color:#ffaa44;text-shadow:0 0 20px rgba(255,100,0,.6)}
+#subtitle{margin-top:3px;font-size:.68rem;letter-spacing:.2em;color:var(--dim);text-transform:uppercase}
+
+/* MODE TABS */
+#mode-tabs{display:flex;gap:5px;justify-content:center;margin-top:8px;flex-wrap:wrap}
+.tab{font-family:'Orbitron',monospace;font-size:.48rem;letter-spacing:.1em;padding:5px 8px;border-radius:4px;cursor:pointer;border:1px solid var(--border);color:var(--dim);background:transparent;transition:all .2s;text-transform:uppercase}
+.tab:hover{color:#fff;border-color:var(--text);background:rgba(100,160,255,.08)}
+.tab.active{border-color:var(--gold);color:var(--gold);background:rgba(245,200,66,.08)}
+.tab.boss-active{border-color:#ff6633!important;color:#ff9955!important;background:rgba(255,80,20,.1)!important;animation:tab-pulse .8s ease-in-out infinite}
+@keyframes tab-pulse{0%,100%{box-shadow:none}50%{box-shadow:0 0 10px rgba(255,80,20,.5)}}
+
+/* PIPS */
+#pips{display:flex;gap:6px;justify-content:center;margin-top:6px}
+.pip{width:7px;height:7px;border-radius:50%;opacity:.2;transition:opacity .3s,box-shadow .3s}
+.pip.active{opacity:1}
+#pr{background:#e03050}#pb{background:#3060e0}#pg{background:#20c060}
+#pr.active{box-shadow:0 0 8px #e03050}#pb.active{box-shadow:0 0 8px #3060e0}#pg.active{box-shadow:0 0 8px #20c060}
+
+/* CANVAS */
+#canvas-area{position:relative;flex:1;z-index:1;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none;}
+
+/* BOSS ARENA VIGNETTE */
+#boss-vignette{position:absolute;inset:0;pointer-events:none;z-index:2;opacity:0;transition:opacity 1.2s;background:radial-gradient(ellipse at 50% 50%,transparent 35%,rgba(60,10,0,.55) 70%,rgba(20,0,0,.9) 100%)}
+#boss-vignette.show{opacity:1}
+
+/* SHOCKWAVE CANVAS */
+#shockwave-canvas{position:absolute;inset:0;pointer-events:none;z-index:7}
