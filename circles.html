@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Circle Alchemy</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600&display=swap');
@@ -11,7 +11,7 @@
   --bg:#07080f;--gold:#f5c842;--text:#c8d8ff;--dim:#3a4a6a;--border:#1a2a4a;
   --red:#ff4455;--blue:#4488ff;--green:#44ee88;--purple:#cc44ff;--yellow:#ffee44;--cyan:#44eeff;
 }
-html,body{width:100%;height:100%;overflow:hidden}
+html,body{width:100%;height:100%;overflow:hidden;touch-action:none;-webkit-tap-highlight-color:transparent;}
 body{background:var(--bg);font-family:'Rajdhani',sans-serif;color:var(--text);display:flex;flex-direction:column;position:relative;transition:background 1.5s}
 body.boss-arena{background:#0d0500}
 body.boss-phase2{background:#100300}
@@ -57,7 +57,7 @@ header.boss-header h1{color:#ffaa44;text-shadow:0 0 20px rgba(255,100,0,.6)}
 #pr.active{box-shadow:0 0 8px #e03050}#pb.active{box-shadow:0 0 8px #3060e0}#pg.active{box-shadow:0 0 8px #20c060}
 
 /* CANVAS */
-#canvas-area{position:relative;flex:1;z-index:1;overflow:hidden}
+#canvas-area{position:relative;flex:1;z-index:1;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none;}
 
 /* BOSS ARENA VIGNETTE */
 #boss-vignette{position:absolute;inset:0;pointer-events:none;z-index:2;opacity:0;transition:opacity 1.2s;background:radial-gradient(ellipse at 50% 50%,transparent 35%,rgba(60,10,0,.55) 70%,rgba(20,0,0,.9) 100%)}
@@ -67,7 +67,7 @@ header.boss-header h1{color:#ffaa44;text-shadow:0 0 20px rgba(255,100,0,.6)}
 #shockwave-canvas{position:absolute;inset:0;pointer-events:none;z-index:7}
 
 /* CIRCLES */
-.circle{position:absolute;border-radius:50%;cursor:grab;user-select:none;display:flex;align-items:center;justify-content:center;flex-direction:column;transition:box-shadow .2s ease,transform .15s ease;will-change:left,top}
+.circle{position:absolute;border-radius:50%;cursor:grab;user-select:none;touch-action:none;-webkit-user-select:none;display:flex;align-items:center;justify-content:center;flex-direction:column;transition:box-shadow .2s ease,transform .15s ease;will-change:left,top}
 .circle:active{cursor:grabbing}
 .circle-label{font-family:'Orbitron',monospace;font-size:.48rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.8);pointer-events:none;text-shadow:0 1px 4px rgba(0,0,0,.9)}
 .circle-sub{font-family:'Rajdhani',sans-serif;font-size:.55rem;color:rgba(255,255,255,.45);pointer-events:none;margin-top:1px}
@@ -777,12 +777,48 @@ body.adv-mars-bg #adv-overlay{background:radial-gradient(ellipse at 50% 80%,#200
 .of-boss-btn{border-color:rgba(255,100,50,.2);color:rgba(255,170,130,.9);}
 .of-boss-btn:hover{border-color:rgba(255,100,50,.5);background:rgba(255,80,30,.12);}
 .of-boss-btn.selected{border-color:#ff6644;background:rgba(255,80,30,.22);}
-.of-inf-btn{grid-column:1/-1;border-color:rgba(160,100,255,.35);color:rgba(210,160,255,.95);}
+.of-prismatic-btn{
+  grid-column:1/-1;
+  border-color:rgba(255,80,80,.5);color:#fff;
+  background:linear-gradient(90deg,rgba(255,40,40,.25),rgba(40,255,40,.25),rgba(40,80,255,.25));
+  animation:prismatic-btn-shimmer 2s linear infinite;
+}
+.of-prismatic-btn:hover{box-shadow:0 0 20px rgba(255,100,255,.5);}
+.of-prismatic-btn.selected{border-color:#fff;box-shadow:0 0 16px rgba(255,255,255,.5);}
+@keyframes prismatic-btn-shimmer{
+  0%{border-color:rgba(255,60,60,.7);color:#ff8888;}
+  33%{border-color:rgba(60,255,60,.7);color:#88ff88;}
+  66%{border-color:rgba(60,100,255,.7);color:#8888ff;}
+  100%{border-color:rgba(255,60,60,.7);color:#ff8888;}
+}
+#of-prismatic-cd{
+  display:flex;flex-direction:column;gap:3px;padding:6px 0 2px;
+}
+#of-prismatic-cd-track{
+  height:8px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden;
+  border:1px solid rgba(255,255,255,.12);
+}
+#of-prismatic-cd-fill{
+  height:100%;width:0%;border-radius:4px;transition:width .5s;
+  background:linear-gradient(90deg,#ff4444,#44ff44,#4444ff,#ff44ff);
+  background-size:200% 100%;animation:prismatic-fill-anim 1s linear infinite;
+}
+@keyframes prismatic-fill-anim{0%{background-position:0% 0%}100%{background-position:200% 0%}}
+#of-prismatic-cd-val{font-family:'Orbitron',monospace;font-size:.4rem;letter-spacing:.15em;color:rgba(200,200,255,.6);text-align:right;}
 .of-inf-btn:hover{border-color:#aa66ff;background:rgba(140,80,255,.18);}
 .of-inf-btn.selected{border-color:#aa66ff;background:rgba(140,80,255,.28);}
 #of-selected-label{font-family:'Rajdhani',sans-serif;font-size:.8rem;letter-spacing:.06em;color:rgba(150,180,255,.7);text-align:center;padding:5px 0;min-height:1.6em;}
-#of-team-row{display:flex;gap:14px;justify-content:center;font-family:'Orbitron',monospace;font-size:.55rem;letter-spacing:.1em;color:rgba(200,215,255,.8);}
-#of-team-row input{accent-color:#44aaff;cursor:pointer;width:14px;height:14px;}
+#of-team-row{display:flex;gap:8px;justify-content:center;margin-top:4px;}
+.of-team-btn{
+  font-family:'Orbitron',monospace;font-size:.6rem;letter-spacing:.1em;
+  flex:1;padding:10px 6px;border-radius:8px;cursor:pointer;
+  border:2px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.04);color:rgba(200,215,255,.6);
+  transition:all .18s;
+}
+.of-team-red.active{border-color:#ff5544;background:rgba(255,60,40,.18);color:#ff8877;box-shadow:0 0 12px rgba(255,60,40,.3);}
+.of-team-blue.active{border-color:#4488ff;background:rgba(40,100,255,.18);color:#88aaff;box-shadow:0 0 12px rgba(40,100,255,.3);}
+.of-team-btn:hover:not(.active){border-color:rgba(255,255,255,.3);color:#fff;}
 
 /* HUD */
 #of-hud{
@@ -819,6 +855,31 @@ body.adv-mars-bg #adv-overlay{background:radial-gradient(ellipse at 50% 80%,#200
 #of-victory-sub{font-family:'Rajdhani',sans-serif;font-size:.9rem;letter-spacing:.15em;color:rgba(255,255,255,.6);text-align:center;}
 .of-mothership-btn{border-color:rgba(255,160,0,.5);color:#ffaa44;background:rgba(80,30,0,.4);}
 .of-mothership-btn:hover{border-color:#ffaa44;background:rgba(120,50,0,.5);box-shadow:0 0 18px rgba(255,140,0,.4);}
+.of-random-btn{border-color:rgba(100,255,180,.4);color:#44ffaa;background:rgba(0,60,30,.4);font-size:.44rem;}
+.of-random-btn:hover{border-color:#44ffaa;background:rgba(0,90,50,.5);box-shadow:0 0 18px rgba(68,255,160,.3);}
+.of-zoom-btn{border-color:rgba(100,200,255,.35);color:#66ccff;background:rgba(0,40,80,.4);}
+.of-zoom-btn:hover{border-color:#66ccff;background:rgba(0,60,120,.5);box-shadow:0 0 18px rgba(80,180,255,.3);}
+.of-zoom-btn.active{border-color:#00ccff;color:#00ffff;background:rgba(0,80,160,.5);box-shadow:0 0 14px rgba(0,200,255,.4);}
+
+#of-random-picker{
+  position:absolute;bottom:56px;left:50%;transform:translateX(-50%);z-index:22;
+  display:flex;align-items:center;gap:6px;
+  background:rgba(4,10,28,.96);border:1px solid rgba(100,255,180,.3);
+  border-radius:10px;padding:8px 14px;
+  box-shadow:0 0 20px rgba(68,255,160,.15);
+  white-space:nowrap;
+}
+.of-rp-label{font-family:'Orbitron',monospace;font-size:.45rem;letter-spacing:.15em;color:rgba(200,230,220,.6);}
+.of-rp-btn{
+  font-family:'Orbitron',monospace;font-size:.48rem;letter-spacing:.1em;
+  padding:6px 13px;border-radius:6px;border:1px solid rgba(100,255,180,.35);
+  background:rgba(0,60,30,.5);color:#44ffaa;cursor:pointer;transition:all .18s;
+}
+.of-rp-btn:hover{border-color:#44ffaa;background:rgba(0,100,50,.6);box-shadow:0 0 12px rgba(68,255,160,.3);}
+.of-rp-massive{border-color:rgba(255,180,50,.4);color:#ffcc44;background:rgba(60,30,0,.5);}
+.of-rp-massive:hover{border-color:#ffcc44;background:rgba(100,60,0,.6);box-shadow:0 0 12px rgba(255,180,50,.3);}
+.of-rp-cancel{background:none;border:none;color:rgba(255,255,255,.3);font-size:.75rem;cursor:pointer;padding:2px 4px;border-radius:4px;transition:color .2s;}
+.of-rp-cancel:hover{color:#ff4444;}
 
 #of-ms-hpbar{
   position:absolute;top:52px;left:50%;transform:translateX(-50%);z-index:22;
@@ -842,7 +903,7 @@ body.adv-mars-bg #adv-overlay{background:radial-gradient(ellipse at 50% 80%,#200
   font-family:'Orbitron',monospace;font-size:.5rem;letter-spacing:.2em;color:rgba(255,150,80,.7);
 }
 #of-laser-btn{
-  position:absolute;top:58px;right:16px;z-index:22;
+  position:absolute;top:16px;right:16px;z-index:22;
   font-family:'Orbitron',monospace;font-size:.52rem;letter-spacing:.2em;
   padding:10px 28px;border-radius:999px;
   border:1px solid rgba(180,80,255,.7);
@@ -872,8 +933,9 @@ body.adv-mars-bg #adv-overlay{background:radial-gradient(ellipse at 50% 80%,#200
   width:300px;background:rgba(4,8,24,.97);
   border:1px solid rgba(68,170,255,.25);border-radius:12px;
   box-shadow:0 0 40px rgba(68,170,255,.15),inset 0 1px 0 rgba(255,255,255,.04);
-  display:none;flex-direction:column;overflow:hidden;
+  display:none;flex-direction:column;
   font-family:'Orbitron',monospace;
+  max-height:88vh;overflow:hidden;
 }
 #admin-panel.open{display:flex;}
 
@@ -918,7 +980,7 @@ body.adv-mars-bg #adv-overlay{background:radial-gradient(ellipse at 50% 80%,#200
 
 /* Unlocked content */
 #admin-content{
-  display:flex;flex-direction:column;gap:0;overflow-y:auto;max-height:420px;
+  display:flex;flex-direction:column;overflow-y:auto;flex:1;
   padding:12px 14px;gap:6px;
 }
 #admin-granted-label{
@@ -946,6 +1008,52 @@ body.adv-mars-bg #adv-overlay{background:radial-gradient(ellipse at 50% 80%,#200
   font-size:.55rem;letter-spacing:.2em;color:#44aaff;text-align:center;
   min-height:1.4em;padding:6px 0 0;
 }
+.admin-item-annihilate{
+  border-color:rgba(255,60,30,.5);color:#ff6644;
+  background:rgba(80,10,0,.5);
+  animation:annihilate-btn-pulse 1.5s ease-in-out infinite;
+}
+.admin-item-annihilate:hover{border-color:#ff4422;background:rgba(140,20,0,.6);color:#ff8866;box-shadow:0 0 16px rgba(255,60,30,.5);}
+@keyframes annihilate-btn-pulse{0%,100%{box-shadow:0 0 6px rgba(255,60,30,.2)}50%{box-shadow:0 0 18px rgba(255,60,30,.6)}}
+
+/* Floating annihilate button above Test Boss on the battlefield */
+#of-annihilate-btn{
+  position:absolute;z-index:22;
+  font-family:'Orbitron',monospace;font-size:.55rem;letter-spacing:.15em;
+  padding:8px 18px;border-radius:999px;
+  border:1px solid rgba(255,60,30,.8);
+  background:rgba(100,10,0,.85);color:#ff6644;cursor:pointer;
+  white-space:nowrap;transform:translateX(-50%);
+  box-shadow:0 0 18px rgba(255,60,30,.5),inset 0 0 8px rgba(255,40,0,.15);
+  animation:annihilate-float-pulse 1.2s ease-in-out infinite;
+  transition:opacity .3s;
+}
+#of-annihilate-btn:hover{background:rgba(160,20,0,.9);border-color:#ff4422;color:#ff8866;box-shadow:0 0 30px rgba(255,60,30,.8);}
+@keyframes annihilate-float-pulse{
+  0%,100%{box-shadow:0 0 18px rgba(255,60,30,.5)}
+  50%{box-shadow:0 0 35px rgba(255,80,30,.9)}
+}
+.admin-item-tool:hover{border-color:rgba(80,220,180,.6);background:rgba(40,180,140,.12);color:#aaffee;}
+.admin-item-tool.active{border-color:#44ffcc;background:rgba(40,200,160,.18);color:#44ffcc;}
+
+#admin-tb-stats{
+  display:flex;flex-direction:column;gap:5px;
+  background:rgba(0,30,20,.5);border:1px solid rgba(80,220,180,.2);
+  border-radius:8px;padding:10px 12px;margin-top:4px;
+}
+#admin-tb-title{
+  font-family:'Orbitron',monospace;font-size:.5rem;letter-spacing:.2em;
+  color:#44ffcc;text-align:center;margin-bottom:4px;
+  animation:admin-tb-pulse 1s ease-in-out infinite;
+}
+@keyframes admin-tb-pulse{0%,100%{opacity:1}50%{opacity:.6}}
+.admin-tb-row{
+  display:flex;justify-content:space-between;align-items:center;
+  font-family:'Orbitron',monospace;font-size:.48rem;letter-spacing:.1em;
+  color:rgba(200,230,220,.7);padding:2px 0;
+  border-bottom:1px solid rgba(80,220,180,.08);
+}
+.admin-tb-row span:last-child{color:#44ffcc;font-weight:700;}
 #admin-summon-btn{
   font-family:'Orbitron',monospace;font-size:.6rem;letter-spacing:.25em;
   padding:12px;border-radius:8px;border:1px solid rgba(255,200,50,.5);
@@ -1218,6 +1326,9 @@ body.adv-mars-bg #adv-overlay{background:radial-gradient(ellipse at 50% 80%,#200
     <!-- Laser overlay canvas — always on top, never cleared by game loop -->
     <canvas id="orbfight-laser-canvas"></canvas>
 
+    <!-- Annihilate button — floats above Test Boss on canvas -->
+    <button id="of-annihilate-btn" style="display:none" onclick="adminAnnihilateAll()">💥 ANNIHILATE ALL</button>
+
     <!-- Spawn panel toggle -->
     <button id="of-spawn-toggle" onclick="ofToggleSpawnPanel()">+ SPAWN</button>
 
@@ -1246,11 +1357,18 @@ body.adv-mars-bg #adv-overlay{background:radial-gradient(ellipse at 50% 80%,#200
         <button class="of-spawn-btn of-boss-btn" data-key="boss_void"     onclick="ofSelectOrb('boss_void')">☠ Void</button>
         <button class="of-spawn-btn of-boss-btn" data-key="boss_ultimate" onclick="ofSelectOrb('boss_ultimate')">⬡ Ultimate</button>
         <button class="of-spawn-btn of-boss-btn of-inf-btn" data-key="infinite" onclick="ofSelectOrb('infinite')">∞ Infinite</button>
+        <button class="of-spawn-btn of-prismatic-btn" data-key="prismatic" onclick="ofSelectOrb('prismatic')">🌈 Prismatic</button>
+      </div>
+      <!-- Prismatic cooldown bar -->
+      <div id="of-prismatic-cd" style="display:none">
+        <div class="of-rp-label">🌈 RGB COOLDOWN</div>
+        <div id="of-prismatic-cd-track"><div id="of-prismatic-cd-fill"></div></div>
+        <div id="of-prismatic-cd-val">30s</div>
       </div>
       <div id="of-selected-label">Click an orb above, then click the battlefield</div>
       <div id="of-team-row">
-        <label><input type="radio" name="ofteam" value="red"> 🔴 Red Team</label>
-        <label><input type="radio" name="ofteam" value="blue" checked> 🔵 Blue Team</label>
+        <button class="of-team-btn of-team-red active" id="of-team-red" onclick="ofSetTeam('red')">🔴 Red</button>
+        <button class="of-team-btn of-team-blue" id="of-team-blue" onclick="ofSetTeam('blue')">🔵 Blue</button>
       </div>
     </div>
 
@@ -1266,9 +1384,20 @@ body.adv-mars-bg #adv-overlay{background:radial-gradient(ellipse at 50% 80%,#200
       <button class="of-ctrl-btn" onclick="ofClearAll()">🗑 CLEAR</button>
       <button class="of-ctrl-btn of-start-btn" id="of-start-btn" onclick="ofStartBattle()">▶ START BATTLE</button>
       <button class="of-ctrl-btn of-mothership-btn" onclick="ofStartMothership()">🚀 FIGHT MOTHERSHIP</button>
+      <button class="of-ctrl-btn of-random-btn" onclick="ofRandomizePrompt()">🎲 RANDOMIZE</button>
+      <button class="of-ctrl-btn of-zoom-btn" id="of-zoom-btn" onclick="ofToggleZoom()">🔭 ZOOM OUT</button>
       <button class="of-ctrl-btn" onclick="ofReset()">↺ RESET</button>
     </div>
     <button id="of-laser-btn" style="display:none" onclick="ofActivateLaser()">∞ ACTIVATE INFINITY LASER</button>
+
+    <!-- Randomize mode picker -->
+    <div id="of-random-picker" style="display:none">
+      <span class="of-rp-label">Choose size:</span>
+      <button class="of-rp-btn" onclick="ofPickRandomize('simple')">⚔ Simple</button>
+      <button class="of-rp-btn" onclick="ofPickRandomize('big')">⚔⚔ Big</button>
+      <button class="of-rp-btn of-rp-massive" onclick="ofPickRandomize('massive')">⚔⚔⚔ Massive</button>
+      <button class="of-rp-cancel" onclick="document.getElementById('of-random-picker').style.display='none'">✕</button>
+    </div>
 
     <!-- Mothership HP bar -->
     <div id="of-ms-hpbar" style="display:none">
@@ -1389,9 +1518,22 @@ body.adv-mars-bg #adv-overlay{background:radial-gradient(ellipse at 50% 80%,#200
         <button class="admin-item admin-item-boss" onclick="adminSelect('boss_5')">⬡ THE ULTIMATE</button>
         <button class="admin-item admin-item-boss" onclick="adminSelect('infinite')">∞ INFINITE CIRCLE</button>
       </div>
+      <div class="admin-cat-label" style="margin-top:10px">ORB FIGHT TOOLS</div>
+      <div class="admin-items">
+        <button class="admin-item admin-item-tool" id="admin-testboss-btn" onclick="adminToggleTestBoss()">⊙ TEST BOSS</button>
+      </div>
     </div>
     <div id="admin-selected-name"></div>
     <button id="admin-summon-btn" onclick="adminSummon()" style="display:none">⚡ SUMMON</button>
+
+    <!-- Test Boss stats panel (shown when active) -->
+    <div id="admin-tb-stats" style="display:none">
+      <div id="admin-tb-title">⊙ TEST BOSS ACTIVE</div>
+      <div class="admin-tb-row"><span>Damage Done</span><span id="admin-tb-dmg">0</span></div>
+      <div class="admin-tb-row"><span>DPS</span><span id="admin-tb-dps">0</span></div>
+      <div class="admin-tb-row"><span>Time</span><span id="admin-tb-time">0s</span></div>
+      <button class="admin-item admin-item-tool" onclick="adminRemoveTestBoss()" style="margin-top:6px;width:100%;color:#ff6655;border-color:rgba(255,80,60,.4)">✕ REMOVE BOSS</button>
+    </div>
   </div>
 </div>
 
@@ -1590,9 +1732,15 @@ function getPos(e){return{x:parseFloat(e.style.left)||0,y:parseFloat(e.style.top
 function cW(){return area.clientWidth}function cH(){return area.clientHeight}
 
 function resetPositions(){
+  const w=cW(), h=cH();
+  if(w<10||h<10){
+    // Layout not ready yet — retry after paint
+    requestAnimationFrame(resetPositions);
+    return;
+  }
   [els.red,els.blue,els.green].forEach((e,i)=>{
-    const cx=cW()/2,cy=cH()/2;
-    setPos(e,cx+startOffsets[i].dx-R,cy+startOffsets[i].dy-R);
+    const cx=w/2, cy=h/2;
+    setPos(e,cx+startOffsets[i].dx-R, cy+startOffsets[i].dy-R);
     e.classList.remove('fading','hidden','knocked');
     ['opacity','transform','pointerEvents','transition','zIndex'].forEach(p=>e.style[p]='');
   });
@@ -1646,17 +1794,17 @@ function toast(txt,color='var(--gold)'){
 });
 
 function startDrag(e){
+  e.preventDefault(); // must be first — prevents scroll on touch
   if(merged||blackHoleActive)return;
-  // During infinite fight: if shield active, don't block drag but chains resist
-  e.preventDefault();
+  if(advActive&&advScene!=='earth'&&advScene!=='mars')return;
   dragging=e.currentTarget;
   const rect=dragging.getBoundingClientRect();
-  const cx=e.touches?e.touches[0].clientX:e.clientX;
-  const cy=e.touches?e.touches[0].clientY:e.clientY;
-  ox=cx-rect.left;oy=cy-rect.top;
-  dragging.style.zIndex=10;dragging.style.transition='box-shadow .2s ease';
+  const touch=e.touches?e.touches[0]:e;
+  ox=touch.clientX-rect.left;
+  oy=touch.clientY-rect.top;
+  dragging.style.zIndex=10;
+  dragging.style.transition='box-shadow .2s ease';
   dragHistory=[];
-  // Zero velocity for this circle while held
   if(mode==='gravity'){
     const idx=[els.red,els.blue,els.green].indexOf(dragging);
     if(idx>=0) gravVels[idx]={x:0,y:0};
@@ -1670,16 +1818,16 @@ document.addEventListener('mouseup',endDrag);
 document.addEventListener('touchend',endDrag);
 
 function moveDrag(e){
-  if(!dragging)return;e.preventDefault();
-  const cx=e.touches?e.touches[0].clientX:e.clientX;
-  const cy=e.touches?e.touches[0].clientY:e.clientY;
+  if(!dragging)return;
+  e.preventDefault();
+  const touch=e.touches?e.touches[0]:e;
   const ar=area.getBoundingClientRect();
-  let nx=cx-ox-ar.left,ny=cy-oy-ar.top;
+  let nx=touch.clientX-ox-ar.left;
+  let ny=touch.clientY-oy-ar.top;
   if(mode==='puzzle')[nx,ny]=applyWallCollision(nx,ny);
   nx=Math.max(-R*.3,Math.min(cW()-R*1.7,nx));
   ny=Math.max(-R*.3,Math.min(cH()-R*1.7,ny));
   dragging.style.left=nx+'px';dragging.style.top=ny+'px';
-  // Record for fling velocity
   const now=performance.now();
   dragHistory.push({x:nx,y:ny,t:now});
   if(dragHistory.length>8)dragHistory.shift();
@@ -4619,6 +4767,8 @@ function setMode(m){
   if(m==='adventure'){ els.recipeHint.classList.remove('show'); advEnter(); return; }
   else els.recipeHint.classList.remove('show');
   if(m==='orbfight'){ orbFightEnter(); return; }
+  // Show main circles for all other modes
+  [els.red,els.blue,els.green].forEach(e=>e.classList.remove('hidden'));
   if(m==='boss'){
     setTimeout(()=>{
       showRunBanner(1,BOSS_TIERS[0].name,BOSS_TIERS[0].color);
@@ -5328,6 +5478,7 @@ function advShowEvent(msg,color='#ffffff'){
 function advEnter(){
   advActive=true;
   advState=advLoad();
+  [els.red,els.blue,els.green].forEach(e=>e.classList.add('hidden'));
   document.getElementById('adv-overlay').style.display='flex';
   advShowMap();
 }
@@ -5335,6 +5486,7 @@ function advEnter(){
 function advExit(){
   advActive=false;
   advStopMars();
+  [els.red,els.blue,els.green].forEach(e=>e.classList.remove('hidden'));
   document.getElementById('adv-overlay').style.display='none';
   document.body.classList.remove('adv-mars-bg');
   advSetCirclesVisible(true); // restore when leaving adventure
@@ -6381,11 +6533,14 @@ function adminSummon(){
   const item=ADMIN_ITEMS[adminSelectedKey];
   // Close panel
   document.getElementById('admin-panel').classList.remove('open');
-  // Must be in a valid mode — switch to the right mode first
+  // Only switch modes when strictly necessary
   if(item.type==='boss'||item.type==='infinite'){
-    if(mode!=='boss') setMode('boss');
+    // Switch away from adventure/orbfight since boss overlay needs the main canvas
+    if(mode==='adventure'||mode==='orbfight') setMode('boss');
+    // Otherwise stay in current mode — boss overlays work on top of fusion/gravity/etc
   } else if(item.type==='fusion'){
-    if(mode==='adventure'||mode==='boss') setMode('fusion');
+    // Fusions need the main circles — leave adventure/orbfight
+    if(mode==='adventure'||mode==='orbfight') setMode('fusion');
   }
   // Run the dramatic admin swirl then trigger the chosen thing
   setTimeout(()=>_adminFusionSequence(item), 200);
@@ -6572,6 +6727,9 @@ const OF={
   canvas:null,
   ctx:null,
   W:0,H:0,
+  prismaticCooldown:0,      // ms remaining
+  prismaticCdInterval:null,
+  zoomedOut:false,          // zoom out mode — orbs 3× smaller, higher limits
 
   // Orb type definitions
   TYPES:{
@@ -6588,7 +6746,8 @@ const OF={
     boss_rainbow: {label:'Rainbow',   r:46, hp:600, dmg:28, spd:0.6, color:'#ff44ff', glow:'rgba(200,80,255,', team:null,   ability:'multishot',  isBoss:true},
     boss_void:    {label:'Void',      r:48, hp:800, dmg:32, spd:0.35,color:'#4433cc', glow:'rgba(80,50,220,',  team:null,   ability:'gravity',    isBoss:true},
     boss_ultimate:{label:'Ultimate',  r:56, hp:1200,dmg:40, spd:0.3, color:'#cc88ff', glow:'rgba(200,150,255,',team:null,   ability:'shockwave',  isBoss:true, isUltimate:true},
-    infinite:     {label:'Infinite',  r:0,  hp:9999,dmg:60, spd:0.0, color:'#7744ff', glow:'rgba(140,80,255,', team:null,   ability:'infinite',   isInfinite:true},
+    infinite:     {label:'Infinite',  r:0,  hp:9999, dmg:60,  spd:0.0, color:'#7744ff', glow:'rgba(140,80,255,',  team:null, ability:'infinite',   isInfinite:true},
+    prismatic:    {label:'Prismatic', r:0,  hp:75000,dmg:120, spd:0.0, color:'#ffffff',  glow:'rgba(255,255,255,', team:null, ability:'prismatic',  isInfinite:false,isPrismatic:true},
   },
 
   init(){
@@ -6615,12 +6774,22 @@ const OF={
     this.battleRunning=false;
     this.orbs=[];
     this.selectedType=null;
+    this._selectedTeam='blue';
     document.getElementById('orbfight-overlay').style.display='flex';
     // Hide status bar and restart button — not needed in this mode
     els.status.style.display='none';
     els.restartBtn.classList.remove('show');
     // Hide main circles
-    [els.red,els.blue,els.green].forEach(e=>{e.style.opacity='0';e.style.pointerEvents='none';});
+    [els.red,els.blue,els.green].forEach(e=>{
+      e.classList.add('hidden');
+      e.style.opacity='';
+      e.style.pointerEvents='none';
+    });
+    // Sync team buttons to default blue
+    const rb=document.getElementById('of-team-red');
+    const bb=document.getElementById('of-team-blue');
+    if(rb) rb.classList.remove('active');
+    if(bb) bb.classList.add('active');
     this.init();
     this.updateHUD();
     this.startRenderLoop();
@@ -6629,7 +6798,9 @@ const OF={
   stop(){
     this.active=false;
     this.battleRunning=false;
-    MS.stop();
+    MS.stop();TB.remove();
+    this._dmgNums=[];
+    if(this.prismaticCdInterval){clearInterval(this.prismaticCdInterval);this.prismaticCdInterval=null;}
     if(this.loop){cancelAnimationFrame(this.loop);this.loop=null;}
     document.getElementById('orbfight-overlay').style.display='none';
     document.getElementById('of-spawn-panel').classList.remove('open');
@@ -6638,9 +6809,13 @@ const OF={
     if(laserBtn){laserBtn.style.display='none';laserBtn.disabled=false;laserBtn.textContent='∞ ACTIVATE INFINITY LASER';}
     const lcvs=document.getElementById('orbfight-laser-canvas');
     if(lcvs) lcvs.getContext('2d').clearRect(0,0,lcvs.width,lcvs.height);
-    // Restore status bar
+    // Restore status bar and circles
     els.status.style.display='';
-    [els.red,els.blue,els.green].forEach(e=>{e.style.opacity='';e.style.pointerEvents='';});
+    [els.red,els.blue,els.green].forEach(e=>{
+      e.classList.remove('hidden');
+      e.style.opacity='';
+      e.style.pointerEvents='';
+    });
   },
 
   toggleSpawnPanel(){
@@ -6655,7 +6830,7 @@ const OF={
   },
 
   getSelectedTeam(){
-    return document.querySelector('input[name="ofteam"]:checked')?.value||'blue';
+    return this._selectedTeam||'blue';
   },
 
   onCanvasClick(e){
@@ -6666,42 +6841,211 @@ const OF={
     const def=this.TYPES[this.selectedType];
     if(!def)return;
 
-    // Infinite orb rules: takes whole side, limit 1 per team in normal mode; 7 max blue in mothership
+    const zoom=this.zoomedOut;
+    const zf=zoom?1/3:1; // size multiplier
+
+    // Infinite orb rules
     if(def.isInfinite){
       if(MS.active){
-        // Mothership mode: max 7 infinites on blue side
         const infCount=this.orbs.filter(o=>o.isInfinite&&o.team==='blue').length;
         if(team!=='blue'){ toast('Only Blue team in Mothership mode!','#ffaa44'); return; }
-        if(infCount>=MS.MAX_INFINITE){ toast(`Max ${MS.MAX_INFINITE} Infinite Circles!`,'#ff8844'); return; }
-        const r=Math.min(this.W,this.H)*.16;
+        const limit=zoom?15:MS.MAX_INFINITE;
+        if(infCount>=limit){ toast(`Max ${limit} Infinite Circles!`,'#ff8844'); return; }
+        const r=Math.min(this.W,this.H)*.16*zf;
         const safeX=Math.max(this.W*0.52+r, Math.min(this.W-r, x));
         const safeY=Math.max(r+40, Math.min(this.H-r-40, y));
         this.orbs.push(this._makeOrb(this.selectedType,safeX,safeY,team,r));
         ofCheckLaserBtn(); return;
       }
-      if(this.orbs.some(o=>o.team===team&&o.type==='infinite'))return;
-      const r=Math.min(this.W,this.H)*.22;
-      this.orbs=this.orbs.filter(o=>o.team!==team);
+      if(TB.active){
+        if(team!=='blue'){ toast('Red side belongs to the Test Boss!','#44ffcc'); return; }
+        const infCount=this.orbs.filter(o=>o.isInfinite&&o.team==='blue').length;
+        const limit=zoom?15:10;
+        if(infCount>=limit){ toast(`Max ${limit} Infinite Circles in Test Boss mode!`,'#ff8844'); return; }
+        const r=Math.min(this.W,this.H)*.16*zf;
+        const safeX=Math.max(this.W*0.52+r, Math.min(this.W-r, x));
+        const safeY=Math.max(r+40, Math.min(this.H-r-40, y));
+        this.orbs.push(this._makeOrb(this.selectedType,safeX,safeY,team,r));
+        ofCheckLaserBtn(); return;
+      }
+      // Normal / zoom mode
+      const infMax=zoom?15:2;
+      const infCountNormal=this.orbs.filter(o=>o.team===team&&o.isInfinite).length;
+      if(infCountNormal>=infMax){ toast(`Max ${infMax} Infinite Circles per team!`,'#ff8844'); return; }
+      const r=Math.min(this.W,this.H)*(zoom?.075:.22);
       const cx=team==='red'?this.W*.25:this.W*.75;
-      const cy=this.H*.45;
-      this.orbs.push(this._makeOrb(this.selectedType,cx,cy,team,r));
+      // In zoom mode scatter freely, normal mode use 2 fixed spots
+      const cy=zoom?Math.max(r+40,Math.min(this.H-r-40,y)):(infCountNormal===0?this.H*.35:this.H*.65);
+      const px=zoom?Math.max(r+4,Math.min(team==='red'?this.W/2-r-4:this.W-r-4,x)):cx;
+      this.orbs.push(this._makeOrb(this.selectedType,px,cy,team,r));
       ofCheckLaserBtn();
       return;
     }
-    // Don't place on same half as infinite
-    if(this.orbs.some(o=>o.team===team&&o.type==='infinite'))return;
+
+    // Don't place regular orbs on a half occupied by an infinite (normal mode only)
+    if(!def.isPrismatic&&!zoom&&this.orbs.some(o=>o.team===team&&o.type==='infinite'&&o.ability==='infinite'))return;
+
+    // Prismatic Singularity rules
+    if(def.isPrismatic){
+      if(this.prismaticCooldown>0){
+        toast(`🌈 RGB Cooldown: ${Math.ceil(this.prismaticCooldown/1000)}s remaining`,'#ff8844');
+        return;
+      }
+      const prisMax=zoom?3:1;
+      const existing=this.orbs.filter(o=>o.isPrismatic&&o.team===team).length;
+      if(existing>=prisMax){ toast(`Max ${prisMax} Prismatic${prisMax>1?'s':''} per team!`,'#ff8844'); return; }
+      if(MS.active&&team!=='blue'){ toast('Only Blue team in Mothership mode!','#ffaa44'); return; }
+      if(TB.active&&team==='red'){ toast('Red side belongs to the Test Boss!','#44ffcc'); return; }
+      const r=Math.min(this.W,this.H)*(zoom?.095:.28);
+      const halfX=this.W/2;
+      const safeX=team==='red'?Math.min(x,halfX-r-4):Math.max(x,halfX+r+4);
+      const safeY=Math.max(r+40,Math.min(this.H-r-40,y));
+      this._prismaticEntrance(safeX,safeY,team,r,false);
+      this._startPrismaticCooldown();
+      this.updateHUD();
+      return;
+    }
     // In mothership mode only blue is allowed
     if(MS.active&&team!=='blue'){ toast('Only Blue team in Mothership mode!','#ffaa44'); return; }
+    // Test boss owns the red side
+    if(TB.active&&team==='red'){ toast('Red side belongs to the Test Boss!','#44ffcc'); return; }
+    // Apply zoom scaling
+    const orbR=zoom?Math.max(4,Math.round(def.r/3)):def.r;
     // Keep orb on correct half
     const halfX=MS.active?OF.W*0.48:this.W/2;
     const safeX=MS.active
-      ? Math.max(halfX+def.r+6, Math.min(this.W-def.r, x))
-      : (team==='red' ? Math.min(x, halfX-def.r-6) : Math.max(x, halfX+def.r+6));
-    const safeY=Math.max(def.r+40,Math.min(this.H-def.r-40, y));
-    this.orbs.push(this._makeOrb(this.selectedType,safeX,safeY,team,def.r));
+      ? Math.max(halfX+orbR+6, Math.min(this.W-orbR, x))
+      : (team==='red' ? Math.min(x, halfX-orbR-6) : Math.max(x, halfX+orbR+6));
+    const safeY=Math.max(orbR+40,Math.min(this.H-orbR-40, y));
+    this.orbs.push(this._makeOrb(this.selectedType,safeX,safeY,team,orbR));
     this.updateHUD();
     ofCheckLaserBtn();
     SFX.pick();
+  },
+
+  _prismaticEntrance(cx,cy,team,r,isBoss){
+    const PORTAL_MS=isBoss?600:1400;
+    const ARRIVE_MS=isBoss?200:500;
+    const canvas=this.canvas;
+    const ctx=this.ctx;
+    const lcvs=document.getElementById('orbfight-laser-canvas');
+    const lctx=lcvs.getContext('2d');
+    let portalR=0, portalT=0, hue=0;
+
+    // ── Phase 1: Rainbow portal grows ──
+    const portalInterval=setInterval(()=>{
+      if(!this.active){clearInterval(portalInterval);return;}
+      portalT+=16;
+      hue=(hue+4)%360;
+      portalR=Math.min(r*1.3,(portalT/PORTAL_MS)*r*1.3);
+
+      // Draw portal on laser canvas
+      lctx.clearRect(cx-r*1.6,cy-r*1.6,r*3.2,r*3.2);
+
+      // Spinning rainbow ring layers
+      for(let ring=0;ring<5;ring++){
+        const rh=(hue+ring*72)%360;
+        const rr=portalR*(0.5+ring*0.15);
+        const rot=portalT*0.003*(ring%2?1:-1)*(ring+1);
+        lctx.save();lctx.translate(cx,cy);lctx.rotate(rot);
+        lctx.strokeStyle=`hsla(${rh},100%,70%,${0.7-ring*0.1})`;
+        lctx.lineWidth=4-ring*0.5;
+        lctx.shadowColor=`hsl(${rh},100%,65%)`;lctx.shadowBlur=20;
+        lctx.setLineDash(ring%2===0?[12,8]:[8,12]);
+        lctx.beginPath();lctx.arc(0,0,rr,0,Math.PI*2);lctx.stroke();
+        lctx.setLineDash([]);lctx.restore();
+      }
+      // Inner void
+      lctx.save();
+      const vg=lctx.createRadialGradient(cx,cy,0,cx,cy,portalR*0.55);
+      vg.addColorStop(0,'rgba(0,0,0,0.95)');
+      vg.addColorStop(0.7,'rgba(0,0,0,0.6)');
+      vg.addColorStop(1,'rgba(0,0,0,0)');
+      lctx.beginPath();lctx.arc(cx,cy,portalR*0.55,0,Math.PI*2);
+      lctx.fillStyle=vg;lctx.fill();lctx.restore();
+
+      // Spokes radiating outward
+      for(let i=0;i<8;i++){
+        const a=portalT*0.002+i*(Math.PI/4);
+        const sh=(hue+i*45)%360;
+        lctx.save();lctx.translate(cx,cy);lctx.rotate(a);
+        lctx.strokeStyle=`hsla(${sh},100%,75%,${0.4+0.2*Math.sin(portalT*0.015+i)})`;
+        lctx.lineWidth=2;lctx.shadowColor=`hsl(${sh},100%,65%)`;lctx.shadowBlur=12;
+        lctx.beginPath();lctx.moveTo(portalR*0.15,0);lctx.lineTo(portalR*1.1,0);lctx.stroke();
+        lctx.restore();
+      }
+
+      if(!isBoss&&portalT%300<16) shake('sm');
+      if(portalT>=PORTAL_MS) clearInterval(portalInterval);
+    },16);
+
+    // ── Phase 2: Orb bursts out ──
+    setTimeout(()=>{
+      if(!this.active)return;
+      lctx.clearRect(0,0,lcvs.width,lcvs.height);
+
+      // Spawn the orb
+      const orb=this._makeOrb('prismatic',cx,cy,team,r);
+      this.orbs.push(orb);
+      this.updateHUD();
+      ofCheckLaserBtn();
+
+      // Arrival effects
+      if(isBoss){
+        shake('md');
+        flashScreen('rgba(255,255,255,.85)',60);
+        setTimeout(()=>flashScreen(`rgba(${Math.random()<.5?'255,80,80':'80,80,255'},.5)`,40),80);
+      } else {
+        shake('lg');
+        setTimeout(()=>shake('lg'),100);
+        setTimeout(()=>shake('md'),250);
+        flashScreen('rgba(255,255,255,.95)',80);
+        setTimeout(()=>flashScreen(`rgba(${[255,Math.floor(Math.random()*100)],80},.65)`,60),100);
+        setTimeout(()=>flashScreen('rgba(255,255,255,.7)',50),240);
+      }
+
+      // Particle burst
+      const cols=['#ff4444','#44ff44','#4488ff','#ff44ff','#ffff44','#44ffff','#ffffff'];
+      cols.forEach((c,i)=>setTimeout(()=>{
+        spawnParticles(cx,cy,c,isBoss?20:40,isBoss?8:12);
+        spawnSparks(cx,cy,c,isBoss?4:8);
+      },i*(isBoss?20:40)));
+      spawnShockwave(cx,cy,'rgba(255,255,255,',r*(isBoss?2:3),isBoss?6:10);
+      spawnShockwave(cx,cy,`rgba(${Math.floor(Math.random()*200+55)},100,255,`,r*2,6);
+      SFX.laserFire();
+      if(!isBoss) setTimeout(()=>SFX.laserFire(),250);
+
+      // Show status message
+      document.getElementById('of-status-text').textContent='🌈 PRISMATIC SINGULARITY ARRIVED!';
+      setTimeout(()=>{
+        if(!this.battleRunning)
+          document.getElementById('of-status-text').textContent='PLACE ORBS — THEN START BATTLE';
+      },isBoss?1500:2500);
+
+    }, PORTAL_MS+ARRIVE_MS);
+  },
+
+  _startPrismaticCooldown(){
+    const TOTAL=30000;
+    this.prismaticCooldown=TOTAL;
+    const cdEl=document.getElementById('of-prismatic-cd');
+    const valEl=document.getElementById('of-prismatic-cd-val');
+    const fillEl=document.getElementById('of-prismatic-cd-fill');
+    if(cdEl) cdEl.style.display='flex';
+    if(valEl) valEl.style.color='';
+    if(this.prismaticCdInterval) clearInterval(this.prismaticCdInterval);
+    this.prismaticCdInterval=setInterval(()=>{
+      this.prismaticCooldown=Math.max(0,this.prismaticCooldown-200);
+      const pct=(1-this.prismaticCooldown/TOTAL)*100;
+      if(fillEl) fillEl.style.width=pct+'%';
+      if(valEl) valEl.textContent=this.prismaticCooldown>0?Math.ceil(this.prismaticCooldown/1000)+'s':'READY!';
+      if(this.prismaticCooldown<=0){
+        clearInterval(this.prismaticCdInterval);
+        this.prismaticCdInterval=null;
+        if(valEl) valEl.style.color='#88ff88';
+        toast('🌈 PRISMATIC SINGULARITY READY!','#ffffff');
+      }
+    },200);
   },
 
   _makeOrb(typeKey,x,y,team,r){
@@ -6717,12 +7061,22 @@ const OF={
       ability:def.ability,
       isBoss:!!def.isBoss,isInfinite:!!def.isInfinite,
       isUltimate:!!def.isUltimate,
+      isPrismatic:!!def.isPrismatic,
       vx:0,vy:0,
-      attackTimer:0,attackRate:def.isBoss?60:def.isInfinite?30:90,
+      attackTimer:0,
+      attackRate:def.isPrismatic?20:def.isBoss?60:def.isInfinite?30:90,
       pulseT:0,
+      hueShift:0,
+      abilityTimer:0,
+      prismT:0,     // fast counter for prismatic idle animation
+      shieldHp: def.isPrismatic?100000:0,
+      shieldMaxHp: def.isPrismatic?100000:0,
+      shieldAngle:0, // rotating shield ring angle
       projectiles:[],
       dead:false,
       label:def.label,
+      orbitLocked:false,
+      orbitPullActive:false,orbitPullT:0,orbitCaptured:[],
     };
   },
 
@@ -6745,7 +7099,15 @@ const OF={
 
   reset(){
     this.battleRunning=false;
-    MS.stop();
+    MS.stop();TB.remove();
+    this._dmgNums=[];
+    if(this.prismaticCdInterval){clearInterval(this.prismaticCdInterval);this.prismaticCdInterval=null;}
+    this.prismaticCooldown=0;
+    document.getElementById('of-prismatic-cd').style.display='none';
+    // Reset zoom
+    this.zoomedOut=false;
+    const zb=document.getElementById('of-zoom-btn');
+    if(zb){zb.classList.remove('active');zb.textContent='🔭 ZOOM OUT';}
     this.orbs=[];
     this.selectedType=null;
     document.querySelectorAll('.of-spawn-btn').forEach(b=>b.classList.remove('selected'));
@@ -6775,14 +7137,14 @@ const OF={
   },
 
   update(){
-    if(!this.battleRunning&&!MS.active)return;
+    if(!this.battleRunning&&!MS.active&&!TB.active)return;
     if(MS.active){ MS.update(); return; }
     const alive=this.orbs.filter(o=>!o.dead);
     const redAlive=alive.filter(o=>o.team==='red');
     const blueAlive=alive.filter(o=>o.team==='blue');
 
-    // Victory check
-    if(alive.length>0&&(redAlive.length===0||blueAlive.length===0)){
+    // Victory check — skip if test boss is active (red side is intentionally empty)
+    if(!TB.active&&alive.length>0&&(redAlive.length===0||blueAlive.length===0)){
       this.battleRunning=false;
       const winner=redAlive.length>0?'red':'blue';
       this.showVictory(winner,redAlive,blueAlive);
@@ -6790,38 +7152,49 @@ const OF={
     }
 
     alive.forEach(o=>{
-      o.pulseT+=0.05;
       o.attackTimer++;
 
-      // Find nearest enemy
+      // Find nearest enemy — or use test boss as target
       const enemies=alive.filter(e=>e.team!==o.team);
-      if(enemies.length===0)return;
-      enemies.sort((a,b)=>Math.hypot(a.x-o.x,a.y-o.y)-Math.hypot(b.x-o.x,b.y-o.y));
-      const target=enemies[0];
-      const dist=Math.hypot(target.x-o.x,target.y-o.y);
+      const hasTBTarget=TB.active&&o.team==='blue';
 
-      // Move toward target (not for infinite)
-      if(!o.isInfinite){
-        const ang=Math.atan2(target.y-o.y,target.x-o.x);
-        const stopDist=o.r+target.r+30;
+      // If no enemies and no TB target, skip
+      if(enemies.length===0&&!hasTBTarget)return;
+
+      // Target: nearest enemy orb, or the test boss center
+      let target=null;
+      if(enemies.length>0){
+        enemies.sort((a,b)=>Math.hypot(a.x-o.x,a.y-o.y)-Math.hypot(b.x-o.x,b.y-o.y));
+        target=enemies[0];
+      }
+      // Use TB as target if it's closer or no orb enemies
+      const tbDist=hasTBTarget?Math.hypot(TB.x-o.x,TB.y-o.y):Infinity;
+      const enemyDist=target?Math.hypot(target.x-o.x,target.y-o.y):Infinity;
+      const useTB=hasTBTarget&&(tbDist<enemyDist||!target);
+      const tx=useTB?TB.x:(target?.x??o.x);
+      const ty=useTB?TB.y:(target?.y??o.y);
+      const tr=useTB?TB.r:(target?.r??0);
+      const dist=Math.hypot(tx-o.x,ty-o.y);
+
+      // Move toward target (not for infinite, not if orbit-locked)
+      if(!o.isInfinite&&!o.orbitLocked){
+        const ang=Math.atan2(ty-o.y,tx-o.x);
+        const stopDist=o.r+tr+30;
         if(dist>stopDist){
           o.vx+=Math.cos(ang)*0.15;
           o.vy+=Math.sin(ang)*0.15;
         } else {
           o.vx*=0.85;o.vy*=0.85;
         }
-        // Speed cap
         const spd=Math.hypot(o.vx,o.vy);
         if(spd>o.spd){o.vx=o.vx/spd*o.spd;o.vy=o.vy/spd*o.spd;}
         o.x+=o.vx;o.y+=o.vy;
-        // Bounds
         o.x=Math.max(o.r,Math.min(this.W-o.r,o.x));
         o.y=Math.max(o.r+40,Math.min(this.H-o.r-40,o.y));
-        // Stay on own half before battle is 1s old (remove wall concept — center boundary)
       }
 
       // Gravity ability — pull enemies
-      if(o.ability==='gravity'&&alive){
+      if(o.ability==='gravity'&&enemies.length>0){
         enemies.forEach(e=>{
           const d=Math.hypot(e.x-o.x,e.y-o.y);
           if(d<200){
@@ -6834,34 +7207,226 @@ const OF={
 
       // Quantum blink
       if(o.ability==='blink'&&o.attackTimer%120===0){
-        const ang=Math.atan2(target.y-o.y,target.x-o.x);
+        const ang=Math.atan2(ty-o.y,tx-o.x);
         o.x+=Math.cos(ang)*80;o.y+=Math.sin(ang)*80;
         o.x=Math.max(o.r,Math.min(this.W-o.r,o.x));
         o.y=Math.max(o.r+40,Math.min(this.H-o.r-40,o.y));
       }
 
+      // ── INFINITE: ORBIT RING PULL ──
+      if(o.isInfinite){
+        if(!o.orbitPullActive){
+          // Trigger when any non-Infinite enemy gets within 2× radius
+          const pullRange=o.r*2.2;
+          const inRange=alive.filter(e=>
+            e.team!==o.team && !e.isInfinite && !e.isPrismatic && !e.dead &&
+            Math.hypot(e.x-o.x,e.y-o.y)<pullRange
+          );
+          if(inRange.length>0){
+            o.orbitPullActive=true;
+            o.orbitPullT=0;
+            // Also sweep in anything within 3.5× radius
+            const extended=alive.filter(e=>
+              e.team!==o.team && !e.isInfinite && !e.isPrismatic && !e.dead &&
+              Math.hypot(e.x-o.x,e.y-o.y)>=pullRange &&
+              Math.hypot(e.x-o.x,e.y-o.y)<o.r*3.5
+            );
+            const allPulled=[...inRange,...extended];
+            o.orbitCaptured=allPulled.map(e=>{
+              const ang=Math.atan2(e.y-o.y,e.x-o.x);
+              const dist=Math.max(o.r*1.4,Math.hypot(e.x-o.x,e.y-o.y));
+              e.orbitLocked=true;e.vx=0;e.vy=0;
+              return{orb:e,angle:ang,dist:Math.min(dist,o.r*2.2)};
+            });
+            flashScreen('rgba(120,0,200,.5)');shake('md');
+            SFX.infiniteShoot();
+            setTimeout(()=>SFX.infiniteShoot(),200);
+            spawnShockwave(o.x,o.y,'rgba(140,0,255,',o.r*3.5,8);
+            document.getElementById('of-status-text').textContent='◉ GRAVITY RING ACTIVATED!';
+            setTimeout(()=>{
+              if(OF.battleRunning) document.getElementById('of-status-text').textContent='BATTLE IN PROGRESS';
+            },2000);
+          }
+        } else {
+          // ── ORBIT ACTIVE ──
+          o.orbitPullT++;
+          const orbitDur=120+Math.floor(Math.random()*60); // 2–3s at 60fps
+
+          // Spin speed accelerates over time
+          const spinSpeed=0.06+o.orbitPullT*0.001;
+
+          o.orbitCaptured=o.orbitCaptured.filter(cap=>{
+            if(cap.orb.dead){ cap.orb.orbitLocked=false; return false; }
+            // Advance angle
+            cap.angle+=spinSpeed;
+            // Slowly tighten orbit radius
+            cap.dist=Math.max(o.r*1.1, cap.dist-0.4);
+            // Lock orb to orbit position
+            cap.orb.x=o.x+Math.cos(cap.angle)*cap.dist;
+            cap.orb.y=o.y+Math.sin(cap.angle)*cap.dist;
+            cap.orb.vx=0;cap.orb.vy=0;
+            // Deal damage per frame (~3% maxHp/s)
+            cap.orb.hp=Math.max(0,cap.orb.hp-cap.orb.maxHp*0.0005*spinSpeed*60);
+            if(Math.random()<.15) spawnSparks(cap.orb.x,cap.orb.y,'#cc44ff',3);
+            if(cap.orb.hp<=0){
+              cap.orb.dead=true;cap.orb.orbitLocked=false;
+              spawnParticles(cap.orb.x,cap.orb.y,'#cc44ff',30,8);
+              spawnShockwave(cap.orb.x,cap.orb.y,'rgba(180,0,255,',80,5);
+              if(cap.orb.isBoss) SFX.bossExplode(); else SFX.orbExplode();
+              return false;
+            }
+            return true;
+          });
+
+          // Pulsing ring visual drawn in _drawOrb via orbitPullActive flag
+
+          if(o.orbitPullT>=orbitDur||o.orbitCaptured.length===0){
+            // FLING phase — release all captured orbs outward
+            o.orbitCaptured.forEach(cap=>{
+              if(cap.orb.dead) return;
+              cap.orb.orbitLocked=false;
+              const flingSpeed=8+Math.random()*6;
+              // Fling tangentially outward
+              cap.orb.vx=Math.cos(cap.angle+Math.PI*0.5)*flingSpeed*( Math.random()<.5?1:-1);
+              cap.orb.vy=Math.sin(cap.angle+Math.PI*0.5)*flingSpeed*( Math.random()<.5?1:-1);
+              spawnSparks(cap.orb.x,cap.orb.y,'#ffffff',6);
+            });
+            shake('sm');
+            spawnShockwave(o.x,o.y,'rgba(180,0,255,',o.r*2,6);
+            o.orbitPullActive=false;
+            o.orbitCaptured=[];
+          }
+        }
+      }
+
+      // ── PRISMATIC SINGULARITY ABILITIES ──
+      if(o.isPrismatic){
+        o.abilityTimer++;
+        const col=`hsl(${o.hueShift},100%,60%)`;
+        o.color=col;
+
+        // Passive aura — constant damage to nearby enemies
+        const auraRange=o.r*2.2;
+        alive.filter(e=>e.team!==o.team&&!e.isInfinite).forEach(e=>{
+          if(Math.hypot(e.x-o.x,e.y-o.y)<auraRange+e.r){
+            e.hp=Math.max(0,e.hp-o.dmg*0.02);
+            if(Math.random()<.08) spawnSparks(e.x,e.y,col,2);
+            if(e.hp<=0){ e.dead=true; SFX.bossExplode(); }
+          }
+        });
+
+        // Abilities cycle: Spectrum Beam → RGB Storm → Prism Burst → Color Singularity
+        const ability=Math.floor(o.abilityTimer/240)%4;
+
+        // Spectrum Beam (every 240 frames = ~4s, fires at frame 0 of each cycle)
+        if(o.abilityTimer%240===0&&o.abilityTimer>0){
+          this._prismaticSpectrumBeam(o,alive);
+        }
+        // RGB Storm (offset 80 frames into cycle)
+        if(o.abilityTimer%240===80){
+          this._prismaticRGBStorm(o,alive);
+        }
+        // Prism Burst (offset 160)
+        if(o.abilityTimer%240===160){
+          this._prismaticPrismBurst(o,alive);
+        }
+        // Color Singularity (offset 200)
+        if(o.abilityTimer%240===200){
+          this._prismaticColorSingularity(o,alive);
+        }
+
+        // Passive sparks
+        if(Math.random()<.25) spawnSparks(
+          o.x+(-o.r+Math.random()*o.r*2),
+          o.y+(-o.r+Math.random()*o.r*2),
+          `hsl(${Math.random()*360},100%,70%)`,2
+        );
+      }
+
       // Attack
       if(o.attackTimer>=o.attackRate){
         o.attackTimer=0;
-        this._attack(o,target,enemies);
+        const attackTarget=target??{x:tx,y:ty,r:tr};
+        this._attack(o,attackTarget,enemies);
       }
 
       // Move projectiles + check hits
       o.projectiles=o.projectiles.filter(p=>{
+        // Homing: curve toward stored target (TB center or orb)
+        if(p.homing&&p.homingStr){
+          // Update target to live position if TB/MS active
+          let htx=p.tx,hty=p.ty;
+          if(TB.active){htx=TB.x;hty=TB.y;}
+          else if(MS.active){htx=MS.x+MS.w/2;hty=MS.y+MS.h/2;}
+          const da=Math.atan2(hty-p.y,htx-p.x);
+          const curA=Math.atan2(p.vy,p.vx);
+          // Smooth angle interpolation
+          let diff=da-curA;
+          while(diff>Math.PI) diff-=Math.PI*2;
+          while(diff<-Math.PI) diff+=Math.PI*2;
+          const turn=Math.min(p.homingStr,Math.abs(diff))*Math.sign(diff);
+          const newA=curA+turn;
+          const spd=Math.hypot(p.vx,p.vy);
+          p.vx=Math.cos(newA)*spd;
+          p.vy=Math.sin(newA)*spd;
+        }
         p.x+=p.vx;p.y+=p.vy;p.life--;
         if(p.life<=0||p.x<0||p.x>this.W||p.y<0||p.y>this.H)return false;
         // Check hit on enemies
         const hit=alive.find(e=>e.team!==o.team&&!e.dead&&Math.hypot(e.x-p.x,e.y-p.y)<e.r+p.r);
         if(hit){
+          // Prismatic shield absorbs damage first
+          if(hit.isPrismatic&&hit.shieldHp>0){
+            hit.shieldHp=Math.max(0,hit.shieldHp-p.dmg);
+            SFX.orbHit();
+            OF._dmgNums=OF._dmgNums||[];
+            const dmgLabel=p.dmg>=1000?(p.dmg/1000).toFixed(1)+'K':Math.round(p.dmg)+'';
+            OF._dmgNums.push({x:p.x+(-10+Math.random()*20),y:p.y-6,label:dmgLabel,life:1,vy:-(0.9+Math.random()*0.6),col:'#44ffff'});
+            spawnSparks(p.x,p.y,'#44ffff',3);
+            if(hit.shieldHp<=0){
+              // Shield breaks
+              flashScreen('rgba(100,255,255,.5)',60);
+              shake('md');
+              spawnParticles(hit.x,hit.y,'#44ffff',50,10);
+              spawnShockwave(hit.x,hit.y,'rgba(100,255,255,',hit.r*2.5,8);
+              SFX.bossExplode();
+              document.getElementById('of-status-text').textContent='🌈 PRISMATIC SHIELD BROKEN!';
+              setTimeout(()=>{if(OF.battleRunning)document.getElementById('of-status-text').textContent='BATTLE IN PROGRESS';},2000);
+            }
+            return false;
+          }
           hit.hp=Math.max(0,hit.hp-p.dmg);
           SFX.orbHit();
+          // Damage number
+          OF._dmgNums=OF._dmgNums||[];
+          const dmgLabel=p.dmg>=1000?(p.dmg/1000).toFixed(1)+'K':Math.round(p.dmg)+'';
+          OF._dmgNums.push({x:p.x+(-10+Math.random()*20),y:p.y-6,label:dmgLabel,life:1,vy:-(0.9+Math.random()*0.6),col:hit.isBoss?'#ffcc44':'#ffffff'});
+          // Storm type special effects
+          if(p.stormType==='red'){
+            spawnShockwave(p.x,p.y,'rgba(255,40,40,',60,5);
+            flashScreen('rgba(255,40,40,.2)',20);
+            alive.filter(e=>e.team!==o.team&&!e.dead&&Math.hypot(e.x-p.x,e.y-p.y)<55).forEach(e=>{
+              e.hp=Math.max(0,e.hp-p.dmg*0.5);
+              if(e.hp<=0){e.dead=true;SFX.orbExplode();}
+            });
+          } else if(p.stormType==='green'){
+            // Chain to nearest enemy
+            const chain=alive.filter(e=>e.team!==o.team&&!e.dead&&e!==hit&&Math.hypot(e.x-hit.x,e.y-hit.y)<100);
+            chain.slice(0,2).forEach(e=>{e.hp=Math.max(0,e.hp-p.dmg*0.6);spawnSparks(e.x,e.y,'#44ff44',3);if(e.hp<=0){e.dead=true;SFX.orbExplode();}});
+          } else if(p.stormType==='blue'){
+            hit.vx*=0.3;hit.vy*=0.3; // slow
+            spawnSparks(hit.x,hit.y,'#4488ff',4);
+          }
           if(hit.hp<=0){
             hit.dead=true;
-            if(hit.isBoss||hit.isInfinite) SFX.bossExplode();
+            if(hit.isBoss||hit.isInfinite||hit.isPrismatic) SFX.bossExplode();
             else SFX.orbExplode();
           }
+          if(p.piercing) return true; // piercing projectiles pass through
           return false;
         }
+        // Check test boss hit
+        if(TB.active&&TB.checkHit(p)) return false;
         return true;
       });
     });
@@ -6871,12 +7436,180 @@ const OF={
     this.updateHUD();
   },
 
+  // ── PRISMATIC ABILITY METHODS ──
+
+  _prismaticSpectrumBeam(o, alive){
+    // Three rotating lasers: red, green, blue — each at 120° offset, pierce everything
+    const reach=Math.max(this.W,this.H)*1.5;
+    const baseAng=Math.random()*Math.PI*2;
+    const colors=[['255,40,40','red'],['40,220,40','green'],['60,100,255','blue']];
+    const lcvs=document.getElementById('orbfight-laser-canvas');
+    const lctx=lcvs.getContext('2d');
+    const BEAM_MS=2500;
+    const startT=Date.now();
+    let lastT=Date.now();
+    let spinAngle=baseAng;
+
+    SFX.laserCharge(); shake('lg');
+    flashScreen('rgba(255,255,255,.9)',80);
+    document.getElementById('of-status-text').textContent='🌈 SPECTRUM BEAM!';
+
+    const loop=setInterval(()=>{
+      if(!this.active){clearInterval(loop);lctx.clearRect(0,0,lcvs.width,lcvs.height);return;}
+      const now=Date.now(); const dt=(now-lastT)/1000; lastT=now;
+      const elapsed=now-startT; const prog=elapsed/BEAM_MS;
+      if(prog>=1){
+        clearInterval(loop);lctx.clearRect(0,0,lcvs.width,lcvs.height);
+        document.getElementById('of-status-text').textContent=this.battleRunning?'BATTLE IN PROGRESS':'PLACE ORBS — THEN START BATTLE';
+        return;
+      }
+      spinAngle+=Math.PI*0.8*dt;
+      const alpha=prog<0.8?1:1-(prog-0.8)/0.2;
+      const beamW=55+Math.sin(elapsed*0.015)*12;
+      lctx.clearRect(0,0,lcvs.width,lcvs.height);
+      colors.forEach(([rgb],ci)=>{
+        const ang=spinAngle+ci*(Math.PI*2/3);
+        const cos=Math.cos(ang),sin=Math.sin(ang);
+        lctx.save();lctx.translate(o.x,o.y);lctx.rotate(ang);
+        lctx.globalAlpha=alpha*0.35;lctx.fillStyle=`rgba(${rgb},1)`;lctx.shadowColor=`rgba(${rgb},1)`;lctx.shadowBlur=60;
+        lctx.fillRect(-reach,-beamW*1.6,reach*2,beamW*3.2);
+        lctx.globalAlpha=alpha*0.8;lctx.fillStyle=`rgba(${rgb},1)`;lctx.shadowBlur=30;
+        lctx.fillRect(-reach,-beamW*0.6,reach*2,beamW*1.2);
+        lctx.globalAlpha=alpha*(0.9+Math.random()*0.1);lctx.fillStyle='rgba(255,255,255,1)';lctx.shadowBlur=15;
+        lctx.fillRect(-reach,-beamW*0.15,reach*2,beamW*0.3);
+        lctx.restore();
+        // Damage enemies along this beam
+        alive.filter(e=>e.team!==o.team&&!e.dead&&!e.isPrismatic).forEach(e=>{
+          const dx=e.x-o.x,dy=e.y-o.y;
+          const localY=Math.abs(-dx*sin+dy*cos);
+          if(localY<beamW+e.r){
+            e.hp=Math.max(0,e.hp-o.dmg*0.15);
+            if(Math.random()<.3) spawnSparks(e.x,e.y,`rgb(${rgb})`,3);
+            if(e.hp<=0){e.dead=true;SFX.bossExplode();spawnParticles(e.x,e.y,`rgb(${rgb})`,30,8);}
+          }
+        });
+        if(TB.active){
+          const dx=TB.x-o.x,dy=TB.y-o.y;
+          const localY=Math.abs(-dx*sin+dy*cos);
+          if(localY<beamW+TB.r){ TB.hit(o.dmg*0.15);if(Math.random()<.1) SFX.mothershipHit(); }
+        }
+      });
+      if(Math.random()<.5) shake('sm');
+      if(Math.random()<.3) flashScreen(`rgba(${colors[Math.floor(Math.random()*3)][0]},.15)`,20);
+      this.orbs=this.orbs.filter(e=>!e.dead);
+      this.updateHUD();
+    },16);
+  },
+
+  _prismaticRGBStorm(o, alive){
+    // Hundreds of colored bolts: red=explosive, green=chain, blue=slow
+    SFX.infiniteShoot(); shake('md');
+    document.getElementById('of-status-text').textContent='⚡ RGB STORM!';
+    const cols=['#ff2222','#22ff22','#2244ff'];
+    const types=['red','green','blue'];
+    for(let i=0;i<90;i++){
+      setTimeout(()=>{
+        if(!this.active||o.dead)return;
+        const ang=Math.random()*Math.PI*2;
+        const spd=4+Math.random()*5;
+        const colIdx=i%3;
+        const col=cols[colIdx];
+        const dmgMult=colIdx===0?2.5:colIdx===2?1.0:1.5;
+        const p={x:o.x,y:o.y,vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd,
+          dmg:o.dmg*dmgMult,r:6+colIdx*2,life:120,color:col,
+          stormType:types[colIdx]};
+        o.projectiles.push(p);
+        if(Math.random()<.3) spawnSparks(o.x+Math.cos(ang)*o.r,o.y+Math.sin(ang)*o.r,col,2);
+      },i*18);
+    }
+    setTimeout(()=>{ document.getElementById('of-status-text').textContent=this.battleRunning?'BATTLE IN PROGRESS':'PLACE ORBS — THEN START BATTLE'; },2200);
+  },
+
+  _prismaticPrismBurst(o, alive){
+    // Flash white then 36 rainbow beams outward — instant clear
+    flashScreen('rgba(255,255,255,1)',100);
+    setTimeout(()=>flashScreen('rgba(200,100,255,.7)',60),110);
+    shake('lg'); SFX.laserFire();
+    document.getElementById('of-status-text').textContent='🌌 PRISM BURST!';
+    const reach=Math.max(this.W,this.H)*1.5;
+    const COUNT=36;
+    for(let i=0;i<COUNT;i++){
+      const ang=(i/COUNT)*Math.PI*2;
+      const hue=Math.round((i/COUNT)*360);
+      const cos=Math.cos(ang),sin=Math.sin(ang);
+      // Instant raycast — damage every enemy along this angle
+      alive.filter(e=>e.team!==o.team&&!e.dead&&!e.isPrismatic).forEach(e=>{
+        const dx=e.x-o.x,dy=e.y-o.y;
+        const localY=Math.abs(-dx*sin+dy*cos);
+        const localX=dx*cos+dy*sin;
+        if(localY<e.r+20&&localX>0){
+          e.hp=Math.max(0,e.hp-o.dmg*1.2);
+          spawnParticles(e.x,e.y,`hsl(${hue},100%,60%)`,20,6);
+          if(e.hp<=0){e.dead=true;SFX.orbExplode();}
+        }
+      });
+      if(TB.active){
+        const dx=TB.x-o.x,dy=TB.y-o.y;
+        const localY=Math.abs(-dx*sin+dy*cos);
+        if(localY<TB.r+20) TB.hit(o.dmg*1.2);
+      }
+      // Draw a burst ray briefly
+      spawnSparks(o.x+cos*o.r*0.5,o.y+sin*o.r*0.5,`hsl(${hue},100%,70%)`,3);
+      setTimeout(()=>spawnParticles(o.x+cos*(50+Math.random()*reach*0.6),o.y+sin*(50+Math.random()*reach*0.6),`hsl(${hue},100%,60%)`,8,5),Math.random()*300);
+    }
+    this.orbs=this.orbs.filter(e=>!e.dead); this.updateHUD();
+    setTimeout(()=>{ document.getElementById('of-status-text').textContent=this.battleRunning?'BATTLE IN PROGRESS':'PLACE ORBS — THEN START BATTLE'; },1500);
+  },
+
+  _prismaticColorSingularity(o, alive){
+    // Vortex pull — drag enemies toward center while dealing damage
+    document.getElementById('of-status-text').textContent='🌀 COLOR SINGULARITY!';
+    SFX.orbShoot(); shake('md');
+    spawnShockwave(o.x,o.y,'rgba(200,100,255,',o.r*3.5,8);
+    const DURATION=180; // ~3s at 60fps
+    let t=0;
+    const vortex=setInterval(()=>{
+      if(!this.active||o.dead){clearInterval(vortex);return;}
+      t++;
+      if(t>=DURATION){clearInterval(vortex);
+        document.getElementById('of-status-text').textContent=this.battleRunning?'BATTLE IN PROGRESS':'PLACE ORBS — THEN START BATTLE';
+        return;
+      }
+      const hue=(t*3)%360;
+      alive.filter(e=>e.team!==o.team&&!e.dead&&!e.isPrismatic).forEach(e=>{
+        const dx=o.x-e.x,dy=o.y-e.y;
+        const dist=Math.hypot(dx,dy);
+        const pullRange=o.r*4;
+        if(dist<pullRange){
+          const force=2.5*(1-dist/pullRange);
+          e.vx+=Math.cos(Math.atan2(dy,dx))*force;
+          e.vy+=Math.sin(Math.atan2(dy,dx))*force;
+          e.hp=Math.max(0,e.hp-o.dmg*0.03);
+          if(Math.random()<.12) spawnSparks(e.x,e.y,`hsl(${hue},100%,60%)`,2);
+          if(e.hp<=0){e.dead=true;SFX.orbExplode();spawnParticles(e.x,e.y,`hsl(${hue},100%,60%)`,25,7);}
+        }
+      });
+      if(TB.active){
+        const dx=o.x-TB.x,dy=o.y-TB.y;
+        if(Math.hypot(dx,dy)<o.r*5) TB.hit(o.dmg*0.04);
+      }
+      // Swirling vortex sparks
+      for(let i=0;i<3;i++){
+        const ang=t*0.2+i*2.1;
+        const rr=o.r*(1.2+Math.sin(t*0.1)*0.3);
+        spawnSparks(o.x+Math.cos(ang)*rr,o.y+Math.sin(ang)*rr,`hsl(${hue},100%,65%)`,2);
+      }
+      this.orbs=this.orbs.filter(e=>!e.dead); this.updateHUD();
+    },16);
+  },
+
   _attack(o,target,enemies){
     const ang=Math.atan2(target.y-o.y,target.x-o.x);
     const spd=5+o.isBoss*2;
 
     // Shoot sound
-    if(o.isInfinite) SFX.infiniteShoot();
+    if(o.isPrismatic) SFX.laserFire();
+    else if(o.isInfinite) SFX.infiniteShoot();
     else if(o.isBoss) SFX.bossShoot();
     else SFX.orbShoot();
 
@@ -6884,7 +7617,7 @@ const OF={
       x:o.x+Math.cos(ang)*(o.r+4),
       y:o.y+Math.sin(ang)*(o.r+4),
       vx,vy,dmg:dmg??o.dmg*.6,
-      r:r??5,life:life??80,color:o.color,
+      r:r??5,life:life??(TB.active?200:80),color:o.color,
     });
 
     if(o.ability==='basic'||o.ability==='aoe'){
@@ -6905,6 +7638,44 @@ const OF={
       for(let i=0;i<8;i++){
         const a=(i/8)*Math.PI*2+o.pulseT;
         o.projectiles.push({x:o.x,y:o.y,vx:Math.cos(a)*7,vy:Math.sin(a)*7,dmg:o.dmg*.7,r:8,life:100,color:o.color});
+      }
+    }
+    if(o.isPrismatic){
+      const hue=o.hueShift||0;
+      const isBigTarget=TB.active||MS.active;
+      const bulletCount=isBigTarget?32:12;
+      const burstCount=isBigTarget?16:5;
+      const baseSpd=isBigTarget?11:9;
+
+      // Spray ring of homing RGB bullets
+      for(let i=0;i<bulletCount;i++){
+        const a=(i/bulletCount)*Math.PI*2+o.pulseT*0.5;
+        const gh=(hue+i*(360/bulletCount))%360;
+        const spd=baseSpd*(0.85+Math.random()*0.3);
+        o.projectiles.push({
+          x:o.x,y:o.y,
+          vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,
+          dmg:o.dmg*0.9,r:8,
+          life:isBigTarget?220:120,
+          color:`hsl(${gh},100%,65%)`,
+          homing:true,homingStr:isBigTarget?0.18:0.08,
+          tx:target.x,ty:target.y,
+        });
+      }
+      // Dense focused burst toward target
+      for(let i=-Math.floor(burstCount/2);i<=Math.floor(burstCount/2);i++){
+        const a=Math.atan2(target.y-o.y,target.x-o.x)+i*0.12;
+        const gh=(hue+i*40+180)%360;
+        const spd=(isBigTarget?14:12)*(0.9+Math.random()*0.2);
+        o.projectiles.push({
+          x:o.x,y:o.y,
+          vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,
+          dmg:o.dmg*(isBigTarget?1.5:1.2),r:isBigTarget?12:10,
+          life:isBigTarget?240:130,
+          color:`hsl(${gh},100%,70%)`,
+          homing:true,homingStr:isBigTarget?0.22:0.1,
+          tx:target.x,ty:target.y,
+        });
       }
     }
     // AOE direct damage (melee range)
@@ -6941,21 +7712,68 @@ const OF={
     // Draw projectiles
     this.orbs.forEach(o=>{
       o.projectiles.forEach(p=>{
-        ctx.save();ctx.globalAlpha=p.life/80;
-        ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
-        ctx.fillStyle=p.color;ctx.shadowColor=p.color;ctx.shadowBlur=12;ctx.fill();
+        ctx.save();
+        const alpha=Math.min(1,p.life/60);
+        ctx.globalAlpha=alpha;
+        if(p.homing){
+          // Comet tail
+          const spd=Math.hypot(p.vx,p.vy);
+          const tailLen=p.r*2.5+spd*1.5;
+          const tx2=p.x-p.vx/spd*tailLen, ty2=p.y-p.vy/spd*tailLen;
+          const grad=ctx.createLinearGradient(p.x,p.y,tx2,ty2);
+          grad.addColorStop(0,p.color);
+          grad.addColorStop(1,'rgba(0,0,0,0)');
+          ctx.strokeStyle=grad;ctx.lineWidth=p.r*0.9;
+          ctx.lineCap='round';ctx.shadowColor=p.color;ctx.shadowBlur=14;
+          ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(tx2,ty2);ctx.stroke();
+          // Bright head
+          ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+          ctx.fillStyle=p.color;ctx.shadowBlur=20;ctx.fill();
+        } else {
+          ctx.globalAlpha=p.life/80;
+          ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+          ctx.fillStyle=p.color;ctx.shadowColor=p.color;ctx.shadowBlur=12;ctx.fill();
+        }
         ctx.restore();
       });
     });
+
+    // Draw test boss (on top of projectiles, below orbs)
+    if(TB.active) TB.draw(ctx);
 
     // Draw mothership (behind orbs)
     if(MS.active) MS.draw(ctx);
 
     // Draw orbs (on top of mothership)
     this.orbs.forEach(o=>this._drawOrb(ctx,o));
+
+    // ── Floating damage numbers ──
+    if(OF._dmgNums&&OF._dmgNums.length){
+      OF._dmgNums=OF._dmgNums.filter(n=>{
+        n.y+=n.vy;
+        n.vy*=0.94;
+        n.life-=0.022;
+        if(n.life<=0)return false;
+        ctx.save();
+        ctx.globalAlpha=Math.min(1,n.life*2);
+        ctx.font=`bold ${Math.round(10+n.life*4)}px Orbitron,monospace`;
+        ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillStyle=n.col||'#44ffcc';
+        ctx.shadowColor=n.col||'#44ffcc';ctx.shadowBlur=8;
+        ctx.fillText(n.label,n.x,n.y);
+        ctx.restore();
+        return true;
+      });
+    }
   },
 
   _drawOrb(ctx,o){
+    // Always tick animation timers so orbs look alive even before battle
+    o.pulseT+=0.05;
+    if(o.isPrismatic){
+      o.hueShift=(o.hueShift+1.8)%360;
+      o.prismT=(o.prismT||0)+0.07;
+    }
     const pulse=0.93+0.07*Math.sin(o.pulseT);
     const r=o.r*pulse;
     ctx.save();
@@ -6966,6 +7784,218 @@ const OF={
     ctx.beginPath();ctx.arc(o.x,o.y,r*2,0,Math.PI*2);ctx.fillStyle=gg;ctx.fill();
 
     // Body
+    if(o.isPrismatic){
+      const hue=o.hueShift||0;
+      const h2=(hue+120)%360, h3=(hue+240)%360;
+      const t=o.prismT||0;
+
+      // ── 4-LAYER PULSING OUTER CORONA ──
+      for(let layer=0;layer<4;layer++){
+        const lh=(hue+layer*90)%360;
+        const lR=r*(1.6+layer*0.45+0.18*Math.sin(t*1.8+layer*1.4));
+        const lg=ctx.createRadialGradient(o.x,o.y,r,o.x,o.y,lR);
+        lg.addColorStop(0,`hsla(${lh},100%,65%,${0.14-layer*0.03})`);
+        lg.addColorStop(1,'rgba(0,0,0,0)');
+        ctx.beginPath();ctx.arc(o.x,o.y,lR,0,Math.PI*2);
+        ctx.fillStyle=lg;ctx.fill();
+      }
+
+      // ── 12 SPINNING SPIKE BLADES ──
+      for(let i=0;i<12;i++){
+        const a=t*1.1+i*(Math.PI/6);
+        const sh=(hue+i*30)%360;
+        const sLen=r*(0.5+0.28*Math.sin(t*2.2+i*0.9));
+        const sW=r*(0.07+0.035*Math.sin(t*3+i));
+        ctx.save();ctx.translate(o.x,o.y);ctx.rotate(a);
+        const sg=ctx.createLinearGradient(r*0.88,0,r*0.88+sLen,0);
+        sg.addColorStop(0,`hsla(${sh},100%,78%,0.95)`);
+        sg.addColorStop(1,`hsla(${(sh+40)%360},100%,60%,0)`);
+        ctx.fillStyle=sg;ctx.shadowColor=`hsl(${sh},100%,65%)`;ctx.shadowBlur=16;
+        ctx.beginPath();
+        ctx.moveTo(r*0.88,-sW/2);ctx.lineTo(r*0.88+sLen,0);ctx.lineTo(r*0.88,sW/2);
+        ctx.closePath();ctx.fill();
+        ctx.restore();
+      }
+
+      // ── 6 COUNTER-SPIN INNER SPIKES ──
+      for(let i=0;i<6;i++){
+        const a=-t*0.8+i*(Math.PI/3);
+        const sh=(h2+i*60)%360;
+        const sLen=r*(0.3+0.15*Math.sin(t*1.6+i));
+        ctx.save();ctx.translate(o.x,o.y);ctx.rotate(a);
+        ctx.fillStyle=`hsla(${sh},100%,80%,0.7)`;
+        ctx.shadowColor=`hsl(${sh},100%,65%)`;ctx.shadowBlur=12;
+        ctx.beginPath();
+        ctx.moveTo(r*0.55,-r*0.04);ctx.lineTo(r*0.55+sLen,0);ctx.lineTo(r*0.55,r*0.04);
+        ctx.closePath();ctx.fill();
+        ctx.restore();
+      }
+
+      // ── MAIN BODY ──
+      const bg=ctx.createRadialGradient(o.x,o.y,0,o.x,o.y,r);
+      bg.addColorStop(0,'#000005');
+      bg.addColorStop(0.3,`hsl(${hue},70%,6%)`);
+      bg.addColorStop(0.65,`hsl(${h2},80%,10%)`);
+      bg.addColorStop(0.9,`hsl(${h3},100%,18%)`);
+      ctx.beginPath();ctx.arc(o.x,o.y,r,0,Math.PI*2);
+      ctx.fillStyle=bg;
+      ctx.shadowColor=`hsl(${hue},100%,60%)`;
+      ctx.shadowBlur=50+25*Math.sin(t*1.8);
+      ctx.fill();
+
+      // ── 3 ORBITAL RINGS ──
+      [[hue,1.4,0.86],[h2,-1.1,0.65],[h3,0.9,0.44]].forEach(([gh,dir,rm],i)=>{
+        ctx.save();ctx.translate(o.x,o.y);ctx.rotate(t*dir);
+        ctx.strokeStyle=`hsla(${gh},100%,68%,${0.7+0.25*Math.sin(t*2+i)})`;
+        ctx.lineWidth=3.5;ctx.shadowColor=`hsl(${gh},100%,62%)`;ctx.shadowBlur=20;
+        ctx.setLineDash(i===1?[10,7]:[14,6]);
+        ctx.beginPath();ctx.arc(0,0,r*rm,0,Math.PI*2);ctx.stroke();
+        ctx.setLineDash([]);ctx.restore();
+      });
+
+      // ── 6 ORBITING DIAMONDS ──
+      for(let i=0;i<6;i++){
+        const dAng=t*1.5+i*(Math.PI/3);
+        const dR=r*(0.55+0.08*Math.sin(t*2.5+i*1.4));
+        const dx=o.x+Math.cos(dAng)*dR, dy=o.y+Math.sin(dAng)*dR;
+        const ds=r*(0.055+0.02*Math.sin(t*3+i));
+        const dh=(hue+i*60)%360;
+        ctx.save();ctx.translate(dx,dy);ctx.rotate(t*4+i);
+        ctx.fillStyle=`hsl(${dh},100%,82%)`;
+        ctx.shadowColor=`hsl(${dh},100%,68%)`;ctx.shadowBlur=16;
+        ctx.beginPath();
+        ctx.moveTo(0,-ds*2.2);ctx.lineTo(ds,0);ctx.lineTo(0,ds*2.2);ctx.lineTo(-ds,0);
+        ctx.closePath();ctx.fill();
+        ctx.restore();
+      }
+
+      // ── INNER RGB TRINITY ARCS ──
+      for(let i=0;i<3;i++){
+        const gh=[hue,h2,h3][i];
+        const a0=t*2.8+i*(Math.PI*2/3);
+        ctx.save();ctx.translate(o.x,o.y);
+        ctx.strokeStyle=`hsla(${gh},100%,80%,0.92)`;
+        ctx.lineWidth=4.5;ctx.shadowColor=`hsl(${gh},100%,65%)`;ctx.shadowBlur=24;
+        ctx.beginPath();ctx.arc(0,0,r*0.48,a0,a0+Math.PI*0.58);ctx.stroke();
+        ctx.restore();
+      }
+
+      // ── EXPANDING SHOCKWAVE RING ──
+      const swCyc=(t*1.0)%Math.PI;
+      const swR=r*(1.0+Math.sin(swCyc)*0.7);
+      const swA=Math.sin(swCyc)*0.5;
+      if(swA>0.02){
+        ctx.beginPath();ctx.arc(o.x,o.y,swR,0,Math.PI*2);
+        ctx.strokeStyle=`hsla(${hue},100%,72%,${swA})`;
+        ctx.lineWidth=5;ctx.shadowColor=`hsl(${h2},100%,70%)`;ctx.shadowBlur=22;
+        ctx.stroke();
+      }
+
+      // ── FULL-SPECTRUM FLASH ──
+      const fCyc=Math.max(0,Math.sin(t*0.7));
+      if(fCyc>0.90){
+        const fa=(fCyc-0.90)/0.1;
+        ctx.beginPath();ctx.arc(o.x,o.y,r,0,Math.PI*2);
+        ctx.fillStyle=`rgba(255,255,255,${fa*0.4})`;
+        ctx.shadowColor='#ffffff';ctx.shadowBlur=70*fa;ctx.fill();
+      }
+
+      // ── WHITE HOT CENTER ──
+      ctx.beginPath();ctx.arc(o.x,o.y,r*0.12,0,Math.PI*2);
+      ctx.fillStyle=`rgba(255,255,255,${0.75+0.25*Math.sin(t*4.5)})`;
+      ctx.shadowColor='#ffffff';ctx.shadowBlur=40;ctx.fill();
+
+      // ── RAINBOW HP BAR (only during battle) ──
+      if(this.battleRunning){
+        const barW=o.r*2.6, barH=8;
+        const bx=o.x-barW/2, by=o.y-r-22;
+        ctx.fillStyle='rgba(0,0,0,0.75)';
+        ctx.fillRect(bx-1,by-1,barW+2,barH+2);
+        const pct=Math.max(0,o.hp/o.maxHp);
+        if(pct>0){
+          const hpGrad=ctx.createLinearGradient(bx,by,bx+barW*pct,by);
+          hpGrad.addColorStop(0,`hsl(${hue},100%,60%)`);
+          hpGrad.addColorStop(0.33,`hsl(${h2},100%,60%)`);
+          hpGrad.addColorStop(1,`hsl(${h3},100%,70%)`);
+          ctx.fillStyle=hpGrad;
+          ctx.shadowColor=`hsl(${hue},100%,65%)`;ctx.shadowBlur=8;
+          ctx.fillRect(bx,by,barW*pct,barH);
+          ctx.shadowBlur=0;
+        }
+        ctx.strokeStyle=`hsla(${hue},100%,70%,0.5)`;ctx.lineWidth=1;
+        ctx.strokeRect(bx,by,barW,barH);
+        ctx.fillStyle='rgba(255,255,255,0.85)';
+        ctx.font=`bold 8px Orbitron,monospace`;
+        ctx.textAlign='center';ctx.textBaseline='bottom';ctx.shadowBlur=0;
+        const hpM=o.hp>=1e6?(o.hp/1e6).toFixed(1)+'M':o.hp>=1e3?(o.hp/1e3).toFixed(0)+'K':Math.round(o.hp)+'';
+        ctx.fillText(hpM,o.x,by-2);
+      }
+
+      // ── ORBITING SHIELD RING ──
+      if(o.shieldHp>0){
+        o.shieldAngle=(o.shieldAngle||0)+0.022;
+        const shieldR=r*1.28;
+        const shieldPct=o.shieldHp/o.shieldMaxHp;
+        const shieldHue=180+t*20%180; // cycles cyan→blue
+        // Outer glow
+        ctx.save();
+        ctx.strokeStyle=`hsla(${shieldHue},100%,70%,${0.25+0.15*Math.sin(t*2.5)})`;
+        ctx.lineWidth=14;ctx.shadowColor=`hsl(${shieldHue},100%,65%)`;ctx.shadowBlur=30;
+        ctx.beginPath();ctx.arc(o.x,o.y,shieldR,0,Math.PI*2);ctx.stroke();
+        // Main shield arc (shows remaining HP as arc fraction)
+        ctx.strokeStyle=`hsla(${shieldHue},100%,80%,0.9)`;
+        ctx.lineWidth=5;ctx.shadowBlur=18;
+        ctx.beginPath();
+        ctx.arc(o.x,o.y,shieldR,o.shieldAngle,o.shieldAngle+Math.PI*2*shieldPct);
+        ctx.stroke();
+        // Counter-arc (dim, shows missing HP)
+        ctx.strokeStyle=`hsla(${shieldHue},60%,40%,0.3)`;
+        ctx.lineWidth=3;ctx.shadowBlur=0;
+        ctx.beginPath();
+        ctx.arc(o.x,o.y,shieldR,o.shieldAngle+Math.PI*2*shieldPct,o.shieldAngle+Math.PI*2);
+        ctx.stroke();
+        // 8 orbiting shield nodes
+        for(let i=0;i<8;i++){
+          const na=o.shieldAngle+i*(Math.PI/4);
+          const nx=o.x+Math.cos(na)*shieldR, ny=o.y+Math.sin(na)*shieldR;
+          const nodeSz=4+2*Math.sin(t*3+i);
+          ctx.beginPath();ctx.arc(nx,ny,nodeSz,0,Math.PI*2);
+          ctx.fillStyle=`hsl(${(shieldHue+i*45)%360},100%,80%)`;
+          ctx.shadowColor=ctx.fillStyle;ctx.shadowBlur=14;ctx.fill();
+        }
+        ctx.restore();
+        // Shield HP bar (arc-style, just above the ring)
+        if(this.battleRunning){
+          const sbW=r*2.2, sbH=5;
+          const sbX=o.x-sbW/2, sbY=o.y-shieldR-16;
+          ctx.fillStyle='rgba(0,0,10,.7)';ctx.fillRect(sbX-1,sbY-1,sbW+2,sbH+2);
+          const shGrad=ctx.createLinearGradient(sbX,sbY,sbX+sbW*shieldPct,sbY);
+          shGrad.addColorStop(0,'#44ffff');shGrad.addColorStop(1,'#0088ff');
+          ctx.fillStyle=shGrad;ctx.shadowColor='#44ffff';ctx.shadowBlur=6;
+          ctx.fillRect(sbX,sbY,sbW*shieldPct,sbH);
+          ctx.shadowBlur=0;
+          ctx.strokeStyle='rgba(100,255,255,.2)';ctx.lineWidth=.5;ctx.strokeRect(sbX,sbY,sbW,sbH);
+          ctx.fillStyle='rgba(180,255,255,0.9)';
+          ctx.font='bold 7px Orbitron,monospace';
+          ctx.textAlign='center';ctx.textBaseline='bottom';
+          const shpM=o.shieldHp>=1e3?(o.shieldHp/1e3).toFixed(0)+'K':Math.round(o.shieldHp)+'';
+          ctx.fillText('🛡 '+shpM,o.x,sbY-1);
+        }
+      }
+
+      // ── LABEL ──
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.font=`bold ${Math.max(10,r*.17)}px Orbitron,monospace`;
+      ctx.fillStyle=`hsla(${hue},100%,92%,0.95)`;
+      ctx.shadowColor=`hsl(${hue},100%,70%)`;ctx.shadowBlur=16;
+      ctx.fillText('🌈',o.x,o.y-r*.20);
+      ctx.font=`bold ${Math.max(7,r*.10)}px Orbitron,monospace`;
+      ctx.fillStyle='rgba(255,255,255,0.75)';ctx.shadowBlur=8;
+      ctx.fillText('PRISMATIC',o.x,o.y+r*.28);
+      ctx.restore();
+      return;
+    }
+
     if(o.isInfinite){
       const ig=ctx.createRadialGradient(o.x,o.y,0,o.x,o.y,r);
       ig.addColorStop(0,'#110022');ig.addColorStop(.5,'#330055');ig.addColorStop(1,'#550077');
@@ -6981,41 +8011,108 @@ const OF={
       // Eye
       ctx.beginPath();ctx.arc(o.x,o.y,r*.12,0,Math.PI*2);
       ctx.fillStyle=`rgba(220,100,255,${0.7+0.3*Math.sin(o.pulseT*2)})`;ctx.shadowBlur=20;ctx.fill();
-    } else {
+
+      // ── ORBIT RING VISUAL ──
+      if(o.orbitPullActive){
+        const ringPulse=0.6+0.4*Math.sin(o.orbitPullT*0.15);
+        const ringR=o.r*2.3+Math.sin(o.orbitPullT*0.2)*12;
+        ctx.save();
+        // Outer glow ring
+        ctx.strokeStyle=`rgba(200,0,255,${ringPulse*0.5})`;
+        ctx.lineWidth=18;ctx.shadowColor='rgba(180,0,255,1)';ctx.shadowBlur=40;
+        ctx.beginPath();ctx.arc(o.x,o.y,ringR,0,Math.PI*2);ctx.stroke();
+        // Inner bright ring
+        ctx.strokeStyle=`rgba(255,150,255,${ringPulse*0.9})`;
+        ctx.lineWidth=4;ctx.shadowBlur=20;
+        ctx.beginPath();ctx.arc(o.x,o.y,ringR,0,Math.PI*2);ctx.stroke();
+        // Rotating dashes
+        ctx.save();ctx.translate(o.x,o.y);ctx.rotate(o.pulseT*2);
+        ctx.strokeStyle=`rgba(255,200,255,${ringPulse*0.6})`;
+        ctx.lineWidth=2;ctx.setLineDash([12,8]);
+        ctx.beginPath();ctx.arc(0,0,ringR*1.15,0,Math.PI*2);ctx.stroke();
+        ctx.setLineDash([]);ctx.restore();
+        ctx.restore();
+
+        // Draw connector lines to each captured orb
+        o.orbitCaptured.forEach(cap=>{
+          if(cap.orb.dead)return;
+          ctx.save();
+          ctx.strokeStyle=`rgba(200,0,255,${0.3+0.2*Math.sin(o.orbitPullT*0.2)})`;
+          ctx.lineWidth=1.5;ctx.setLineDash([4,6]);
+          ctx.beginPath();ctx.moveTo(o.x,o.y);ctx.lineTo(cap.orb.x,cap.orb.y);ctx.stroke();
+          ctx.setLineDash([]);
+          // Tint captured orb purple
+          ctx.globalAlpha=0.4;
+          ctx.beginPath();ctx.arc(cap.orb.x,cap.orb.y,cap.orb.r,0,Math.PI*2);
+          ctx.fillStyle='rgba(180,0,255,1)';ctx.fill();
+          ctx.restore();
+        });
+      }
+    } // end if(o.isInfinite)
+    else {
+      // ── NORMAL / BOSS / GOLD / etc. ──
       const og=ctx.createRadialGradient(o.x-r*.3,o.y-r*.3,0,o.x,o.y,r);
-      og.addColorStop(0,'rgba(255,255,255,.35)');og.addColorStop(.4,o.color);og.addColorStop(1,'rgba(0,0,0,.4)');
+      og.addColorStop(0,'rgba(255,255,255,.35)');
+      og.addColorStop(.4,o.color);
+      og.addColorStop(1,'rgba(0,0,0,.4)');
       ctx.beginPath();ctx.arc(o.x,o.y,r,0,Math.PI*2);
-      ctx.fillStyle=og;ctx.shadowColor=o.color;ctx.shadowBlur=o.isBoss?35:18;ctx.fill();
-      // Boss crack lines
+      ctx.fillStyle=og;
+      ctx.shadowColor=o.color;
+      ctx.shadowBlur=o.isBoss?40:o.isUltimate?60:18;
+      ctx.fill();
+
+      // Boss: crack lines radiating outward
       if(o.isBoss){
-        ctx.strokeStyle='rgba(255,255,255,.15)';ctx.lineWidth=1.2;
+        ctx.strokeStyle='rgba(255,255,255,.14)';ctx.lineWidth=1.2;
         for(let i=0;i<5;i++){
-          const a=(i/5)*Math.PI*2+o.pulseT*.15;
-          ctx.beginPath();ctx.moveTo(o.x,o.y);ctx.lineTo(o.x+Math.cos(a)*r*.8,o.y+Math.sin(a)*r*.8);ctx.stroke();
+          const a=(i/5)*Math.PI*2+o.pulseT*.12;
+          ctx.beginPath();ctx.moveTo(o.x,o.y);
+          ctx.lineTo(o.x+Math.cos(a)*r*.85,o.y+Math.sin(a)*r*.85);
+          ctx.stroke();
         }
       }
-    }
 
-    // HP bar
+      // Ultimate: extra outer glow ring
+      if(o.isUltimate){
+        ctx.strokeStyle=`rgba(200,150,255,${0.25+0.15*Math.sin(o.pulseT*2)})`;
+        ctx.lineWidth=3;ctx.shadowColor='#cc88ff';ctx.shadowBlur=20;
+        ctx.beginPath();ctx.arc(o.x,o.y,r*1.15,0,Math.PI*2);ctx.stroke();
+      }
+
+      // Label inside orb (pre-battle only)
+      if(!this.battleRunning){
+        ctx.fillStyle='rgba(255,255,255,.55)';
+        ctx.font=`bold ${Math.max(7,r*.28)}px Orbitron,monospace`;
+        ctx.textAlign='center';ctx.textBaseline='middle';ctx.shadowBlur=0;
+        ctx.fillText(o.label,o.x,o.y);
+      }
+    }
     if(this.battleRunning){
       const barW=o.r*2.2,barH=5;
-      const bx=o.x-barW/2,by=o.y-r-12;
-      ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(bx,by,barW,barH);
-      const pct=o.hp/o.maxHp;
+      const bx=o.x-barW/2,by=o.y-r-14;
+      ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(bx-1,by-1,barW+2,barH+2);
+      const pct=Math.max(0,o.hp/o.maxHp);
       const hpCol=pct>0.5?'#44ff88':pct>0.25?'#ffcc44':'#ff3322';
-      ctx.fillStyle=hpCol;ctx.fillRect(bx,by,barW*pct,barH);
-      ctx.strokeStyle='rgba(255,255,255,.1)';ctx.lineWidth=.5;ctx.strokeRect(bx,by,barW,barH);
+      ctx.fillStyle=hpCol;ctx.shadowColor=hpCol;ctx.shadowBlur=4;
+      ctx.fillRect(bx,by,barW*pct,barH);
+      ctx.shadowBlur=0;
+      ctx.strokeStyle='rgba(255,255,255,.12)';ctx.lineWidth=.5;ctx.strokeRect(bx,by,barW,barH);
+      // HP number above bar
+      const hpDisplay=o.hp>=1e6?(o.hp/1e6).toFixed(1)+'M':
+                      o.hp>=1e3?(o.hp/1e3).toFixed(0)+'K':
+                      Math.round(o.hp)+'';
+      ctx.fillStyle='rgba(255,255,255,0.82)';
+      ctx.font=`bold ${Math.max(6,Math.min(9,o.r*.28))}px Orbitron,monospace`;
+      ctx.textAlign='center';ctx.textBaseline='bottom';ctx.shadowBlur=0;
+      ctx.fillText(hpDisplay,o.x,by-1);
     }
 
-    // Team dot + label
+    // Team dot
+    // Team dot — size relative to orb
     const teamColor=o.team==='red'?'#ff5544':'#5588ff';
-    ctx.beginPath();ctx.arc(o.x,o.y-r-18,4,0,Math.PI*2);
+    const dotR=Math.max(2, Math.min(4, o.r*0.12));
+    ctx.beginPath();ctx.arc(o.x,o.y-r-32,dotR,0,Math.PI*2);
     ctx.fillStyle=teamColor;ctx.shadowColor=teamColor;ctx.shadowBlur=8;ctx.fill();
-    if(!this.battleRunning){
-      ctx.fillStyle='rgba(255,255,255,.5)';ctx.font=`bold ${Math.max(7,r*.22)}px Orbitron,monospace`;
-      ctx.textAlign='center';ctx.textBaseline='middle';ctx.shadowBlur=0;
-      ctx.fillText(o.label,o.x,o.y);
-    }
     ctx.restore();
   },
 
@@ -7075,9 +8172,10 @@ const MS={
     this.cannonCharging=false; this.cannonChargeT=0; this.spawnTimer=0;
     this.pulseT=0; this._cannonBeamLife=0;
 
-    // Mothership dimensions
-    this.w=OF.W*0.42;
-    this.h=OF.H*0.78;
+    // Mothership dimensions — scale down in zoom mode
+    const mzf=OF.zoomedOut?1/3:1;
+    this.w=OF.W*0.42*mzf;
+    this.h=OF.H*0.78*mzf;
     // Start offscreen left — will slide in through portal
     this.x=-this.w*1.1;
     this.y=(OF.H-this.h)/2;
@@ -7234,7 +8332,12 @@ const MS={
         ?'linear-gradient(90deg,#880000,#cc2200,#ff4400)'
         :'linear-gradient(90deg,#440000,#880000,#cc0000)';
     }
-    if(val) val.textContent=Math.ceil(pct*100)+'%';
+    if(val){
+      const hp=Math.ceil(this.hp);
+      const hpStr=hp>=1e6?(hp/1e6).toFixed(2)+'M':hp>=1e3?(hp/1e3).toFixed(1)+'K':hp.toLocaleString();
+      const maxStr=this.maxHp>=1e6?(this.maxHp/1e6).toFixed(0)+'M':this.maxHp>=1e3?(this.maxHp/1e3).toFixed(0)+'K':this.maxHp.toLocaleString();
+      val.textContent=`${hpStr} / ${maxStr}  (${Math.ceil(pct*100)}%)`;
+    }
   },
 
   // Called from OF.update() each frame
@@ -7302,10 +8405,15 @@ const MS={
         if(p.life<=0) return false;
         // Hit mothership body?
         if(p.x>this.x&&p.x<this.x+this.w&&p.y>this.y&&p.y<this.y+this.h){
-          this.hp=Math.max(0, this.hp-p.dmg*3);
+          const actualDmg=p.dmg*3;
+          this.hp=Math.max(0, this.hp-actualDmg);
           this._updateBar();
           SFX.mothershipHit();
           spawnSparks(p.x, p.y, '#ff6633', 4);
+          // Damage number on mothership
+          OF._dmgNums=OF._dmgNums||[];
+          const dmgLabel=actualDmg>=1000?(actualDmg/1000).toFixed(1)+'K':Math.round(actualDmg)+'';
+          OF._dmgNums.push({x:p.x+(-15+Math.random()*30),y:p.y-8,label:dmgLabel,life:1,vy:-(1+Math.random()*0.7),col:'#ff8844'});
           if(this.hp<=0){ this._destroy(); return false; }
           return false;
         }
@@ -7340,7 +8448,6 @@ const MS={
 
     // Infinite orbs also attack mothership directly
     OF.orbs.filter(o=>o.team==='blue'&&o.isInfinite).forEach(o=>{
-      o.pulseT+=0.05;
       o.attackTimer++;
       if(o.attackTimer>=45){
         o.attackTimer=0;
@@ -7372,6 +8479,8 @@ const MS={
   },
 
   _spawnMinion(){
+    const zoom=OF.zoomedOut;
+    const zf=zoom?1/3:1;
     // Launch from mothership right edge
     const types=[
       {r:14,hp:50, dmg:8, spd:2.2,color:'#ff3300',glow:'rgba(255,80,0,',  ability:'basic'},
@@ -7380,8 +8489,9 @@ const MS={
     ];
     const t=types[Math.floor(Math.random()*types.length)];
     const ey=this.y+Math.random()*this.h;
+    const orbR=Math.max(4,Math.round(t.r*zf));
     OF.orbs.push({
-      ...t, team:'red',type:'ms_minion',label:'Minion',
+      ...t, r:orbR, team:'red',type:'ms_minion',label:'Minion',
       x:this.x+this.w+10, y:ey,
       maxHp:t.hp, vx:0,vy:0,
       id:Date.now()+Math.random(),
@@ -7410,6 +8520,31 @@ const MS={
     setTimeout(()=>{ if(MS.active) document.getElementById('of-status-text').textContent='👾 DESTROY THE MOTHERSHIP!'; },2000);
   },
 
+  _dmgOrb(o, dmg){
+    // Shield absorbs damage first for Prismatic orbs
+    if(o.isPrismatic&&o.shieldHp>0){
+      const absorbed=Math.min(o.shieldHp,dmg);
+      o.shieldHp=Math.max(0,o.shieldHp-absorbed);
+      spawnSparks(o.x,o.y,'#44ffff',3);
+      if(o.shieldHp<=0){
+        flashScreen('rgba(100,255,255,.5)',60);shake('md');
+        spawnParticles(o.x,o.y,'#44ffff',50,10);
+        spawnShockwave(o.x,o.y,'rgba(100,255,255,',o.r*2.5,8);
+        SFX.bossExplode();
+        document.getElementById('of-status-text').textContent='🌈 PRISMATIC SHIELD BROKEN!';
+        setTimeout(()=>{if(MS.active)document.getElementById('of-status-text').textContent='👾 DESTROY THE MOTHERSHIP!';},2000);
+      }
+      dmg-=absorbed;
+      if(dmg<=0) return;
+    }
+    o.hp=Math.max(0,o.hp-dmg);
+    if(o.hp<=0){
+      o.dead=true;
+      if(o.isBoss||o.isInfinite||o.isPrismatic) spawnParticles(o.x,o.y,'#ff8800',40,10);
+      else spawnParticles(o.x,o.y,'#ff8800',20,6);
+    }
+  },
+
   _missileExplode(x,y){
     shake('sm');
     SFX.missileExplode();
@@ -7417,13 +8552,12 @@ const MS={
     spawnParticles(x,y,'#ff6600',30,8);
     spawnParticles(x,y,'#ffcc44',15,6);
     spawnShockwave(x,y,'rgba(255,100,0,',120,6);
-    // Damage blue orbs in blast radius
+    // Damage blue orbs in blast radius — shield-aware
     OF.orbs.filter(o=>o.team==='blue'&&!o.dead).forEach(o=>{
       const d=Math.hypot(o.x-x, o.y-y);
       if(d<110+o.r){
         const dmg=(1-d/130)*80;
-        o.hp=Math.max(0, o.hp-dmg);
-        if(o.hp<=0){o.dead=true;spawnParticles(o.x,o.y,'#ff8800',20,6);}
+        this._dmgOrb(o,dmg);
       }
     });
     OF.orbs=OF.orbs.filter(o=>!o.dead);
@@ -7449,13 +8583,12 @@ const MS={
     flashScreen('rgba(255,220,0,.7)',80);
     setTimeout(()=>flashScreen('rgba(255,100,0,.4)',60),100);
     document.getElementById('of-status-text').textContent='⚡ ENERGY CANNON FIRED!';
-    // Damage all blue orbs in horizontal band
+    // Damage all blue orbs in horizontal band — shield-aware
     const bandH=80;
     OF.orbs.filter(o=>o.team==='blue'&&!o.dead).forEach(o=>{
       if(Math.abs(o.y-sy)<bandH+o.r){
-        o.hp=Math.max(0, o.hp-o.maxHp*.35);
+        this._dmgOrb(o, o.maxHp*.35);
         spawnSparks(o.x,o.y,'#ffcc00',6);
-        if(o.hp<=0){o.dead=true;spawnParticles(o.x,o.y,'#ffcc00',25,8);}
       }
     });
     OF.orbs=OF.orbs.filter(o=>!o.dead);
@@ -7688,11 +8821,144 @@ MS._fireEnergyBlast=function(){
 };
 
 function ofStartMothership(){
+  if(TB.active){ toast('Remove the Test Boss first!','#ffaa44'); return; }
   MS.setup();
   ofCheckLaserBtn();
 }
 
 function ofClearAll(){ OF.clearAll(); ofCheckLaserBtn(); }
+function ofRandomize(modeStr='simple'){
+  // Stop any running battle first
+  OF.battleRunning=false;
+  OF.clearAll();
+  ofCheckLaserBtn();
+
+  // Pool per mode
+  const SIMPLE_POOL=['basic_red','basic_blue','basic_green','gold','diamond','singularity','plasma','quantum'];
+  const BIG_POOL=[...SIMPLE_POOL,'boss_tyrant','boss_giant','boss_rainbow'];
+  const MASSIVE_POOL=[...BIG_POOL,'boss_void','boss_ultimate'];
+
+  const pool=modeStr==='massive'?MASSIVE_POOL:modeStr==='big'?BIG_POOL:SIMPLE_POOL;
+
+  // Budget ranges
+  const budgets={
+    simple:[3000,6000,10000],
+    big:   [15000,30000,60000],
+    massive:[120000,250000,500000,800000],
+  };
+  const opts=budgets[modeStr]||budgets.simple;
+  const budget=opts[Math.floor(Math.random()*opts.length)];
+
+  function power(key){
+    const t=OF.TYPES[key];
+    return t.hp*t.dmg*(t.spd||0.5);
+  }
+
+  function buildArmy(budget){
+    const army=[];let spent=0;let attempts=0;
+    while(spent<budget*0.80&&attempts<600){
+      attempts++;
+      const key=pool[Math.floor(Math.random()*pool.length)];
+      const p=power(key);
+      if(spent+p<=budget*1.20){army.push(key);spent+=p;}
+    }
+    if(army.length===0){army.push(pool[Math.floor(Math.random()*pool.length)]);spent=power(army[0]);}
+    return{army,spent};
+  }
+
+  const red=buildArmy(budget);
+  const blue=buildArmy(red.spent);
+
+  // For massive mode: if army hits 55+ orbs, other team gets just 1 Infinity instead
+  const zoom=OF.zoomedOut;
+  const infR=Math.min(OF.W,OF.H)*(zoom?.075:.16);
+
+  if(modeStr==='massive'&&red.army.length>=55){
+    const infTeam=Math.random()<0.5?'red':'blue';
+    const armyTeam=infTeam==='red'?'blue':'red';
+
+    const ix=infTeam==='red'?OF.W*0.25:OF.W*0.75;
+    const iy=OF.H*0.48;
+    OF.orbs.push(OF._makeOrb('infinite',ix,iy,infTeam,infR));
+
+    placeArmy(red.army,armyTeam);
+    OF.updateHUD();
+    ofCheckLaserBtn();
+
+    const sb=document.getElementById('of-start-btn');
+    sb.style.display='';sb.textContent='▶ START BATTLE';
+    const infLabel=infTeam==='red'?'🔴':'🔵';
+    const armyLabel=infTeam==='red'?'🔵':'🔴';
+    document.getElementById('of-status-text').textContent=
+      `🎲 MASSIVE — ${infLabel} ∞ vs ${armyLabel} ${red.army.length} orbs — PRESS START!`;
+    toast(`🎲 MASSIVE ⚔⚔⚔  ${infLabel}∞ INFINITY vs ${armyLabel}${red.army.length} orbs`,'#44ffaa');
+    return;
+  }
+
+  function placeArmy(army,team){
+    const cols=Math.max(1,Math.ceil(Math.sqrt(army.length)));
+    const rows=Math.ceil(army.length/cols);
+    const cellW=(OF.W*0.44)/cols;
+    const cellH=(OF.H*0.72)/rows;
+    army.forEach((key,i)=>{
+      const def=OF.TYPES[key];
+      const orbR=zoom?Math.max(4,Math.round(def.r/3)):def.r;
+      const col=i%cols,row=Math.floor(i/cols);
+      const bx=team==='red'?(OF.W*0.03+col*cellW+cellW/2):(OF.W*0.53+col*cellW+cellW/2);
+      const by=OF.H*0.14+row*cellH+cellH/2;
+      const sx=Math.max(orbR+4,Math.min(team==='red'?OF.W/2-orbR-4:OF.W-orbR-4,bx));
+      const sy=Math.max(orbR+50,Math.min(OF.H-orbR-50,by));
+      OF.orbs.push(OF._makeOrb(key,sx,sy,team,orbR));
+    });
+  }
+
+  placeArmy(red.army,'red');
+  placeArmy(blue.army,'blue');
+  OF.updateHUD();
+  ofCheckLaserBtn();
+
+  const infAdded=OF.orbs.filter(o=>o.isInfinite).length/2;
+  const infNote=infAdded>0?` + ${infAdded}×∞ per side`:'';
+
+  // Pause — show Start Battle button
+  const sb=document.getElementById('of-start-btn');
+  sb.style.display='';sb.textContent='▶ START BATTLE';
+  document.getElementById('of-status-text').textContent=
+    `🎲 ${modeStr.toUpperCase()} — 🔴 ${red.army.length} vs 🔵 ${blue.army.length}${infNote} — PRESS START!`;
+
+  const diff=Math.abs(red.spent-blue.spent);
+  const pct=Math.round(diff/Math.max(red.spent,blue.spent)*100);
+  const label={simple:'SIMPLE ⚔',big:'BIG ⚔⚔',massive:'MASSIVE ⚔⚔⚔'}[modeStr];
+  toast(`🎲 ${label}  🔴${red.army.length} vs 🔵${blue.army.length}  (${pct}% diff)`,'#44ffaa');
+}
+function ofRandomizePrompt(){
+  const picker=document.getElementById('of-random-picker');
+  picker.style.display=picker.style.display==='none'?'flex':'none';
+}
+function ofPickRandomize(mode){
+  document.getElementById('of-random-picker').style.display='none';
+  ofRandomize(mode);
+}
+function ofSetTeam(team){
+  OF._selectedTeam=team;
+  document.getElementById('of-team-red').classList.toggle('active',team==='red');
+  document.getElementById('of-team-blue').classList.toggle('active',team==='blue');
+}
+function ofToggleZoom(){
+  OF.zoomedOut=!OF.zoomedOut;
+  const btn=document.getElementById('of-zoom-btn');
+  if(OF.zoomedOut){
+    btn.classList.add('active');
+    btn.textContent='🔭 ZOOMED OUT';
+    toast('🔭 Zoom Out ON — orbs 3× smaller, 15 Infinities, 3 Prismatics max','#66ccff');
+  } else {
+    btn.classList.remove('active');
+    btn.textContent='🔭 ZOOM OUT';
+    toast('🔭 Zoom Out OFF','#888');
+  }
+  // Clear existing orbs since their sizes would be wrong
+  OF.clearAll();
+}
 function ofReset(){ OF.reset(); ofCheckLaserBtn(); }
 
 // Show/hide laser button based on whether an Infinite orb exists
@@ -7700,78 +8966,104 @@ function ofCheckLaserBtn(){
   const btn=document.getElementById('of-laser-btn');
   if(!btn)return;
   const hasInfinite=OF.orbs.some(o=>o.isInfinite);
-  btn.style.display=hasInfinite?'block':'none';
+  const hasPrismatic=OF.orbs.some(o=>o.isPrismatic);
+  const hasEither=hasInfinite||hasPrismatic;
+  btn.style.display=hasEither?'block':'none';
+  if(!hasEither)return;
+  if(hasInfinite&&hasPrismatic) btn.textContent='⚡ ACTIVATE LASER';
+  else if(hasPrismatic) btn.textContent='🌈 ACTIVATE SPECTRUM LASER';
+  else btn.textContent='∞ ACTIVATE INFINITY LASER';
 }
 
 // Fire the annihilation laser from the Infinite orb's position on the OF canvas
 function ofActivateLaser(){
   const btn=document.getElementById('of-laser-btn');
-  const infOrb=OF.orbs.find(o=>o.isInfinite);
-  if(!infOrb)return;
-  // Disable button while firing
-  if(btn){ btn.disabled=true; btn.textContent='∞ FIRING...'; }
+  const infOrbs=OF.orbs.filter(o=>o.isInfinite||o.isPrismatic);
+  if(infOrbs.length===0)return;
 
-  // ── Charge phase on OF canvas ──
-  const cvs=OF.canvas;const ctx=OF.ctx;
-  const cx=infOrb.x,cy=infOrb.y;
-  let chargeT=0;
+  // Disable button while firing
+  if(btn){ btn.disabled=true; btn.textContent=`⚡ ${infOrbs.length > 1 ? infOrbs.length+'× ' : ''}FIRING...`; }
+
+  const lcvs=document.getElementById('orbfight-laser-canvas');
+  lcvs.width=OF.W; lcvs.height=OF.H;
+  const lctx=lcvs.getContext('2d');
+
+  // Each Infinite gets its own charge interval and spin angle
+  const orbStates=infOrbs.map((o,i)=>({
+    orb:o,
+    spinAngle:Math.random()*Math.PI*2,
+    // Stagger starting angles so beams spread out
+    spinOffset:(i/infOrbs.length)*Math.PI*2,
+    // Each orb gets a slightly different spin speed
+    spinSpeed:Math.PI*(1.0+i*0.2),
+    chargeT:0,
+  }));
+
+  // ── CHARGE PHASE (2s) ── all orbs charge simultaneously
   SFX.laserCharge();
+  if(infOrbs.length>1) setTimeout(()=>SFX.laserCharge(),300);
+  document.getElementById('of-status-text').textContent=
+    infOrbs.length>1?`⚠ ${infOrbs.length} INFINITY SURGES DETECTED!`:'⚠ INFINITE ENERGY SURGE DETECTED';
+
   const chargeInterval=setInterval(()=>{
     if(!OF.active){clearInterval(chargeInterval);return;}
-    chargeT+=0.2;
-    infOrb.pulseT+=0.3; // spin faster
-    // Brighten orb via extra glow circle
-    ctx.save();
-    const gr=ctx.createRadialGradient(cx,cy,0,cx,cy,infOrb.r*2.5);
-    gr.addColorStop(0,`rgba(255,255,255,${Math.min(0.5,chargeT*.06)})`);
-    gr.addColorStop(1,'rgba(255,255,255,0)');
-    ctx.beginPath();ctx.arc(cx,cy,infOrb.r*2.5,0,Math.PI*2);
-    ctx.fillStyle=gr;ctx.fill();
-    ctx.restore();
-    // Sparks building up
-    if(Math.random()<.5){
-      spawnSparks(cx+(-infOrb.r+Math.random()*infOrb.r*2),cy+(-infOrb.r+Math.random()*infOrb.r*2),'#ffffff',2);
-      spawnSparks(cx+(-infOrb.r+Math.random()*infOrb.r*2),cy+(-infOrb.r+Math.random()*infOrb.r*2),'#cc88ff',1);
-    }
+    orbStates.forEach(s=>{
+      s.chargeT+=0.2;
+      s.orb.pulseT+=0.3;
+      const ctx=OF.ctx;
+      ctx.save();
+      const gr=ctx.createRadialGradient(s.orb.x,s.orb.y,0,s.orb.x,s.orb.y,s.orb.r*2.5);
+      gr.addColorStop(0,`rgba(255,255,255,${Math.min(0.5,s.chargeT*.06)})`);
+      gr.addColorStop(1,'rgba(255,255,255,0)');
+      ctx.beginPath();ctx.arc(s.orb.x,s.orb.y,s.orb.r*2.5,0,Math.PI*2);
+      ctx.fillStyle=gr;ctx.fill();
+      ctx.restore();
+      if(Math.random()<.5){
+        spawnSparks(s.orb.x+(-s.orb.r+Math.random()*s.orb.r*2),s.orb.y+(-s.orb.r+Math.random()*s.orb.r*2),'#ffffff',2);
+        spawnSparks(s.orb.x+(-s.orb.r+Math.random()*s.orb.r*2),s.orb.y+(-s.orb.r+Math.random()*s.orb.r*2),'#cc88ff',1);
+      }
+    });
   },50);
 
-  // Status
-  document.getElementById('of-status-text').textContent='⚠ INFINITE ENERGY SURGE DETECTED';
-
-  // After 2s — fire
+  // ── FIRE (after 2s) ──
   setTimeout(()=>{
     clearInterval(chargeInterval);
     if(!OF.active)return;
 
-    // Set up dedicated laser canvas
-    const lcvs=document.getElementById('orbfight-laser-canvas');
-    lcvs.width=OF.W; lcvs.height=OF.H;
-    const lctx=lcvs.getContext('2d');
+    // Each beam gets a slightly different color so they're visually distinct
+    const beamColors=[
+      {outer:'80,0,200',mid:'180,80,255',core:'230,180,255'},
+      {outer:'0,80,200',mid:'80,180,255',core:'180,230,255'},
+      {outer:'200,0,80', mid:'255,80,180',core:'255,180,230'},
+      {outer:'0,200,80', mid:'80,255,180',core:'180,255,230'},
+      {outer:'200,80,0', mid:'255,180,80',core:'255,230,180'},
+      {outer:'80,0,200',mid:'180,80,255',core:'230,180,255'},
+      {outer:'100,200,0',mid:'180,255,80',core:'230,255,180'},
+    ];
 
     const reach=Math.max(OF.W,OF.H)*1.5;
     const BEAM_MS=3000;
     const startT=Date.now();
-    let spinAngle=Math.random()*Math.PI*2;  // starting angle, will spin
-    const SPIN_SPEED=Math.PI*1.2; // radians per second — ~1 full revolution in 1.7s
 
-    // Opening blast
+    // Opening cascade — one flash per orb, staggered
     SFX.laserFire();
+    if(infOrbs.length>1) setTimeout(()=>SFX.laserFire(),200);
     shake('lg');
     flashScreen('rgba(255,255,255,.98)',80);
     setTimeout(()=>{ shake('lg'); flashScreen('rgba(200,100,255,.75)',60); },100);
     setTimeout(()=>{ shake('lg'); flashScreen('rgba(255,255,255,.85)',50); },240);
-    setTimeout(()=>{ shake('lg'); flashScreen('rgba(255,180,255,.6)',40); },420);
+    if(infOrbs.length>1){
+      setTimeout(()=>{ shake('lg'); flashScreen('rgba(100,200,255,.7)',50); },360);
+      setTimeout(()=>{ shake('lg'); flashScreen('rgba(255,255,255,.9)',50); },500);
+    }
 
-    // Continuous shakes and flashes every 180ms
     const shakeInterval=setInterval(()=>{
       if(!OF.active){ clearInterval(shakeInterval); return; }
       shake(Math.random()<.45?'lg':'md');
       if(Math.random()<.6) flashScreen(
         Math.random()<.5
-          ? `rgba(255,255,255,.${Math.floor(25+Math.random()*45)})`
-          : `rgba(${160+Math.floor(Math.random()*95)},${Math.floor(Math.random()*80)},255,.${Math.floor(30+Math.random()*50)})`,
-        35
-      );
+          ?`rgba(255,255,255,.${Math.floor(25+Math.random()*45)})`
+          :`rgba(${160+Math.floor(Math.random()*95)},${Math.floor(Math.random()*80)},255,.${Math.floor(30+Math.random()*50)})`,35);
     },180);
 
     let lastT=Date.now();
@@ -7783,120 +9075,493 @@ function ofActivateLaser(){
       const prog=elapsed/BEAM_MS;
 
       if(prog>=1){
-        clearInterval(beamLoop);
-        clearInterval(shakeInterval);
+        clearInterval(beamLoop); clearInterval(shakeInterval);
         lctx.clearRect(0,0,lcvs.width,lcvs.height);
-        // Final explosion
         flashScreen('rgba(255,255,255,1)',120);
         setTimeout(()=>flashScreen('rgba(180,60,255,.7)',80),110);
         setTimeout(()=>flashScreen('rgba(255,255,255,.5)',60),250);
-        shake('lg');setTimeout(()=>shake('md'),200);
-        if(btn){ btn.disabled=false; btn.textContent='∞ ACTIVATE INFINITY LASER'; }
+        shake('lg'); setTimeout(()=>shake('md'),200);
+        if(btn){ btn.disabled=false; ofCheckLaserBtn(); }
         document.getElementById('of-status-text').textContent=OF.battleRunning?'BATTLE IN PROGRESS':'PLACE ORBS — THEN START BATTLE';
-        // Residual particle sweep along last beam angle
-        const fc=Math.cos(spinAngle),fs=Math.sin(spinAngle);
-        for(let i=0;i<40;i++) setTimeout(()=>{
-          const t=(-1+Math.random()*2)*reach;
-          spawnParticles(cx+fc*t,cy+fs*t,'#cc88ff',12,5);
-          spawnSparks(cx+fc*t,cy+fs*t,'#ffffff',5);
-        },i*30);
+        // Residual particles from each orb
+        orbStates.forEach(s=>{
+          const fc=Math.cos(s.spinAngle),fs=Math.sin(s.spinAngle);
+          for(let i=0;i<20;i++) setTimeout(()=>{
+            const t=(-1+Math.random()*2)*reach;
+            spawnParticles(s.orb.x+fc*t,s.orb.y+fs*t,'#cc88ff',8,4);
+            spawnSparks(s.orb.x+fc*t,s.orb.y+fs*t,'#ffffff',3);
+          },i*30);
+        });
         return;
       }
 
-      // Advance spin angle
-      spinAngle+=SPIN_SPEED*dt;
-      const cos=Math.cos(spinAngle), sin=Math.sin(spinAngle);
+      // Advance each spin angle independently
+      orbStates.forEach(s=>{ s.spinAngle+=s.spinSpeed*dt; });
 
-      // Alpha: full brightness until last 0.5s
       const alpha=prog<0.83?1:1-(prog-0.83)/0.17;
-      // Beam width pulses with a sine wave for drama
       const beamW=90+Math.sin(elapsed*0.012)*20;
 
-      // ── Draw beam on laser canvas ──
+      // Clear and draw ALL beams
       lctx.clearRect(0,0,lcvs.width,lcvs.height);
-      lctx.save();
-      lctx.translate(cx,cy);
-      lctx.rotate(spinAngle);
+      orbStates.forEach((s,idx)=>{
+        const col=beamColors[idx%beamColors.length];
+        const cx=s.orb.x, cy=s.orb.y;
+        const cos=Math.cos(s.spinAngle), sin=Math.sin(s.spinAngle);
 
-      // Layer 1: widest outer bloom (very transparent purple)
-      lctx.globalAlpha=alpha*0.30;
-      lctx.fillStyle='rgba(80,0,200,1)';
-      lctx.shadowColor='rgba(160,80,255,1)'; lctx.shadowBlur=80;
-      lctx.fillRect(-reach, -beamW*1.8, reach*2, beamW*3.6);
+        lctx.save();
+        lctx.translate(cx,cy);
+        lctx.rotate(s.spinAngle);
 
-      // Layer 2: mid energy (purple)
-      lctx.globalAlpha=alpha*0.65;
-      lctx.fillStyle='rgba(180,80,255,1)';
-      lctx.shadowColor='rgba(200,120,255,1)'; lctx.shadowBlur=50;
-      lctx.fillRect(-reach, -beamW*0.8, reach*2, beamW*1.6);
+        // Outer bloom
+        lctx.globalAlpha=alpha*0.28;
+        lctx.fillStyle=`rgba(${col.outer},1)`;
+        lctx.shadowColor=`rgba(${col.outer},1)`; lctx.shadowBlur=80;
+        lctx.fillRect(-reach,-beamW*1.8,reach*2,beamW*3.6);
+        // Mid
+        lctx.globalAlpha=alpha*0.62;
+        lctx.fillStyle=`rgba(${col.mid},1)`;
+        lctx.shadowColor=`rgba(${col.mid},1)`; lctx.shadowBlur=50;
+        lctx.fillRect(-reach,-beamW*0.8,reach*2,beamW*1.6);
+        // Core
+        lctx.globalAlpha=alpha*0.88;
+        lctx.fillStyle=`rgba(${col.core},1)`;
+        lctx.shadowColor='rgba(255,255,255,1)'; lctx.shadowBlur=35;
+        lctx.fillRect(-reach,-beamW*0.35,reach*2,beamW*0.7);
+        // Spine
+        lctx.globalAlpha=alpha*(0.85+Math.random()*0.15);
+        lctx.fillStyle='rgba(255,255,255,1)';
+        lctx.shadowColor='rgba(255,255,255,1)'; lctx.shadowBlur=20;
+        lctx.fillRect(-reach,-beamW*0.12,reach*2,beamW*0.24);
+        lctx.restore();
 
-      // Layer 3: bright inner core (white-violet)
-      lctx.globalAlpha=alpha*0.90;
-      lctx.fillStyle='rgba(230,180,255,1)';
-      lctx.shadowColor='rgba(255,255,255,1)'; lctx.shadowBlur=35;
-      lctx.fillRect(-reach, -beamW*0.35, reach*2, beamW*0.7);
+        // Incinerate enemies hit by this beam — bounce off prismatic
+        OF.orbs.forEach(o=>{
+          if(o.isInfinite||o.team===s.orb.team)return;
+          const dx=o.x-cx,dy=o.y-cy;
+          const localY=Math.abs(-dx*sin+dy*cos);
 
-      // Layer 4: white-hot center spine
-      lctx.globalAlpha=alpha*(0.85+Math.random()*0.15); // flickers
-      lctx.fillStyle='rgba(255,255,255,1)';
-      lctx.shadowColor='rgba(255,255,255,1)'; lctx.shadowBlur=20;
-      lctx.fillRect(-reach, -beamW*0.12, reach*2, beamW*0.24);
+          // Prismatic: bounce the beam off it
+          if(o.isPrismatic&&localY<beamW*1.2+o.r){
+            // Damage shield if alive, else HP
+            const dmgAmt=o.shieldHp>0?o.maxHp*0.004:o.maxHp*0.002;
+            if(o.shieldHp>0){
+              o.shieldHp=Math.max(0,o.shieldHp-dmgAmt*50);
+              spawnSparks(o.x+(-o.r+Math.random()*o.r*2),o.y+(-o.r+Math.random()*o.r*2),'#44ffff',3);
+            } else {
+              o.hp=Math.max(0,o.hp-dmgAmt*50);
+              spawnSparks(o.x,o.y,`hsl(${(s.orb.hueShift||0)},100%,70%)`,3);
+              if(o.hp<=0){o.dead=true;spawnParticles(o.x,o.y,'#ffffff',60,12);spawnShockwave(o.x,o.y,'rgba(255,255,255,',200,10);SFX.bossExplode();}
+            }
+            // Draw bounce beam — reflect angle off prismatic surface normal
+            const toOrb=Math.atan2(o.y-cy,o.x-cx);
+            const bounceAngle=2*toOrb-s.spinAngle+Math.PI+(-0.3+Math.random()*0.6);
+            const bCos=Math.cos(bounceAngle),bSin=Math.sin(bounceAngle);
+            lctx.save();
+            lctx.translate(o.x,o.y);lctx.rotate(bounceAngle);
+            lctx.globalAlpha=alpha*0.5;
+            // Rainbow bounce colors shift through prismatic hues
+            const bHue=(o.hueShift||0);
+            lctx.fillStyle=`hsl(${bHue},100%,70%)`;
+            lctx.shadowColor=`hsl(${(bHue+120)%360},100%,60%)`;lctx.shadowBlur=40;
+            lctx.fillRect(0,-beamW*0.6,reach,beamW*1.2);
+            lctx.globalAlpha=alpha*0.8;
+            lctx.fillStyle=`hsl(${(bHue+240)%360},100%,85%)`;lctx.shadowBlur=20;
+            lctx.fillRect(0,-beamW*0.2,reach,beamW*0.4);
+            lctx.restore();
+            // Bounce beam damages enemies in reflected direction
+            OF.orbs.forEach(e2=>{
+              if(e2===o||e2.team===s.orb.team||e2.dead)return;
+              const ex=e2.x-o.x,ey=e2.y-o.y;
+              const bLocalY=Math.abs(-ex*bSin+ey*bCos);
+              const bLocalX=-ex*bCos-ey*bSin;
+              if(bLocalY<beamW+e2.r&&bLocalX<0&&bLocalX>-reach){
+                e2.hp=Math.max(0,e2.hp-e2.maxHp*.04);
+                if(Math.random()<.4) spawnSparks(e2.x,e2.y,`hsl(${bHue},100%,70%)`,3);
+                if(e2.hp<=0){e2.dead=true;spawnParticles(e2.x,e2.y,`hsl(${bHue},100%,70%)`,30,8);SFX.orbExplode();}
+              }
+            });
+            return; // beam doesn't continue past prismatic
+          }
 
-      lctx.restore();
+          if(localY<beamW*1.2+o.r){
+            o.hp=Math.max(0,o.hp-o.maxHp*.08);
+            if(Math.random()<.5) spawnSparks(o.x+(-25+Math.random()*50),o.y+(-25+Math.random()*50),'#ffffff',4);
+            if(Math.random()<.35) spawnSparks(o.x,o.y,'#ee88ff',3);
+            if(o.hp<=0){
+              o.dead=true;
+              spawnParticles(o.x,o.y,'#ffffff',40,10);
+              spawnParticles(o.x,o.y,'#cc88ff',25,8);
+              spawnShockwave(o.x,o.y,'rgba(200,120,255,',120,6);
+              flashScreen('rgba(255,255,255,.4)',50);shake('sm');
+            }
+          }
+        });
 
-      // ── Incinerate everything the beam sweeps through ──
-      OF.orbs.forEach(o=>{
-        if(o.isInfinite||o.team===infOrb.team)return;
-        const dx=o.x-cx, dy=o.y-cy;
-        const localY=Math.abs(-dx*sin+dy*cos);
-        if(localY<beamW*1.2+o.r){
-          o.hp=Math.max(0,o.hp-o.maxHp*.08);
-          if(Math.random()<.5) spawnSparks(o.x+(-25+Math.random()*50),o.y+(-25+Math.random()*50),'#ffffff',4);
-          if(Math.random()<.35) spawnSparks(o.x,o.y,'#ee88ff',3);
-          if(Math.random()<.2) flashScreen('rgba(255,255,255,.15)',20);
-          if(o.hp<=0){
-            o.dead=true;
-            spawnParticles(o.x,o.y,'#ffffff',40,10);
-            spawnParticles(o.x,o.y,'#cc88ff',25,8);
-            spawnShockwave(o.x,o.y,'rgba(200,120,255,',120,6);
-            flashScreen('rgba(255,255,255,.4)',50);shake('sm');
+        // Damage Mothership
+        if(MS.active&&OF.battleRunning){
+          const msCx=MS.x+MS.w/2,msCy=MS.y+MS.h/2;
+          const dx=msCx-cx,dy=msCy-cy;
+          const localY=Math.abs(-dx*sin+dy*cos);
+          if(localY<beamW*1.2+MS.h*.4){
+            MS.hp=Math.max(0,MS.hp-MS.maxHp*0.004);
+            MS._updateBar();
+            if(Math.random()<.07) SFX.mothershipHit();
+            if(Math.random()<.4) spawnSparks(MS.x+Math.random()*MS.w,MS.y+Math.random()*MS.h,'#ffffff',4);
+            if(MS.hp<=0) MS._destroy();
           }
         }
+
+        // Damage Test Boss with laser
+        if(TB.active){
+          const dx=TB.x-cx,dy=TB.y-cy;
+          const localY=Math.abs(-dx*sin+dy*cos);
+          if(localY<beamW*1.2+TB.r){
+            // ~8% of a normal orb's dmg per frame, scaled by infinite's dmg
+            const laserDmg=s.orb.dmg*0.08;
+            TB.hit(laserDmg);
+            // Floating number — throttled so it doesn't spam every frame
+            if(Math.random()<0.12){
+              OF._dmgNums=OF._dmgNums||[];
+              const dispDmg=Math.round(laserDmg*10); // show per-tick * 10 for readability
+              const label=dispDmg>=1000?(dispDmg/1000).toFixed(1)+'K':String(dispDmg);
+              OF._dmgNums.push({
+                x:TB.x+(-TB.r*0.6+Math.random()*TB.r*1.2),
+                y:TB.y+(-TB.r*0.6+Math.random()*TB.r*1.2),
+                label,
+                life:1.0,
+                vy:-(0.8+Math.random()*0.6),
+              });
+            }
+            if(Math.random()<.35) spawnSparks(TB.x+(-TB.r*0.5+Math.random()*TB.r),TB.y+(-TB.r*0.5+Math.random()*TB.r),'#aaffee',3);
+          }
+        }
+
+        // Crackling sparks along beam
+        for(let i=0;i<3;i++){
+          const t=(-1+Math.random()*2)*reach;
+          spawnSparks(cx+cos*t,cy+sin*t,'#ffffff',2);
+          if(Math.random()<.4) spawnSparks(cx+cos*t,cy+sin*t,'#cc88ff',1);
+        }
       });
+
       OF.orbs=OF.orbs.filter(o=>!o.dead);
       OF.updateHUD();
-
-      // ── Damage the Mothership if beam sweeps through it ──
-      if(MS.active&&OF.battleRunning){
-        const msCx=MS.x+MS.w/2, msCy=MS.y+MS.h/2;
-        const dx=msCx-cx, dy=msCy-cy;
-        const localY=Math.abs(-dx*sin+dy*cos);
-        // Beam hits mothership body if it passes through its center region
-        if(localY<beamW*1.2+MS.h*.4){
-          const dmgPerFrame=MS.maxHp*0.004;
-          MS.hp=Math.max(0,MS.hp-dmgPerFrame);
-          MS._updateBar();
-          if(Math.random()<.07) SFX.mothershipHit();
-          if(Math.random()<.4) spawnSparks(MS.x+Math.random()*MS.w, MS.y+Math.random()*MS.h,'#ffffff',4);
-          if(Math.random()<.25) spawnSparks(MS.x+Math.random()*MS.w, MS.y+Math.random()*MS.h,'#cc88ff',3);
-          if(MS.hp<=0) MS._destroy();
-        }
-      }
-
-      // Dense crackling sparks along rotating beam
-      for(let i=0;i<5;i++){
-        const t=(-1+Math.random()*2)*reach;
-        spawnSparks(cx+cos*t, cy+sin*t, '#ffffff', 3);
-        if(Math.random()<.4) spawnSparks(cx+cos*t, cy+sin*t, '#cc88ff', 2);
-      }
     },16);
   },2000);
 }
 
-// Wire up key lookup in _adminTrigger by storing key on item reference
+// ══════════════════════════════════════════
+// ⊙ TEST BOSS (Admin Tool — Orb Fight)
+// ══════════════════════════════════════════
+const TB={
+  active:false,
+  x:0,y:0,r:0,
+  totalDamage:0,
+  startTime:0,
+  frameTimer:null,
+  pulseT:0,
+  // Damage sample window for DPS (rolling 1s)
+  dmgSamples:[],  // [{t, dmg}]
+
+  spawn(){
+    if(!OF.active){
+      toast('Open ORB FIGHT mode first!','#ff8844');
+      return;
+    }
+    if(this.active) this.remove();
+
+    // Ensure canvas is sized and OF is in right state
+    if(OF.W<10||OF.H<10) OF.resize();
+    // Force a canvas redraw so the boss appears immediately
+    if(OF.ctx) OF.draw();
+
+    this.active=true;
+    this.totalDamage=0;
+    this.startTime=Date.now();
+    this.dmgSamples=[];
+    this.pulseT=0;
+
+    // Position: center of the red (left) half
+    this.x=OF.W*0.25;
+    this.y=OF.H*0.48;
+    const tbzf=OF.zoomedOut?1/3:1;
+    this.r=Math.min(OF.W*0.18,OF.H*0.32)*tbzf;
+
+    // Clear red orbs — test boss owns the red side
+    OF.orbs=OF.orbs.filter(o=>o.team!=='red');
+    document.getElementById('admin-tb-stats').style.display='flex';
+    document.getElementById('admin-testboss-btn').classList.add('active');
+    document.getElementById('admin-testboss-btn').textContent='⊙ TEST BOSS ON';
+
+    // Show floating annihilate button above the boss
+    const annBtn=document.getElementById('of-annihilate-btn');
+    if(annBtn){
+      annBtn.style.display='block';
+      annBtn.style.left=this.x+'px';
+      annBtn.style.top=(this.y-52)+'px';
+    }
+
+    // Update stats every 100ms
+    this.frameTimer=setInterval(()=>this._updateStats(),100);
+
+    // Block red side placement by flagging
+    OF._testBossActive=true;
+
+    toast('⊙ Test Boss spawned — attack it!','#44ffcc');
+  },
+
+  remove(){
+    this.active=false;
+    if(this.frameTimer){clearInterval(this.frameTimer);this.frameTimer=null;}
+    document.getElementById('admin-tb-stats').style.display='none';
+    document.getElementById('admin-testboss-btn').classList.remove('active');
+    document.getElementById('admin-testboss-btn').textContent='⊙ TEST BOSS';
+    OF._testBossActive=false;
+    const annBtn=document.getElementById('of-annihilate-btn');
+    if(annBtn) annBtn.style.display='none';
+    toast('⊙ Test Boss removed','#888');
+  },
+
+  hit(dmg){
+    if(!this.active||dmg<=0)return;
+    this.totalDamage+=dmg;
+    const now=Date.now();
+    this.dmgSamples.push({t:now,dmg});
+  },
+
+  _updateStats(){
+    if(!this.active)return;
+    const now=Date.now();
+    const elapsed=(now-this.startTime)/1000;
+
+    // Rolling DPS over last 3 seconds
+    const window=3000;
+    this.dmgSamples=this.dmgSamples.filter(s=>now-s.t<window);
+    const windowDmg=this.dmgSamples.reduce((a,s)=>a+s.dmg,0);
+    const dps=Math.round(windowDmg/(Math.min(window,now-this.startTime)/1000));
+
+    document.getElementById('admin-tb-dmg').textContent=
+      this.totalDamage>=1e6?(this.totalDamage/1e6).toFixed(2)+'M':
+      this.totalDamage>=1e3?(this.totalDamage/1e3).toFixed(1)+'K':
+      Math.round(this.totalDamage).toLocaleString();
+    document.getElementById('admin-tb-dps').textContent=
+      dps>=1e6?(dps/1e6).toFixed(2)+'M/s':
+      dps>=1e3?(dps/1e3).toFixed(1)+'K/s':
+      dps+'/s';
+    document.getElementById('admin-tb-time').textContent=
+      elapsed>=60?Math.floor(elapsed/60)+'m '+Math.floor(elapsed%60)+'s':
+      elapsed.toFixed(1)+'s';
+  },
+
+  draw(ctx){
+    if(!this.active)return;
+    this.pulseT+=0.04;
+
+    // Keep annihilate button positioned above the boss as it hovers
+    const annBtn=document.getElementById('of-annihilate-btn');
+    if(annBtn&&annBtn.style.display!=='none'){
+      annBtn.style.left=this.x+'px';
+      annBtn.style.top=(this.y-this.r-44)+'px';
+    }
+
+    const pulse=0.5+0.5*Math.sin(this.pulseT*1.5);
+
+    // Outer glow
+    const gg=ctx.createRadialGradient(this.x,this.y,this.r*.7,this.x,this.y,this.r*1.4);
+    gg.addColorStop(0,`rgba(255,255,255,${0.04+pulse*0.04})`);
+    gg.addColorStop(1,'rgba(255,255,255,0)');
+    ctx.beginPath();ctx.arc(this.x,this.y,this.r*1.4,0,Math.PI*2);
+    ctx.fillStyle=gg;ctx.fill();
+
+    // Main dotted hollow ring
+    ctx.save();
+    ctx.strokeStyle=`rgba(255,255,255,${0.6+pulse*0.35})`;
+    ctx.lineWidth=3;
+    ctx.setLineDash([12,10]);
+    ctx.shadowColor='rgba(255,255,255,1)';
+    ctx.shadowBlur=18+pulse*12;
+    ctx.beginPath();ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
+    ctx.stroke();
+
+    // Inner thinner ring
+    ctx.lineWidth=1.5;
+    ctx.setLineDash([6,14]);
+    ctx.shadowBlur=8;
+    ctx.strokeStyle=`rgba(220,255,255,${0.3+pulse*0.2})`;
+    ctx.beginPath();ctx.arc(this.x,this.y,this.r*0.7,0,Math.PI*2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+
+    // Crosshair lines
+    ctx.save();
+    ctx.strokeStyle=`rgba(255,255,255,${0.12+pulse*0.08})`;
+    ctx.lineWidth=1;ctx.setLineDash([4,8]);
+    ctx.beginPath();ctx.moveTo(this.x-this.r,this.y);ctx.lineTo(this.x+this.r,this.y);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(this.x,this.y-this.r);ctx.lineTo(this.x,this.y+this.r);ctx.stroke();
+    ctx.setLineDash([]);ctx.restore();
+
+    // Center label
+    ctx.save();
+    ctx.fillStyle=`rgba(255,255,255,${0.5+pulse*0.4})`;
+    ctx.font='bold 13px Orbitron,monospace';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.shadowColor='rgba(255,255,255,.8)';ctx.shadowBlur=10;
+    ctx.fillText('TEST BOSS',this.x,this.y-10);
+    ctx.font='10px Orbitron,monospace';
+    ctx.fillStyle=`rgba(180,255,220,${0.5+pulse*0.3})`;
+    ctx.fillText('∞ HP',this.x,this.y+10);
+    ctx.restore();
+  },
+
+  // Called from OF projectile collision check
+  checkHit(p){
+    if(!this.active)return false;
+    const dist=Math.hypot(p.x-this.x,p.y-this.y);
+    if(dist<this.r+p.r){
+      this.hit(p.dmg||1);
+      spawnSparks(p.x,p.y,'#aaffee',4);
+      OF._dmgNums=OF._dmgNums||[];
+      const dmg=Math.round(p.dmg||1);
+      const label=dmg>=1000?(dmg/1000).toFixed(1)+'K':String(dmg);
+      OF._dmgNums.push({
+        x:p.x+(-15+Math.random()*30),
+        y:p.y-8,
+        label,
+        life:1.0,
+        vy:-(1.0+Math.random()*0.8),
+      });
+      return true;
+    }
+    return false;
+  },
+};
+
+function adminAnnihilateAll(){
+  if(!OF.active||OF.orbs.length===0){
+    toast('No orbs to annihilate!','#ff6644');
+    return;
+  }
+
+  const orbsToKill=[...OF.orbs.filter(o=>!o.dead)];
+  if(orbsToKill.length===0){ toast('No orbs to annihilate!','#ff6644'); return; }
+
+  // Pause battle during sequence
+  OF.battleRunning=false;
+  // Hide the floating button immediately
+  const annBtnEl=document.getElementById('of-annihilate-btn');
+  if(annBtnEl) annBtnEl.style.display='none';
+
+  // ── Phase 1: Orbs vibrate and flash (0–1.2s) ──
+  let vibT=0;
+  const basePos=orbsToKill.map(o=>({x:o.x,y:o.y}));
+  const vibInterval=setInterval(()=>{
+    vibT+=16;
+    const intensity=2+vibT/100;
+    orbsToKill.forEach((o,i)=>{
+      if(o.dead)return;
+      o.x=basePos[i].x+(-intensity+Math.random()*intensity*2);
+      o.y=basePos[i].y+(-intensity+Math.random()*intensity*2);
+    });
+    // Rapid random flashes
+    if(Math.random()<.5) flashScreen(
+      `rgba(${Math.random()<.5?'255,60,30':'255,200,50'},.${Math.floor(20+Math.random()*40)})`,30
+    );
+    if(vibT%200<16) shake('sm');
+  },16);
+
+  // ── Phase 2: Big flash cascade then explode each orb (1.2s) ──
+  setTimeout(()=>{
+    clearInterval(vibInterval);
+
+    // Restore positions
+    orbsToKill.forEach((o,i)=>{ o.x=basePos[i].x; o.y=basePos[i].y; });
+
+    // Opening megaflash
+    flashScreen('rgba(255,255,255,1)',100);
+    shake('lg');
+    setTimeout(()=>{ flashScreen('rgba(255,80,30,.8)',80); shake('lg'); },100);
+    setTimeout(()=>{ flashScreen('rgba(255,255,255,.9)',70); shake('lg'); },220);
+    setTimeout(()=>{ flashScreen('rgba(255,60,0,.7)',60); shake('md'); },360);
+
+    // Explode each orb staggered over 1.5s
+    orbsToKill.forEach((o,i)=>{
+      setTimeout(()=>{
+        if(o.dead)return;
+        o.dead=true;
+
+        // Big explosion per orb
+        const col=o.isBoss?'#ffcc44':o.isInfinite?'#cc88ff':'#ff6644';
+        spawnParticles(o.x,o.y,col,o.isBoss?60:30,o.isBoss?12:8);
+        spawnParticles(o.x,o.y,'#ffffff',20,10);
+        spawnShockwave(o.x,o.y,`rgba(255,100,30,`,o.isBoss?200:100,o.isBoss?8:5);
+        spawnSparks(o.x,o.y,'#ffffff',8);
+
+        // Flash per explosion
+        if(Math.random()<.6) flashScreen(
+          `rgba(255,${Math.floor(50+Math.random()*150)},30,.${Math.floor(25+Math.random()*40)})`,30
+        );
+        if(o.isBoss||o.isInfinite){ shake('md'); SFX.bossExplode(); }
+        else SFX.orbExplode();
+
+        // Damage numbers burst outward
+        OF._dmgNums=OF._dmgNums||[];
+        for(let j=0;j<4;j++){
+          OF._dmgNums.push({
+            x:o.x+(-30+Math.random()*60),
+            y:o.y+(-20+Math.random()*20),
+            label:'💥',
+            life:1.0,
+            vy:-(1.2+Math.random()*1.2),
+            col:'#ff6644',
+          });
+        }
+      }, i*(800/Math.max(1,orbsToKill.length))+Math.random()*200);
+    });
+
+    // ── Phase 3: Final megablast when all are gone (~1.5s later) ──
+    setTimeout(()=>{
+      OF.orbs=[];
+      OF.updateHUD();
+      OF._dmgNums=[];
+
+      // Grand finale
+      flashScreen('rgba(255,255,255,1)',120);
+      setTimeout(()=>flashScreen('rgba(255,80,0,.7)',80),120);
+      setTimeout(()=>flashScreen('rgba(255,255,200,.5)',60),280);
+      shake('lg');setTimeout(()=>shake('lg'),150);setTimeout(()=>shake('md'),350);
+
+      // Big center explosion
+      const cx=OF.W/2, cy=OF.H/2;
+      spawnParticles(cx,cy,'#ff6644',100,14);
+      spawnParticles(cx,cy,'#ffcc44',70,12);
+      spawnParticles(cx,cy,'#ffffff',60,16);
+      spawnShockwave(cx,cy,'rgba(255,100,30,',OF.W*0.9,12);
+      spawnShockwave(cx,cy,'rgba(255,200,50,',OF.W*0.6,8);
+
+      SFX.mothershipDestroy();
+
+      // Restore start button
+      document.getElementById('of-status-text').textContent='💥 ANNIHILATED — PLACE ORBS THEN START';
+      const sb=document.getElementById('of-start-btn');
+      sb.style.display='';sb.textContent='▶ START BATTLE';
+
+      toast('💥 ANNIHILATION COMPLETE','#ff6644');
+    }, orbsToKill.length*(800/Math.max(1,orbsToKill.length))+600);
+
+  }, 1200);
+}
+
+function adminToggleTestBoss(){
+  if(TB.active) TB.remove();
+  else TB.spawn();
+}
+function adminRemoveTestBoss(){ TB.remove(); }
 Object.entries(ADMIN_ITEMS).forEach(([k,v])=>v.key=k);
 
-setMode('fusion');
+// Wait two animation frames so the browser fully lays out header + canvas area
+// before placing circles — fixes the "circles in corner" bug on mobile
+requestAnimationFrame(()=>requestAnimationFrame(()=>setMode('fusion')));
 </script>
 <!-- ═══════════════════════════════════════════════════
      ADVENTURE MODE OVERLAY
