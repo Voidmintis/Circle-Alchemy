@@ -7116,7 +7116,9 @@ const OF={
 
   _makeOrb(typeKey,x,y,team,r){
     const def=this.TYPES[typeKey];
-    const actualR=r??def.r;
+    let actualR=r??def.r;
+    // Shrink player orbs to 1/5 when fighting the Apex
+    if(APEX.active&&team==='blue') actualR=Math.max(4,Math.round(actualR/5));
     return{
       id:Date.now()+Math.random(),
       type:typeKey,team:team,
