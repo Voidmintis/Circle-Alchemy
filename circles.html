@@ -9357,9 +9357,9 @@ const MS={
     this.cannonCharging=false; this.cannonChargeT=0; this.spawnTimer=0;
     this.pulseT=0; this._cannonBeamLife=0;
 
-    // Mothership dimensions — scale down in zoom mode or when fighting alongside Apex
+    // Mothership dimensions — scale down in zoom mode only; full size even as rival boss
     const mzf=OF.zoomedOut?1/3:1;
-    const rivalScale=this._summonedAsRival&&APEX.active?0.7:1;
+    const rivalScale=1;
     this.w=OF.W*0.42*mzf*rivalScale;
     this.h=OF.H*0.78*mzf*rivalScale;
     // Start offscreen — left normally, right if summoned as rival
@@ -9808,7 +9808,7 @@ const MS={
   _spawnMinion(){
     const zoom=OF.zoomedOut;
     const zf=zoom?1/3:1;
-    const rivalScale=this._summonedAsRival&&APEX.active?0.7:1;
+    const rivalScale=1;
     // Launch from mothership edge (right normally, left if rival)
     const types=[
       {r:14,hp:50, dmg:8, spd:2.2,color:'#ff3300',glow:'rgba(255,80,0,',  ability:'basic'},
@@ -9839,7 +9839,7 @@ const MS={
     if(targets.length===0) return;
     shake('sm');
     SFX.missileLaunch();
-    const rivalScale=this._summonedAsRival&&APEX.active?0.7:1;
+    const rivalScale=1;
     for(let i=0;i<count;i++){
       const target=targets[Math.floor(Math.random()*targets.length)];
       const sx=this._summonedAsRival?this.x:this.x+this.w;
