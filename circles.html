@@ -7272,8 +7272,8 @@ const OF={
     const redAlive=alive.filter(o=>o.team==='red');
     const blueAlive=alive.filter(o=>o.team==='blue');
 
-    // Victory check — skip if test boss is active (red side is intentionally empty)
-    if(!TB.active&&alive.length>0&&(redAlive.length===0||blueAlive.length===0)){
+    // Victory check — skip if boss or test boss is active (red side may be intentionally empty)
+    if(!TB.active&&!MS.active&&!APEX.active&&alive.length>0&&(redAlive.length===0||blueAlive.length===0)){
       this.battleRunning=false;
       const winner=redAlive.length>0?'red':'blue';
       this.showVictory(winner,redAlive,blueAlive);
@@ -8527,10 +8527,11 @@ const OF={
 
     // ── Boss HP bars drawn on canvas above the boss ──
     if(MS.active&&!MS.spawning){
-      const bx=MS.x+MS.w/2, by=MS.y-30;
+      const bvbScale=APEX.active?0.6:1;
+      const bx=MS.x+MS.w/2, by=MS.y-30*bvbScale;
       this._drawBossHPBar(ctx,bx,by,MS.hp,MS.maxHp,'👾 MOTHERSHIP',
         MS.hp/MS.maxHp>0.5?'#ff6600':MS.hp/MS.maxHp>0.25?'#cc2200':'#880000',
-        'linear-gradient(90deg,#aa0000,#ff4400,#ff8800,#ffcc00)');
+        'linear-gradient(90deg,#aa0000,#ff4400,#ff8800,#ffcc00)',bvbScale);
     }
     if(APEX.active&&!APEX.spawning){
       const bx=APEX.x, by=APEX.y-APEX.r-45;
@@ -8560,30 +8561,31 @@ const OF={
 
   },
 
-  _drawBossHPBar(ctx,cx,cy,hp,maxHp,label,barCol){
+  _drawBossHPBar(ctx,cx,cy,hp,maxHp,label,barCol,scale){
+    const s=scale||1;
     const pct=Math.max(0,hp/maxHp);
-    const bw=340,bh=22;
+    const bw=340*s,bh=22*s;
     const bx=cx-bw/2,by=cy;
     ctx.save();
     // Background panel with glow
     ctx.shadowColor=barCol;ctx.shadowBlur=20;
     ctx.fillStyle='rgba(0,0,0,.85)';
     ctx.strokeStyle=barCol+'88';ctx.lineWidth=2;
-    const panelH=60;
-    const rx=bx-16,ry=by-24;
+    const panelH=60*s;
+    const rx=bx-16*s,ry=by-24*s;
     ctx.beginPath();
-    ctx.roundRect(rx,ry,bw+32,panelH,8);
+    ctx.roundRect(rx,ry,bw+32*s,panelH,8*s);
     ctx.fill();ctx.stroke();
     // Label with glow
     ctx.shadowBlur=12;ctx.shadowColor=barCol;
-    ctx.fillStyle=barCol;ctx.font='bold 11px Orbitron,monospace';
+    ctx.fillStyle=barCol;ctx.font=`bold ${Math.round(11*s)}px Orbitron,monospace`;
     ctx.textAlign='center';
-    ctx.fillText(label,cx,by-7);
+    ctx.fillText(label,cx,by-7*s);
     // Track
     ctx.shadowBlur=0;
     ctx.fillStyle='rgba(0,0,0,.6)';
     ctx.strokeStyle='rgba(255,255,255,.25)';ctx.lineWidth=1.5;
-    ctx.beginPath();ctx.roundRect(bx,by,bw,bh,6);ctx.fill();ctx.stroke();
+    ctx.beginPath();ctx.roundRect(bx,by,bw,bh,6*s);ctx.fill();ctx.stroke();
     // Fill with gradient and glow
     if(pct>0){
       ctx.shadowBlur=16;ctx.shadowColor=barCol;
@@ -8592,7 +8594,7 @@ const OF={
       fillGrad.addColorStop(0.5,barCol+'dd');
       fillGrad.addColorStop(1,'#ffffff88');
       ctx.fillStyle=fillGrad;
-      ctx.beginPath();ctx.roundRect(bx,by,bw*pct,bh,6);ctx.fill();
+      ctx.beginPath();ctx.roundRect(bx,by,bw*pct,bh,6*s);ctx.fill();
       // Animated shine
       const shineX=bx+(Date.now()%2000)/2000*bw*pct;
       if(shineX<bx+bw*pct){
@@ -8603,13 +8605,13 @@ const OF={
     }
     // Percentage on bar
     ctx.shadowBlur=0;
-    ctx.fillStyle='rgba(255,255,255,.9)';ctx.font='bold 10px Orbitron,monospace';
-    ctx.fillText(`${Math.ceil(pct*100)}%`,cx,by+bh-5);
+    ctx.fillStyle='rgba(255,255,255,.9)';ctx.font=`bold ${Math.round(10*s)}px Orbitron,monospace`;
+    ctx.fillText(`${Math.ceil(pct*100)}%`,cx,by+bh-5*s);
     // HP value below
-    ctx.fillStyle='rgba(255,255,255,.6)';ctx.font='bold 8px Orbitron,monospace';
+    ctx.fillStyle='rgba(255,255,255,.6)';ctx.font=`bold ${Math.round(8*s)}px Orbitron,monospace`;
     const hpStr=hp>=1e6?(hp/1e6).toFixed(2)+'M':hp>=1e3?(hp/1e3).toFixed(1)+'K':Math.ceil(hp).toLocaleString();
     const maxStr=maxHp>=1e6?(maxHp/1e6).toFixed(0)+'M':maxHp>=1e3?(maxHp/1e3).toFixed(0)+'K':maxHp.toLocaleString();
-    ctx.fillText(`${hpStr} / ${maxStr}`,cx,by+bh+13);
+    ctx.fillText(`${hpStr} / ${maxStr}`,cx,by+bh+13*s);
     ctx.restore();
   },
 
@@ -9739,6 +9741,14 @@ const MS={
 
     // ── BOSS VS BOSS: Mothership attacks Apex ──
     if(APEX.active&&!APEX.spawning&&!APEX.deathSequence){
+      // Mothership slowly drifts toward Apex
+      const msCx=this.x+this.w/2,msCy=this.y+this.h/2;
+      const aDist=Math.hypot(APEX.x-msCx,APEX.y-msCy);
+      if(aDist>this.w/2+APEX.r+20){
+        const driftA=Math.atan2(APEX.y-msCy,APEX.x-msCx);
+        this.x+=Math.cos(driftA)*0.3;
+        this.y+=Math.sin(driftA)*0.15;
+      }
       // Missiles also hit Apex
       this.missiles=this.missiles.filter(m=>{
         const d=Math.hypot(m.x-APEX.x,m.y-APEX.y);
@@ -9762,7 +9772,6 @@ const MS={
       }
       // Mothership's minions also shoot at Apex — handled by OF orb system since minions are red orbs
       // Constant proximity damage — mothership's shields grind against Apex
-      const msCx=this.x+this.w/2, msCy=this.y+this.h/2;
       const bossD=Math.hypot(APEX.x-msCx,APEX.y-msCy);
       if(bossD<APEX.r+Math.max(this.w,this.h)/2+40&&this._battleFrames%6===0){
         APEX.hp=Math.max(0,APEX.hp-800);APEX._updateBar();
@@ -10203,9 +10212,9 @@ const APEX={
     this._omniPullTimer=0;
     this._projectiles=[];
 
-    // Apex is a giant orb — 20% of canvas smaller dimension, scaled down if rival
+    // Apex is a giant orb — 20% of canvas smaller dimension, slightly scaled if rival
     const dim=Math.min(OF.W,OF.H);
-    const rivalScale=this._summonedAsRival&&MS.active?1/3:1;
+    const rivalScale=this._summonedAsRival&&MS.active?0.7:1;
     this.r=dim*(OF.zoomedOut?0.1:0.2)*rivalScale;
     this.x=this._summonedAsRival?OF.W*0.78:OF.W*0.22;
     this.y=OF.H*0.5;
@@ -10752,6 +10761,12 @@ const APEX={
     if(MS.active&&!MS.spawning){
       const msCx=MS.x+MS.w/2, msCy=MS.y+MS.h/2;
       const bossD=Math.hypot(this.x-msCx,this.y-msCy);
+      // Apex slowly drifts toward Mothership
+      if(bossD>this.r+Math.max(MS.w,MS.h)/2+20){
+        const driftA=Math.atan2(msCy-this.y,msCx-this.x);
+        this.x+=Math.cos(driftA)*0.4;
+        this.y+=Math.sin(driftA)*0.2;
+      }
       // Aura damage — Apex's constant 7k DPS applies to Mothership too
       if(this.attackTimer%6===0){
         const auraRange=this.r*2.5;
@@ -10816,8 +10831,11 @@ const APEX={
   // ── ATTACK: OMNIBEAM ──
   _fireOmnibeam(){
     const blueOrbs=OF.orbs.filter(o=>o.team==='blue'&&!o.dead);
-    if(blueOrbs.length===0)return;
-    const target=blueOrbs[Math.floor(Math.random()*blueOrbs.length)];
+    // In boss-vs-boss, target Mothership if no blue orbs
+    let targets=[...blueOrbs];
+    if(MS.active&&!MS.spawning) targets.push({x:MS.x+MS.w/2,y:MS.y+MS.h/2,r:Math.max(MS.w,MS.h)/2});
+    if(targets.length===0)return;
+    const target=targets[Math.floor(Math.random()*targets.length)];
     this._omnibeamAngle=Math.atan2(target.y-this.y,target.x-this.x);
     this._omnibeamLife=40;
     shake('lg');setTimeout(()=>shake('lg'),100);setTimeout(()=>shake('md'),200);
@@ -10869,6 +10887,18 @@ const APEX={
         spawnParticles(o.x,o.y,'#ff8800',8,4);
       }
     });
+    // Boss-vs-boss: detonation also damages Mothership
+    if(MS.active&&!MS.spawning){
+      const msCx=MS.x+MS.w/2,msCy=MS.y+MS.h/2;
+      const d=Math.hypot(msCx-this.x,msCy-this.y);
+      if(d<detRange){
+        const dmg=(7000+this.phase*2500)*(1-d*0.3/detRange);
+        MS.hp=Math.max(0,MS.hp-dmg);MS._updateBar();
+        spawnSparks(msCx,msCy,'#ffaa44',8);
+        spawnParticles(msCx,msCy,'#ff8800',10,6);
+        if(MS.hp<=0) MS._destroy();
+      }
+    }
     OF.orbs=OF.orbs.filter(o=>!o.dead);
     OF.updateHUD();
     setTimeout(()=>{if(this.active)document.getElementById('of-status-text').textContent='🌌 DESTROY THE OMNIVERSAL APEX!';},2500);
@@ -10887,14 +10917,18 @@ const APEX={
   // ── ATTACK: ANNIHILATION BARRAGE — rapid homing projectiles ──
   _annihilationBarrage(){
     const blueOrbs=OF.orbs.filter(o=>o.team==='blue'&&!o.dead);
-    if(blueOrbs.length===0)return;
+    // In boss-vs-boss, target Mothership too
+    let targets=[...blueOrbs];
+    if(MS.active&&!MS.spawning) targets.push({x:MS.x+MS.w/2,y:MS.y+MS.h/2,r:Math.max(MS.w,MS.h)/2,dead:false});
+    if(targets.length===0)return;
     SFX.bossShoot();
     document.getElementById('of-status-text').textContent='⚡ ANNIHILATION BARRAGE!';
     const count=8+this.phase*4;
     for(let i=0;i<count;i++){
       setTimeout(()=>{
         if(!this.active||!OF.battleRunning)return;
-        const target=blueOrbs.filter(o=>!o.dead)[0];
+        let target=blueOrbs.filter(o=>!o.dead)[0];
+        if(!target&&MS.active) target={x:MS.x+MS.w/2,y:MS.y+MS.h/2};
         if(!target)return;
         const a=Math.atan2(target.y-this.y,target.x-this.x)+(Math.random()-0.5)*0.8;
         const spd=8+Math.random()*4;
@@ -10989,6 +11023,19 @@ const APEX={
         o.vx+=Math.cos(knockA)*15;o.vy+=Math.sin(knockA)*15;
       }
     });
+    // Boss-vs-boss: cataclysm also damages Mothership heavily
+    if(MS.active&&!MS.spawning){
+      const msCx=MS.x+MS.w/2,msCy=MS.y+MS.h/2;
+      const d=Math.hypot(msCx-this.x,msCy-this.y);
+      const maxRange=OF.W*0.95;
+      const dmg=d<maxRange?(15000+this.phase*5000)*(1-d*0.2/maxRange):0;
+      if(dmg>0){
+        MS.hp=Math.max(0,MS.hp-dmg);MS._updateBar();
+        spawnSparks(msCx,msCy,'#ffffff',12);
+        spawnParticles(msCx,msCy,'#ff44ff',15,8);
+        if(MS.hp<=0) MS._destroy();
+      }
+    }
     OF.orbs=OF.orbs.filter(o=>!o.dead);
     OF.updateHUD();
     setTimeout(()=>{if(this.active)document.getElementById('of-status-text').textContent='🌌 DESTROY THE OMNIVERSAL APEX!';},3000);
