@@ -7226,9 +7226,8 @@ const OF={
   },
 
   update(){
-    if(!this.battleRunning&&!MS.active&&!APEX.active&&!TB.active)return;
-    // ── SECRET CELESTIAL FUSION: Triastral Convergence ──
-    if(!this.battleRunning&&!this._triastralChecking){
+    // ── SECRET CELESTIAL FUSION: Triastral Convergence (works even before battle) ──
+    if(!this._triastralChecking){
       const solar=this.orbs.find(o=>o.ability==='solar'&&!o.dead);
       const lunar=this.orbs.find(o=>o.ability==='lunar'&&!o.dead);
       const nebula=this.orbs.find(o=>o.ability==='nebula'&&!o.dead);
@@ -7246,6 +7245,7 @@ const OF={
         }
       }
     }
+    if(!this.battleRunning&&!MS.active&&!APEX.active&&!TB.active)return;
     if(MS.active){ MS.update(); return; }
     if(APEX.active){ APEX.update(); return; }
     const alive=this.orbs.filter(o=>!o.dead);
