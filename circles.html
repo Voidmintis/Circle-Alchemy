@@ -862,6 +862,9 @@ body.adv-mars-bg #adv-overlay{background:radial-gradient(ellipse at 50% 80%,#200
 #of-victory-sub{font-family:'Rajdhani',sans-serif;font-size:.9rem;letter-spacing:.15em;color:rgba(255,255,255,.6);text-align:center;}
 .of-mothership-btn{border-color:rgba(255,160,0,.5);color:#ffaa44;background:rgba(80,30,0,.4);}
 .of-mothership-btn:hover{border-color:#ffaa44;background:rgba(120,50,0,.5);box-shadow:0 0 18px rgba(255,140,0,.4);}
+.of-summon-btn{border-color:rgba(255,80,80,.5);color:#ff6666;background:rgba(80,0,0,.4);animation:of-summon-pulse 1.5s ease-in-out infinite;}
+.of-summon-btn:hover{border-color:#ff6666;background:rgba(120,0,0,.5);box-shadow:0 0 18px rgba(255,60,60,.4);}
+@keyframes of-summon-pulse{0%,100%{box-shadow:0 0 8px rgba(255,60,60,.2);}50%{box-shadow:0 0 20px rgba(255,60,60,.5);}}
 .of-random-btn{border-color:rgba(100,255,180,.4);color:#44ffaa;background:rgba(0,60,30,.4);font-size:.44rem;}
 .of-random-btn:hover{border-color:#44ffaa;background:rgba(0,90,50,.5);box-shadow:0 0 18px rgba(68,255,160,.3);}
 .of-zoom-btn{border-color:rgba(100,200,255,.35);color:#66ccff;background:rgba(0,40,80,.4);}
@@ -888,7 +891,7 @@ body.adv-mars-bg #adv-overlay{background:radial-gradient(ellipse at 50% 80%,#200
 .of-rp-cancel{background:none;border:none;color:rgba(255,255,255,.3);font-size:.75rem;cursor:pointer;padding:2px 4px;border-radius:4px;transition:color .2s;}
 .of-rp-cancel:hover{color:#ff4444;}
 .of-apex-btn{border-color:rgba(200,150,255,.5) !important;color:#cc88ff !important;text-shadow:0 0 10px rgba(180,120,255,.6);}
-#of-boss-picker{
+#of-boss-picker,#of-summon-picker{
   position:absolute;bottom:56px;left:50%;transform:translateX(-50%);z-index:22;
   display:flex;align-items:center;gap:6px;
   background:rgba(4,10,28,.96);border:1px solid rgba(180,120,255,.3);
@@ -1409,6 +1412,7 @@ body.adv-mars-bg #adv-overlay{background:radial-gradient(ellipse at 50% 80%,#200
       <button class="of-ctrl-btn" onclick="ofClearAll()">🗑 CLEAR</button>
       <button class="of-ctrl-btn of-start-btn" id="of-start-btn" onclick="ofStartBattle()">▶ START BATTLE</button>
       <button class="of-ctrl-btn of-mothership-btn" onclick="ofShowBossPicker()">⚔ FIGHT BOSS</button>
+      <button class="of-ctrl-btn of-summon-btn" id="of-summon-btn" style="display:none" onclick="ofShowSummonPicker()">⚔ SUMMON BOSS</button>
       <button class="of-ctrl-btn of-random-btn" onclick="ofRandomizePrompt()">🎲 RANDOMIZE</button>
       <button class="of-ctrl-btn of-zoom-btn" id="of-zoom-btn" onclick="ofToggleZoom()">🔭 ZOOM OUT</button>
       <button class="of-ctrl-btn" onclick="ofReset()">↺ RESET</button>
@@ -1430,6 +1434,14 @@ body.adv-mars-bg #adv-overlay{background:radial-gradient(ellipse at 50% 80%,#200
       <button class="of-rp-btn" onclick="ofPickBoss('mothership')">👾 Mothership</button>
       <button class="of-rp-btn of-rp-massive" onclick="ofPickBoss('apex')">🌌 Omniversal Apex</button>
       <button class="of-rp-cancel" onclick="document.getElementById('of-boss-picker').style.display='none'">✕</button>
+    </div>
+
+    <!-- Summon second boss picker -->
+    <div id="of-summon-picker" style="display:none">
+      <span class="of-rp-label">Summon a rival boss:</span>
+      <button class="of-rp-btn" id="of-summon-ms-btn" onclick="ofSummonBoss('mothership')">👾 Mothership</button>
+      <button class="of-rp-btn of-rp-massive" id="of-summon-apex-btn" onclick="ofSummonBoss('apex')">🌌 Omniversal Apex</button>
+      <button class="of-rp-cancel" onclick="document.getElementById('of-summon-picker').style.display='none'">✕</button>
     </div>
 
     <!-- Mothership HP bar -->
@@ -7170,8 +7182,11 @@ const OF={
 
   startBattle(){
     if(this.orbs.length<1&&!MS.active&&!APEX.active)return;
-    if(MS.active&&!OF.battleRunning){ MS.beginBattle(); return; }
-    if(APEX.active&&!OF.battleRunning){ APEX.beginBattle(); return; }
+    if((MS.active||APEX.active)&&!OF.battleRunning){
+      if(MS.active) MS.beginBattle();
+      if(APEX.active) APEX.beginBattle();
+      return;
+    }
     this.battleRunning=true;
     document.getElementById('of-start-btn').style.display='none';
     document.getElementById('of-status-text').textContent='BATTLE IN PROGRESS';
@@ -7204,6 +7219,8 @@ const OF={
     sb.style.display='';sb.textContent='▶ START BATTLE';
     document.getElementById('of-status-text').textContent='PLACE ORBS — THEN START BATTLE';
     document.getElementById('of-victory').style.display='none';
+    document.getElementById('of-summon-btn').style.display='none';
+    document.getElementById('of-summon-picker').style.display='none';
     document.getElementById('of-selected-label').textContent='Select an orb, then click left (Red) or right (Blue) to place';
     this.updateHUD();
   },
@@ -7246,8 +7263,10 @@ const OF={
       }
     }
     if(!this.battleRunning&&!MS.active&&!APEX.active&&!TB.active)return;
-    if(MS.active){ MS.update(); return; }
-    if(APEX.active){ APEX.update(); return; }
+    if(MS.active) MS.update();
+    if(APEX.active) APEX.update();
+    // If only bosses are fighting each other (no regular battle), skip orb-vs-orb logic
+    if((MS.active||APEX.active)&&!this.battleRunning) return;
     const alive=this.orbs.filter(o=>!o.dead);
     const redAlive=alive.filter(o=>o.team==='red');
     const blueAlive=alive.filter(o=>o.team==='blue');
@@ -9338,22 +9357,28 @@ const MS={
     const mzf=OF.zoomedOut?1/3:1;
     this.w=OF.W*0.42*mzf;
     this.h=OF.H*0.78*mzf;
-    // Start offscreen left — will slide in through portal
-    this.x=-this.w*1.1;
+    // Start offscreen — left normally, right if summoned as rival
+    if(this._summonedAsRival){
+      this.x=OF.W+this.w*0.1;
+    } else {
+      this.x=-this.w*1.1;
+    }
     this.y=(OF.H-this.h)/2;
 
-    // Remove red orbs
-    OF.orbs=OF.orbs.filter(o=>o.team==='blue');
+    // Remove red orbs (only when not summoned as rival boss)
+    if(!this._summonedAsRival) OF.orbs=OF.orbs.filter(o=>o.team==='blue');
 
     // Hide HP bar until entrance done
     document.getElementById('of-ms-hpbar').style.display='none';
     document.getElementById('of-start-btn').style.display='none';
     document.getElementById('of-status-text').textContent='';
+    // Show summon button (to summon rival boss)
+    if(!APEX.active) document.getElementById('of-summon-btn').style.display='';
 
     // ── PHASE 1: Portal appears (0–1.2s) ──
     this._portalR=0;
     this._portalActive=true;
-    const portalX=OF.W*0.21, portalY=OF.H*0.5;
+    const portalX=this._summonedAsRival?OF.W*0.79:OF.W*0.21, portalY=OF.H*0.5;
     let portalT=0;
     SFX.portalOpen();
     const portalGrow=setInterval(()=>{
@@ -9370,8 +9395,9 @@ const MS={
 
   _doEntrance(portalX,portalY){
     // ── PHASE 2: Ship slides in (0–1s) ──
-    const targetX=OF.W*0.005;
-    const startX=-this.w*1.1;
+    const fromRight=this._summonedAsRival;
+    const targetX=fromRight?OF.W-this.w-OF.W*0.005:OF.W*0.005;
+    const startX=fromRight?OF.W+this.w*0.1:-this.w*1.1;
     let t=0;
     const SLIDE_MS=900;
     const slide=setInterval(()=>{
@@ -9477,6 +9503,7 @@ const MS={
     this.active=false;
     this.spawning=false;
     this._portalActive=false;
+    this._summonedAsRival=false;
     this.missiles=[];
     document.getElementById('ms-arrival-text')?.remove();
     document.getElementById('of-ms-hpbar').style.display='none';
@@ -9699,11 +9726,47 @@ const MS={
       );
     });
 
+    // ── BOSS VS BOSS: Mothership attacks Apex ──
+    if(APEX.active&&!APEX.spawning&&!APEX.deathSequence){
+      // Missiles also hit Apex
+      this.missiles=this.missiles.filter(m=>{
+        const d=Math.hypot(m.x-APEX.x,m.y-APEX.y);
+        if(d<APEX.r+m.r+20){
+          this._missileExplode(m.x,m.y);
+          APEX.hp=Math.max(0,APEX.hp-120);APEX._updateBar();
+          if(APEX.hp<=0) APEX._destroy();
+          return false;
+        }
+        return true;
+      });
+      // Energy cannon beam hits Apex
+      if(this._cannonBeamLife>0){
+        const cx=this.x+this.w,cy=this.y+this.h/2;
+        const d=Math.hypot(APEX.x-cx,APEX.y-cy);
+        if(d<APEX.r+80){
+          APEX.hp=Math.max(0,APEX.hp-250);APEX._updateBar();
+          if(APEX.hp<=0) APEX._destroy();
+          if(Math.random()<.2) spawnSparks(APEX.x,APEX.y,'#ffcc00',4);
+        }
+      }
+      // Mothership's minions also shoot at Apex — handled by OF orb system since minions are red orbs
+      // Constant proximity damage — mothership's shields grind against Apex
+      const msCx=this.x+this.w/2, msCy=this.y+this.h/2;
+      const bossD=Math.hypot(APEX.x-msCx,APEX.y-msCy);
+      if(bossD<APEX.r+Math.max(this.w,this.h)/2+40&&this._battleFrames%6===0){
+        APEX.hp=Math.max(0,APEX.hp-800);APEX._updateBar();
+        if(Math.random()<.3) spawnSparks(
+          (APEX.x+msCx)/2,(APEX.y+msCy)/2,'#ff8844',4
+        );
+        if(APEX.hp<=0) APEX._destroy();
+      }
+    }
+
     // Victory check — all blue dead
     const blueLeft=OF.orbs.filter(o=>o.team==='blue'&&!o.dead);
     // Only declare mothership win if at least one blue orb has been spawned
     // and 3 seconds of battle have passed (grace period to place orbs)
-    if(blueLeft.length===0&&this._battleFrames>180&&this._peakBlueCount>0&&!this.hp<=0){
+    if(blueLeft.length===0&&this._battleFrames>180&&this._peakBlueCount>0&&!this.hp<=0&&!APEX.active){
       this.active=false;
       OF.battleRunning=false;
       this.stop();
@@ -9838,7 +9901,8 @@ const MS={
 
   _destroy(){
     this.active=false;
-    OF.battleRunning=false;
+    // Only stop battle if no other boss is active
+    if(!APEX.active) OF.battleRunning=false;
     SFX.mothershipDestroy();
     // Dramatic explosion sequence
     let t=0;
@@ -9860,13 +9924,20 @@ const MS={
         spawnParticles(cx,cy,'#ffffff',80,14);
         spawnParticles(cx,cy,'#ff8800',60,12);
         spawnShockwave(cx,cy,'rgba(255,200,0,',OF.W*.8,12);
+        const killedByApex=APEX.active;
         this.stop();
         setTimeout(()=>{
-          document.getElementById('of-victory').style.display='flex';
-          document.getElementById('of-victory-icon').textContent='💥';
-          document.getElementById('of-victory-title').textContent='MOTHERSHIP DESTROYED!';
-          document.getElementById('of-victory-title').style.color='#ffaa44';
-          document.getElementById('of-victory-sub').textContent='Your fleet triumphs! The Mothership is no more.';
+          if(killedByApex){
+            // Apex killed the Mothership — show who won
+            toast('💥 MOTHERSHIP DESTROYED by Omniversal Apex!','#ff8844');
+            document.getElementById('of-status-text').textContent='🌌 Apex defeated the Mothership!';
+          } else {
+            document.getElementById('of-victory').style.display='flex';
+            document.getElementById('of-victory-icon').textContent='💥';
+            document.getElementById('of-victory-title').textContent='MOTHERSHIP DESTROYED!';
+            document.getElementById('of-victory-title').style.color='#ffaa44';
+            document.getElementById('of-victory-sub').textContent='Your fleet triumphs! The Mothership is no more.';
+          }
           SFX.bossDefeat();shake('lg');
         },400);
       }
@@ -9879,7 +9950,7 @@ const MS={
 
     // ── Portal effect ──
     if(this._portalActive&&this._portalR>0){
-      const px=OF.W*0.21, py=OF.H*0.5;
+      const px=this._summonedAsRival?OF.W*0.79:OF.W*0.21, py=OF.H*0.5;
       ctx.save();
       // Outer ring
       for(let i=3;i>=1;i--){
@@ -10113,22 +10184,25 @@ const APEX={
     // Apex is a giant orb — 20% of canvas smaller dimension
     const dim=Math.min(OF.W,OF.H);
     this.r=dim*(OF.zoomedOut?0.1:0.2);
-    this.x=OF.W*0.22;
+    this.x=this._summonedAsRival?OF.W*0.78:OF.W*0.22;
     this.y=OF.H*0.5;
 
-    // Remove red orbs
-    OF.orbs=OF.orbs.filter(o=>o.team==='blue');
+    // Remove red orbs (only when not summoned as rival boss)
+    if(!this._summonedAsRival) OF.orbs=OF.orbs.filter(o=>o.team==='blue');
 
-    // Shrink all player orbs to 1/5 size — the Apex is god-tier
-    OF.orbs.forEach(o=>{
-      o.r=Math.max(4,Math.round(o.r/5));
-      // Reposition orbs to the right side
-      o.x=Math.max(OF.W*0.5+o.r,Math.min(OF.W-o.r,o.x));
-    });
+    // Shrink all player orbs to 1/5 size — the Apex is god-tier (only when primary boss)
+    if(!this._summonedAsRival){
+      OF.orbs.forEach(o=>{
+        o.r=Math.max(4,Math.round(o.r/5));
+        o.x=Math.max(OF.W*0.5+o.r,Math.min(OF.W-o.r,o.x));
+      });
+    }
 
     document.getElementById('of-ms-hpbar').style.display='none';
     document.getElementById('of-start-btn').style.display='none';
     document.getElementById('of-status-text').textContent='';
+    // Show summon button (to summon rival boss)
+    if(!MS.active) document.getElementById('of-summon-btn').style.display='';
 
     // Spawn sequence — screen darkens, boss materializes
     this._spawnAlpha=0;
@@ -10210,6 +10284,7 @@ const APEX={
   stop(){
     this.active=false;
     this.spawning=false;
+    this._summonedAsRival=false;
     this.vortexActive=false;
     this.cataclysmCharging=false;
     this.deathSequence=false;
@@ -10641,9 +10716,58 @@ const APEX={
       }
     });
 
+    // ── BOSS VS BOSS: Apex attacks Mothership ──
+    if(MS.active&&!MS.spawning){
+      const msCx=MS.x+MS.w/2, msCy=MS.y+MS.h/2;
+      const bossD=Math.hypot(this.x-msCx,this.y-msCy);
+      // Aura damage — Apex's constant 7k DPS applies to Mothership too
+      if(this.attackTimer%6===0){
+        const auraRange=this.r*2.5;
+        if(bossD<auraRange+Math.max(MS.w,MS.h)/2){
+          const dmg=(700+this.phase*300);
+          MS.hp=Math.max(0,MS.hp-dmg);MS._updateBar();
+          if(Math.random()<.15) spawnSparks(msCx,msCy,`hsl(${this.hueShift},100%,60%)`,3);
+          if(MS.hp<=0) MS._destroy();
+        }
+      }
+      // Omnibeam also hits Mothership
+      if(this._omnibeamLife>0){
+        const beamEndX=this.x+Math.cos(this._omnibeamAngle)*OF.W;
+        const beamEndY=this.y+Math.sin(this._omnibeamAngle)*OF.W;
+        // Line-rect intersection check (simplified — distance from beam line to MS center)
+        const dx=beamEndX-this.x,dy=beamEndY-this.y;
+        const t=Math.max(0,Math.min(1,((msCx-this.x)*dx+(msCy-this.y)*dy)/(dx*dx+dy*dy)));
+        const nearX=this.x+t*dx,nearY=this.y+t*dy;
+        const distToBeam=Math.hypot(msCx-nearX,msCy-nearY);
+        if(distToBeam<Math.max(MS.w,MS.h)/2+30){
+          MS.hp=Math.max(0,MS.hp-500);MS._updateBar();
+          if(Math.random()<.2) spawnSparks(nearX,nearY,`hsl(${this.hueShift},100%,70%)`,4);
+          if(MS.hp<=0) MS._destroy();
+        }
+      }
+      // Apex projectiles (annihilation barrage) also hit Mothership
+      this._projectiles=(this._projectiles||[]).filter(p=>{
+        if(p.x>MS.x&&p.x<MS.x+MS.w&&p.y>MS.y&&p.y<MS.y+MS.h){
+          MS.hp=Math.max(0,MS.hp-p.dmg*2);MS._updateBar();
+          spawnSparks(p.x,p.y,p.color,4);
+          if(MS.hp<=0) MS._destroy();
+          return false;
+        }
+        return true;
+      });
+      // Proximity damage
+      if(bossD<this.r+Math.max(MS.w,MS.h)/2+40&&this._battleFrames%6===0){
+        MS.hp=Math.max(0,MS.hp-1200);MS._updateBar();
+        if(Math.random()<.3) spawnSparks(
+          (this.x+msCx)/2,(this.y+msCy)/2,`hsl(${this.hueShift},100%,70%)`,4
+        );
+        if(MS.hp<=0) MS._destroy();
+      }
+    }
+
     // ── Victory check — all blue dead ──
     const blueLeft=OF.orbs.filter(o=>o.team==='blue'&&!o.dead);
-    if(blueLeft.length===0&&this._battleFrames>180&&this._peakBlueCount>0&&this.hp>0){
+    if(blueLeft.length===0&&this._battleFrames>180&&this._peakBlueCount>0&&this.hp>0&&!MS.active){
       this.active=false;
       OF.battleRunning=false;
       this.stop();
@@ -10841,7 +10965,8 @@ const APEX={
   // ── DEFEAT SEQUENCE ──
   _destroy(){
     this.deathSequence=true;
-    OF.battleRunning=false;
+    // Only stop battle if no other boss is active
+    if(!MS.active) OF.battleRunning=false;
     document.getElementById('of-status-text').textContent='🌌 THE APEX IS COLLAPSING...';
 
     // Generate crack lines
@@ -10897,14 +11022,20 @@ const APEX={
         });
         this.minions=[];
 
+        const killedByMS=MS.active;
         this.stop();
 
         setTimeout(()=>{
-          document.getElementById('of-victory').style.display='flex';
-          document.getElementById('of-victory-icon').textContent='🌌';
-          document.getElementById('of-victory-title').textContent='THE OMNIVERSAL APEX HAS FALLEN';
-          document.getElementById('of-victory-title').style.color='#cc88ff';
-          document.getElementById('of-victory-sub').textContent='The ultimate cosmic entity has been vanquished. You are the true champion.';
+          if(killedByMS){
+            toast('🌌 OMNIVERSAL APEX DESTROYED by Mothership!','#cc88ff');
+            document.getElementById('of-status-text').textContent='👾 Mothership defeated the Apex!';
+          } else {
+            document.getElementById('of-victory').style.display='flex';
+            document.getElementById('of-victory-icon').textContent='🌌';
+            document.getElementById('of-victory-title').textContent='THE OMNIVERSAL APEX HAS FALLEN';
+            document.getElementById('of-victory-title').style.color='#cc88ff';
+            document.getElementById('of-victory-sub').textContent='The ultimate cosmic entity has been vanquished. You are the true champion.';
+          }
           SFX.bossDefeat();shake('lg');
         },600);
       }
@@ -11200,6 +11331,48 @@ function ofStartApex(){
   if(TB.active){ toast('Remove the Test Boss first!','#ffaa44'); return; }
   APEX.setup();
   ofCheckLaserBtn();
+}
+
+function ofShowSummonPicker(){
+  const picker=document.getElementById('of-summon-picker');
+  // Hide options for already-active bosses
+  document.getElementById('of-summon-ms-btn').style.display=MS.active?'none':'';
+  document.getElementById('of-summon-apex-btn').style.display=APEX.active?'none':'';
+  picker.style.display='flex';
+}
+
+function ofSummonBoss(type){
+  document.getElementById('of-summon-picker').style.display='none';
+  document.getElementById('of-summon-btn').style.display='none';
+  if(type==='mothership'&&!MS.active){
+    // Summon Mothership on the RIGHT side (Apex is on left)
+    MS._summonedAsRival=true;
+    MS.setup();
+    // After setup, reposition Mothership to the right side
+    setTimeout(()=>{
+      MS.x=OF.W-MS.w*0.1; // will slide in from right
+      MS._slideFromRight=true;
+    },50);
+    ofCheckLaserBtn();
+    toast('👾 Mothership has entered the arena!','#ff8844');
+  } else if(type==='apex'&&!APEX.active){
+    // Summon Apex on the RIGHT side (Mothership is on left)
+    APEX._summonedAsRival=true;
+    APEX.setup();
+    // After setup, reposition Apex to the right side
+    setTimeout(()=>{
+      APEX.x=OF.W*0.78;
+    },50);
+    ofCheckLaserBtn();
+    toast('🌌 Omniversal Apex has entered the arena!','#aa66ff');
+  }
+  // If battle was already running, auto-start for the new boss
+  if(OF.battleRunning){
+    setTimeout(()=>{
+      if(type==='mothership'&&MS.active&&MS.spawning===false) MS.beginBattle();
+      if(type==='apex'&&APEX.active&&APEX.spawning===false) APEX.beginBattle();
+    },3500); // Wait for entrance animation
+  }
 }
 
 function ofClearAll(){ OF.clearAll(); ofCheckLaserBtn(); }
