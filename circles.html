@@ -1366,7 +1366,7 @@ body.adv-mars-bg #adv-overlay{background:radial-gradient(ellipse at 50% 80%,#200
       <div class="of-spawn-grid">
         <button class="of-spawn-btn of-boss-btn" data-key="boss_tyrant"   onclick="ofSelectOrb('boss_tyrant')">☠ Tyrant</button>
         <button class="of-spawn-btn of-boss-btn" data-key="boss_giant"    onclick="ofSelectOrb('boss_giant')">☠ Overlord</button>
-        <button class="of-spawn-btn of-boss-btn" data-key="boss_rainbow"  onclick="ofSelectOrb('boss_rainbow')">☠ Prismatic</button>
+        <button class="of-spawn-btn of-boss-btn" data-key="boss_rainbow"  onclick="ofSelectOrb('boss_rainbow')">🌈 Rainbow Chaos</button>
         <button class="of-spawn-btn of-boss-btn" data-key="boss_void"     onclick="ofSelectOrb('boss_void')">☠ Void</button>
         <button class="of-spawn-btn of-boss-btn" data-key="boss_ultimate" onclick="ofSelectOrb('boss_ultimate')">⬡ Ultimate</button>
         <button class="of-spawn-btn of-boss-btn of-inf-btn" data-key="infinite" onclick="ofSelectOrb('infinite')">∞ Infinite</button>
@@ -6782,7 +6782,7 @@ const OF={
     quantum:      {label:'Quantum',   r:22, hp:100, dmg:10, spd:1.4, color:'#cc44ff', glow:'rgba(200,80,255,', team:null,   ability:'blink'},
     boss_tyrant:  {label:'Tyrant',    r:44, hp:500, dmg:25, spd:0.5, color:'#f5c842', glow:'rgba(245,200,66,', team:null,   ability:'shockwave', isBoss:true},
     boss_giant:   {label:'Overlord',  r:50, hp:700, dmg:30, spd:0.4, color:'#ff8800', glow:'rgba(255,120,0,',  team:null,   ability:'aoe',       isBoss:true},
-    boss_rainbow: {label:'Prismatic', r:46, hp:600, dmg:28, spd:0.6, color:'#ff44ff', glow:'rgba(200,80,255,', team:null,   ability:'multishot',  isBoss:true},
+    boss_rainbow: {label:'Rainbow Chaos', r:46, hp:600, dmg:28, spd:0.6, color:'#ff44ff', glow:'rgba(200,80,255,', team:null,   ability:'multishot',  isBoss:true},
     boss_void:    {label:'Void',      r:48, hp:800, dmg:32, spd:0.35,color:'#4433cc', glow:'rgba(80,50,220,',  team:null,   ability:'gravity',    isBoss:true},
     boss_ultimate:{label:'Ultimate',  r:56, hp:1200,dmg:40, spd:0.3, color:'#cc88ff', glow:'rgba(200,150,255,',team:null,   ability:'shockwave',  isBoss:true, isUltimate:true},
     infinite:     {label:'Infinite',  r:0,  hp:9999, dmg:60,  spd:0.0, color:'#7744ff', glow:'rgba(140,80,255,',  team:null, ability:'infinite',   isInfinite:true},
@@ -8672,8 +8672,9 @@ const OF={
         SFX.mothershipArrive();
         setTimeout(()=>SFX.bossDefeat(),200);
 
-        // Spawn the Triastral Convergence
-        const r=100; // Fixed large size
+        // Spawn the Triastral Convergence (80% of Prismatic size)
+        const zoom=APEX.active;
+        const r=Math.min(this.W,this.H)*(zoom?.095*.8:.28*.8);
         const orb=this._makeOrb('triastral',cx,cy,team,r);
         this.orbs.push(orb);
 
