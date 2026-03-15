@@ -1390,6 +1390,7 @@ body.adv-mars-bg #adv-overlay{background:radial-gradient(ellipse at 50% 80%,#200
           <button class="of-spawn-btn of-celestial-btn" data-key="stellar" onclick="ofSelectOrb('stellar')">⭐ Stellar Titan</button>
           <button class="of-spawn-btn of-celestial-btn" data-key="comet" onclick="ofSelectOrb('comet')">🌀 Comet Harbinger</button>
           <button class="of-spawn-btn of-celestial-btn" data-key="astral" onclick="ofSelectOrb('astral')">✨ Astral Seraph</button>
+    <button class="of-spawn-btn of-celestial-btn" data-key="celestial_prime" onclick="ofSelectOrb('celestial_prime')">🌟 Celestial Prime</button>
         </div>
       </div>
       <div id="of-selected-label">Select an orb, then click left (Red) or right (Blue) to place</div>
@@ -6792,6 +6793,7 @@ const OF={
     stellar:  {label:'Stellar Titan',    r:120,hp:42000, dmg:100,spd:0.5, color:'#ffee88', glow:'rgba(255,238,136,', team:null, ability:'stellar',  isCelestial:true},
     comet:    {label:'Comet Harbinger',  r:70, hp:26000, dmg:75, spd:1.8, color:'#44ddff', glow:'rgba(68,221,255,',  team:null, ability:'comet',    isCelestial:true},
     astral:   {label:'Astral Seraph',    r:110,hp:48000, dmg:110,spd:0.55,color:'#ffffff', glow:'rgba(255,255,255,', team:null, ability:'astral',   isCelestial:true},
+    celestial_prime:{label:'Celestial Prime',r:130,hp:65000,dmg:130,spd:0.45,color:'#ffffee',glow:'rgba(255,255,238,',team:null,ability:'celestial_prime',isCelestial:true},
   },
 
   init(){
@@ -6881,6 +6883,10 @@ const OF={
   },
 
   onCanvasClick(e){
+    // Debounce to prevent double-spawn
+    const now=Date.now();
+    if(now-(this._lastClickTime||0)<100) return;
+    this._lastClickTime=now;
     if(this.battleRunning)return;
     const rect=this.canvas.getBoundingClientRect();
     const x=e.clientX-rect.left, y=e.clientY-rect.top;
@@ -6912,6 +6918,16 @@ const OF={
 
     // Infinite orb rules
     if(def.isInfinite){
+      if(APEX.active){
+        const infCount=this.orbs.filter(o=>o.isInfinite&&o.team==='blue').length;
+        if(team!=='blue'){ toast('Only Blue team in Apex mode!','#ffaa44'); return; }
+        if(infCount>=20){ toast('Max 20 Infinite Circles in Apex mode!','#ff8844'); return; }
+        const r=Math.min(this.W,this.H)*.16*zf;
+        const safeX=Math.max(this.W*0.52+r, Math.min(this.W-r, x));
+        const safeY=Math.max(r+40, Math.min(this.H-r-40, y));
+        this.orbs.push(this._makeOrb(this.selectedType,safeX,safeY,team,r));
+        ofCheckLaserBtn(); return;
+      }
       if(MS.active){
         const infCount=this.orbs.filter(o=>o.isInfinite&&o.team==='blue').length;
         if(team!=='blue'){ toast('Only Blue team in Mothership mode!','#ffaa44'); return; }
@@ -6957,9 +6973,10 @@ const OF={
         toast(`✦ RGB Cooldown: ${Math.ceil(this.prismaticCooldown/1000)}s remaining`,'#ff8844');
         return;
       }
-      const prisMax=zoom?3:1;
+      const prisMax=APEX.active?5:zoom?3:1;
       const existing=this.orbs.filter(o=>o.isPrismatic&&o.team===team).length;
       if(existing>=prisMax){ toast(`Max ${prisMax} Prismatic${prisMax>1?'s':''} per team!`,'#ff8844'); return; }
+      if(APEX.active&&team!=='blue'){ toast('Only Blue team in Apex mode!','#ffaa44'); return; }
       if(MS.active&&team!=='blue'){ toast('Only Blue team in Mothership mode!','#ffaa44'); return; }
       if(TB.active&&team==='red'){ toast('Red side belongs to the Test Boss!','#44ffcc'); return; }
       const r=Math.min(this.W,this.H)*(zoom?.095:.28);
@@ -7698,6 +7715,143 @@ const OF={
           // Star particles
           if(Math.random()<.3) spawnSparks(o.x+(-o.r+Math.random()*o.r*2),o.y+(-o.r+Math.random()*o.r*2),'#ffffcc',2);
         }
+
+        // 🌟 CELESTIAL PRIME
+        if(o.ability==='celestial_prime'){
+          o._primeRingT=(o._primeRingT||0)+0.04;
+          o._primeStarfallT=(o._primeStarfallT||0)+1;
+
+          // Celestial Aura — passive damage to enemies, damage boost to allies
+          const auraRange=o.r*3;
+          alive.filter(e=>e.team!==o.team&&!e.dead).forEach(e=>{
+            const d=Math.hypot(e.x-o.x,e.y-o.y);
+            if(d<auraRange){
+              e.hp=Math.max(0,e.hp-o.dmg*0.015);
+              if(Math.random()<.04) spawnSparks(e.x,e.y,'#ffffcc',2);
+              if(e.hp<=0){e.dead=true;SFX.orbExplode();}
+            }
+          });
+          // Ally damage boost aura
+          alive.filter(e=>e.team===o.team&&!e.dead&&e!==o).forEach(e=>{
+            const d=Math.hypot(e.x-o.x,e.y-o.y);
+            if(d<auraRange&&!e._primeBoost){
+              e._primeBoost=true;
+              e.dmg*=1.15; // 15% damage boost
+            }
+          });
+
+          // Orbit Shield — 3 protective stars
+          if(!o._orbitStars||o._orbitStars.length===0){
+            if(!o._orbitShieldCd||o._orbitShieldCd<=0){
+              o._orbitStars=[];
+              for(let i=0;i<3;i++){
+                o._orbitStars.push({angle:i*(Math.PI*2/3),hp:o.maxHp*0.03,r:8});
+              }
+            } else {
+              o._orbitShieldCd--;
+            }
+          }
+          if(o._orbitStars&&o._orbitStars.length>0){
+            o._orbitStars.forEach(s=>{
+              s.angle+=0.04;
+            });
+            // Shield absorbs nearby enemy projectiles
+            const enemies2=alive.filter(e=>e.team!==o.team&&!e.dead);
+            enemies2.forEach(e=>{
+              e.projectiles=e.projectiles.filter(p=>{
+                for(let si=o._orbitStars.length-1;si>=0;si--){
+                  const s=o._orbitStars[si];
+                  const sx=o.x+Math.cos(s.angle)*(o.r*1.4);
+                  const sy=o.y+Math.sin(s.angle)*(o.r*1.4);
+                  if(Math.hypot(p.x-sx,p.y-sy)<s.r+p.r+5){
+                    s.hp-=p.dmg||10;
+                    spawnSparks(sx,sy,'#ffffaa',3);
+                    if(s.hp<=0){
+                      o._orbitStars.splice(si,1);
+                      spawnParticles(sx,sy,'#ffffcc',10,4);
+                      SFX.orbExplode();
+                      if(o._orbitStars.length===0) o._orbitShieldCd=300;
+                    }
+                    return false;
+                  }
+                }
+                return true;
+              });
+            });
+          }
+
+          // Stellar Beam — piercing white beam (every 200 frames)
+          if(o.abilityTimer%200===0&&o.abilityTimer>0){
+            const target=alive.filter(e=>e.team!==o.team&&!e.dead).sort((a,b)=>Math.hypot(a.x-o.x,a.y-o.y)-Math.hypot(b.x-o.x,b.y-o.y))[0];
+            let tx=o.x+300,ty=o.y;
+            if(target){tx=target.x;ty=target.y;}
+            else if(TB.active){tx=TB.x;ty=TB.y;}
+            else if(MS.active){tx=MS.x+MS.w/2;ty=MS.y+MS.h/2;}
+            else if(APEX.active){tx=APEX.x;ty=APEX.y;}
+            const ang=Math.atan2(ty-o.y,tx-o.x);
+            SFX.laserFire();shake('md');flashScreen('rgba(255,255,230,.4)',60);
+            for(let i=0;i<12;i++){
+              const a=ang+(i-5.5)*0.04;
+              const spd=14+Math.random()*2;
+              o.projectiles.push({x:o.x,y:o.y,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,
+                dmg:o.dmg*2,r:12,life:200,color:'#ffffff',
+                homing:true,homingStr:0.08,tx,ty});
+            }
+          }
+
+          // Cosmic Pulse — expanding energy wave (every 200, offset 100)
+          if(o.abilityTimer%200===100){
+            shake('md');SFX.bossExplode();
+            spawnShockwave(o.x,o.y,'rgba(255,255,200,',o.r*5,9);
+            flashScreen('rgba(255,255,220,.25)',50);
+            alive.filter(e=>e.team!==o.team&&!e.dead).forEach(e=>{
+              const d=Math.hypot(e.x-o.x,e.y-o.y);
+              if(d<o.r*5){
+                e.hp=Math.max(0,e.hp-o.dmg*1.5);
+                const knockA=Math.atan2(e.y-o.y,e.x-o.x);
+                e.vx+=Math.cos(knockA)*5;e.vy+=Math.sin(knockA)*5;
+                spawnSparks(e.x,e.y,'#ffffcc',4);
+                if(e.hp<=0){e.dead=true;SFX.bossExplode();}
+              }
+            });
+            if(TB.active&&Math.hypot(TB.x-o.x,TB.y-o.y)<o.r*5) TB.hit(o.dmg*1.5);
+            if(MS.active&&Math.hypot((MS.x+MS.w/2)-o.x,(MS.y+MS.h/2)-o.y)<o.r*5){
+              MS.hp=Math.max(0,MS.hp-o.dmg*1.5);MS._updateBar();
+              if(MS.hp<=0) MS._destroy();
+            }
+            if(APEX.active&&Math.hypot(APEX.x-o.x,APEX.y-o.y)<o.r*5){
+              APEX.hp=Math.max(0,APEX.hp-o.dmg*1.5);APEX._updateBar();
+              if(APEX.hp<=0) APEX._destroy();
+            }
+          }
+
+          // Starfall — stars rain from above (every 200, offset 150)
+          if(o.abilityTimer%200===150){
+            SFX.infiniteShoot();
+            document.getElementById('of-status-text')&&(document.getElementById('of-status-text').textContent='✨ STARFALL!');
+            for(let i=0;i<10;i++){
+              setTimeout(()=>{
+                if(!OF.active||o.dead)return;
+                const sx=o.x+(-o.r*3+Math.random()*o.r*6);
+                const sy=0;
+                o.projectiles.push({x:sx,y:sy,vx:(Math.random()-0.5)*2,vy:8+Math.random()*4,
+                  dmg:o.dmg*1.2,r:9,life:160,color:`hsl(${40+Math.random()*20},100%,${70+Math.random()*20}%)`});
+                spawnSparks(sx,sy,'#ffee66',3);
+              },i*60);
+            }
+            setTimeout(()=>{
+              if(OF.active&&!o.dead) document.getElementById('of-status-text').textContent=OF.battleRunning?'BATTLE IN PROGRESS':'PLACE ORBS — THEN START BATTLE';
+            },2000);
+          }
+
+          // Constant star particles
+          if(Math.random()<.35) spawnSparks(o.x+(-o.r+Math.random()*o.r*2),o.y+(-o.r+Math.random()*o.r*2),'#ffffcc',2);
+          // Occasional bright flash
+          if(Math.random()<.005){
+            flashScreen('rgba(255,255,230,.15)',30);
+            spawnParticles(o.x,o.y,'#ffffff',8,4);
+          }
+        }
       }
 
       // ── PRISMATIC SINGULARITY ABILITIES ──
@@ -8240,37 +8394,54 @@ const OF={
 
   _drawBossHPBar(ctx,cx,cy,hp,maxHp,label,barCol){
     const pct=Math.max(0,hp/maxHp);
-    const bw=220,bh=14;
+    const bw=340,bh=22;
     const bx=cx-bw/2,by=cy;
     ctx.save();
-    // Background panel
-    ctx.fillStyle='rgba(0,0,0,.75)';
-    ctx.strokeStyle='rgba(255,255,255,.15)';ctx.lineWidth=1;
-    const panelH=42;
-    const rx=bx-12,ry=by-18;
+    // Background panel with glow
+    ctx.shadowColor=barCol;ctx.shadowBlur=20;
+    ctx.fillStyle='rgba(0,0,0,.85)';
+    ctx.strokeStyle=barCol+'88';ctx.lineWidth=2;
+    const panelH=60;
+    const rx=bx-16,ry=by-24;
     ctx.beginPath();
-    ctx.roundRect(rx,ry,bw+24,panelH,6);
+    ctx.roundRect(rx,ry,bw+32,panelH,8);
     ctx.fill();ctx.stroke();
-    // Label
-    ctx.fillStyle=barCol;ctx.font='bold 8px Orbitron,monospace';
-    ctx.textAlign='center';ctx.shadowColor=barCol;ctx.shadowBlur=8;
-    ctx.fillText(label,cx,by-5);
+    // Label with glow
+    ctx.shadowBlur=12;ctx.shadowColor=barCol;
+    ctx.fillStyle=barCol;ctx.font='bold 11px Orbitron,monospace';
+    ctx.textAlign='center';
+    ctx.fillText(label,cx,by-7);
     // Track
-    ctx.fillStyle='rgba(0,0,0,.5)';
-    ctx.strokeStyle='rgba(255,255,255,.2)';ctx.lineWidth=1;
-    ctx.beginPath();ctx.roundRect(bx,by,bw,bh,4);ctx.fill();ctx.stroke();
-    // Fill
-    if(pct>0){
-      ctx.shadowBlur=12;ctx.shadowColor=barCol;
-      ctx.fillStyle=barCol;
-      ctx.beginPath();ctx.roundRect(bx,by,bw*pct,bh,4);ctx.fill();
-    }
-    // Value text
     ctx.shadowBlur=0;
-    ctx.fillStyle='rgba(255,255,255,.7)';ctx.font='bold 7px Orbitron,monospace';
+    ctx.fillStyle='rgba(0,0,0,.6)';
+    ctx.strokeStyle='rgba(255,255,255,.25)';ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.roundRect(bx,by,bw,bh,6);ctx.fill();ctx.stroke();
+    // Fill with gradient and glow
+    if(pct>0){
+      ctx.shadowBlur=16;ctx.shadowColor=barCol;
+      const fillGrad=ctx.createLinearGradient(bx,by,bx+bw*pct,by);
+      fillGrad.addColorStop(0,barCol);
+      fillGrad.addColorStop(0.5,barCol+'dd');
+      fillGrad.addColorStop(1,'#ffffff88');
+      ctx.fillStyle=fillGrad;
+      ctx.beginPath();ctx.roundRect(bx,by,bw*pct,bh,6);ctx.fill();
+      // Animated shine
+      const shineX=bx+(Date.now()%2000)/2000*bw*pct;
+      if(shineX<bx+bw*pct){
+        const sg=ctx.createRadialGradient(shineX,by+bh/2,0,shineX,by+bh/2,20);
+        sg.addColorStop(0,'rgba(255,255,255,0.3)');sg.addColorStop(1,'rgba(255,255,255,0)');
+        ctx.fillStyle=sg;ctx.fillRect(bx,by,bw*pct,bh);
+      }
+    }
+    // Percentage on bar
+    ctx.shadowBlur=0;
+    ctx.fillStyle='rgba(255,255,255,.9)';ctx.font='bold 10px Orbitron,monospace';
+    ctx.fillText(`${Math.ceil(pct*100)}%`,cx,by+bh-5);
+    // HP value below
+    ctx.fillStyle='rgba(255,255,255,.6)';ctx.font='bold 8px Orbitron,monospace';
     const hpStr=hp>=1e6?(hp/1e6).toFixed(2)+'M':hp>=1e3?(hp/1e3).toFixed(1)+'K':Math.ceil(hp).toLocaleString();
     const maxStr=maxHp>=1e6?(maxHp/1e6).toFixed(0)+'M':maxHp>=1e3?(maxHp/1e3).toFixed(0)+'K':maxHp.toLocaleString();
-    ctx.fillText(`${hpStr} / ${maxStr}  (${Math.ceil(pct*100)}%)`,cx,by+bh+10);
+    ctx.fillText(`${hpStr} / ${maxStr}`,cx,by+bh+13);
     ctx.restore();
   },
 
@@ -8655,6 +8826,78 @@ const OF={
           ctx.beginPath();ctx.arc(0,0,ringR,0,Math.PI*2);
           ctx.strokeStyle=`rgba(255,255,${200-ring*40},${0.4-ring*0.1})`;ctx.lineWidth=1.5;ctx.stroke();
           ctx.restore();
+        }
+      } else if(o.ability==='celestial_prime'){
+        // Glowing white core with galaxy patterns
+        const cpt=o._primeRingT||o.pulseT*0.04;
+        // Galaxy-like inner swirl
+        const ig=ctx.createRadialGradient(o.x,o.y,0,o.x,o.y,r);
+        ig.addColorStop(0,'#ffffff');ig.addColorStop(0.15,'#ffffee');
+        ig.addColorStop(0.4,`hsl(${(cpt*20)%360},30%,85%)`);
+        ig.addColorStop(0.7,`hsl(${(cpt*20+120)%360},20%,60%)`);
+        ig.addColorStop(1,`hsl(${(cpt*20+240)%360},25%,35%)`);
+        ctx.beginPath();ctx.arc(o.x,o.y,r,0,Math.PI*2);ctx.fillStyle=ig;
+        ctx.shadowColor='#ffffcc';ctx.shadowBlur=50;ctx.fill();
+        // Galaxy spiral pattern inside
+        ctx.save();ctx.translate(o.x,o.y);ctx.rotate(cpt*0.3);
+        for(let arm=0;arm<4;arm++){
+          ctx.save();ctx.rotate(arm*(Math.PI/2));
+          ctx.strokeStyle=`rgba(255,255,200,${0.15+0.05*Math.sin(cpt*2+arm)})`;ctx.lineWidth=1.5;
+          ctx.beginPath();
+          for(let s=0;s<25;s++){
+            const sa=s*0.25;const sr=r*0.15+s*(r*0.03);
+            const sx=Math.cos(sa)*sr,sy=Math.sin(sa)*sr;
+            s===0?ctx.moveTo(sx,sy):ctx.lineTo(sx,sy);
+          }
+          ctx.stroke();ctx.restore();
+        }
+        ctx.restore();
+        // Rotating golden rings
+        for(let ring=0;ring<2;ring++){
+          ctx.save();ctx.translate(o.x,o.y);
+          ctx.rotate(cpt*(ring+1)*0.6+ring*1.5);
+          ctx.scale(1,0.3);
+          const ringR=r*(1.3+ring*0.25);
+          ctx.beginPath();ctx.arc(0,0,ringR,0,Math.PI*2);
+          ctx.strokeStyle=`rgba(255,220,100,${0.45-ring*0.1+0.1*Math.sin(cpt*2+ring)})`;
+          ctx.lineWidth=2.5;ctx.shadowColor='#ffcc44';ctx.shadowBlur=12;ctx.stroke();
+          ctx.restore();
+        }
+        // Orbiting star particles
+        for(let i=0;i<8;i++){
+          const sa=cpt*0.5+i*(Math.PI*2/8);
+          const sd=r*(1.15+0.1*Math.sin(cpt*1.5+i*0.8));
+          const sx=o.x+Math.cos(sa)*sd,sy=o.y+Math.sin(sa)*sd;
+          const ss=2+Math.sin(cpt*3+i)*1;
+          ctx.beginPath();ctx.arc(sx,sy,ss,0,Math.PI*2);
+          ctx.fillStyle=`rgba(255,255,200,${0.6+0.3*Math.sin(cpt*2+i)})`;
+          ctx.shadowColor='#ffffcc';ctx.shadowBlur=8;ctx.fill();
+        }
+        // Bright flash effect (periodic)
+        const flash=Math.pow(Math.max(0,Math.sin(cpt*0.8)),12);
+        if(flash>0.01){
+          const fg=ctx.createRadialGradient(o.x,o.y,0,o.x,o.y,r*0.5);
+          fg.addColorStop(0,`rgba(255,255,255,${flash*0.9})`);
+          fg.addColorStop(1,'rgba(255,255,200,0)');
+          ctx.beginPath();ctx.arc(o.x,o.y,r*0.5,0,Math.PI*2);ctx.fillStyle=fg;ctx.fill();
+        }
+        // Draw orbit shield stars
+        if(o._orbitStars&&o._orbitStars.length>0){
+          o._orbitStars.forEach(s=>{
+            const sx=o.x+Math.cos(s.angle)*(r*1.4*pulse);
+            const sy=o.y+Math.sin(s.angle)*(r*1.4*pulse);
+            ctx.beginPath();ctx.arc(sx,sy,s.r,0,Math.PI*2);
+            ctx.fillStyle='#ffffaa';ctx.shadowColor='#ffee66';ctx.shadowBlur=12;ctx.fill();
+            // Star glint
+            ctx.save();ctx.translate(sx,sy);ctx.rotate(cpt*2+s.angle);
+            for(let g=0;g<4;g++){
+              ctx.save();ctx.rotate(g*(Math.PI/2));
+              ctx.fillStyle='rgba(255,255,200,0.5)';
+              ctx.beginPath();ctx.moveTo(0,-1);ctx.lineTo(s.r+4,0);ctx.lineTo(0,1);ctx.fill();
+              ctx.restore();
+            }
+            ctx.restore();
+          });
         }
       }
     }
