@@ -9356,6 +9356,7 @@ const MS={
     this.attackTimer=0; this.missileTimer=0; this.cannonTimer=0;
     this.cannonCharging=false; this.cannonChargeT=0; this.spawnTimer=0;
     this.pulseT=0; this._cannonBeamLife=0;
+    this._ringAngles=[0,0.8,1.8];
 
     // Mothership dimensions — scale down in zoom mode only; full size even as rival boss
     const mzf=OF.zoomedOut?1/3:1;
@@ -9981,128 +9982,164 @@ const MS={
     if(this._portalActive&&this._portalR>0){
       const px=this._summonedAsRival?OF.W*0.79:OF.W*0.21, py=OF.H*0.5;
       ctx.save();
-      // Outer ring
       for(let i=3;i>=1;i--){
         ctx.beginPath();ctx.arc(px,py,this._portalR*i/3+Math.sin(this.pulseT*4)*6,0,Math.PI*2);
         ctx.strokeStyle=`rgba(255,${80+i*40},0,${0.15*i})`;
         ctx.lineWidth=8*i;ctx.shadowColor='rgba(255,100,0,1)';ctx.shadowBlur=30;ctx.stroke();
       }
-      // Swirling interior
       const pg=ctx.createRadialGradient(px,py,0,px,py,this._portalR);
-      pg.addColorStop(0,'rgba(255,200,50,.6)');
-      pg.addColorStop(.4,'rgba(255,80,0,.4)');
-      pg.addColorStop(1,'rgba(100,0,0,0)');
-      ctx.beginPath();ctx.arc(px,py,this._portalR,0,Math.PI*2);
-      ctx.fillStyle=pg;ctx.fill();
-      // Rotating spokes
+      pg.addColorStop(0,'rgba(255,200,50,.6)');pg.addColorStop(.4,'rgba(255,80,0,.4)');pg.addColorStop(1,'rgba(100,0,0,0)');
+      ctx.beginPath();ctx.arc(px,py,this._portalR,0,Math.PI*2);ctx.fillStyle=pg;ctx.fill();
       ctx.translate(px,py);ctx.rotate(this.pulseT*3);
       for(let i=0;i<8;i++){
         const a=(i/8)*Math.PI*2;
-        ctx.beginPath();ctx.moveTo(0,0);
-        ctx.lineTo(Math.cos(a)*this._portalR,Math.sin(a)*this._portalR);
-        ctx.strokeStyle=`rgba(255,150,50,${0.15+.1*Math.sin(this.pulseT*5+i)})`;
-        ctx.lineWidth=3;ctx.shadowBlur=10;ctx.stroke();
+        ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(Math.cos(a)*this._portalR,Math.sin(a)*this._portalR);
+        ctx.strokeStyle=`rgba(255,150,50,${0.15+.1*Math.sin(this.pulseT*5+i)})`;ctx.lineWidth=3;ctx.shadowBlur=10;ctx.stroke();
       }
       ctx.restore();
     }
 
-    // Don't draw the ship while it's still in the portal entrance phase
-    if(this.spawning) return;
-    const x=this.x,y=this.y,w=this.w,h=this.h;
+    if(this.spawning)return;
+
+    const x=this.x, y=this.y, w=this.w, h=this.h;
+    const cx=x+w*0.5, cy=y+h*0.5;
+    const r=Math.min(w,h)*0.44;
     const hpPct=this.hp/this.maxHp;
-    const pulse=0.97+0.03*Math.sin(this.pulseT*1.5);
+    const tT=this.pulseT;
+    const pulse=0.97+0.03*Math.sin(tT*1.5);
+    if(!this._ringAngles) this._ringAngles=[0,0.8,1.8];
 
     ctx.save();
+    if(this._summonedAsRival){ctx.translate(x*2+w,0);ctx.scale(-1,1);}
 
-    // Flip horizontally when summoned as rival (facing left instead of right)
-    if(this._summonedAsRival){
-      ctx.translate(x*2+w,0);
-      ctx.scale(-1,1);
+    // ── Outer threat aura ──
+    const ag=ctx.createRadialGradient(cx,cy,r*0.4,cx,cy,r*2.4);
+    ag.addColorStop(0,'rgba(255,80,0,0.20)');ag.addColorStop(0.5,'rgba(160,40,0,0.07)');ag.addColorStop(1,'rgba(100,20,0,0)');
+    ctx.fillStyle=ag;ctx.beginPath();ctx.arc(cx,cy,r*2.4,0,Math.PI*2);ctx.fill();
+
+    // ── Base sphere — dark metal ──
+    const sg=ctx.createRadialGradient(cx-r*0.28,cy-r*0.28,r*0.04,cx,cy,r);
+    sg.addColorStop(0,'#321400');sg.addColorStop(0.45,'#1c0800');sg.addColorStop(0.78,'#0e0400');sg.addColorStop(1,'#010000');
+    ctx.shadowColor='rgba(255,80,0,0.6)';ctx.shadowBlur=28;
+    ctx.fillStyle=sg;ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fill();
+
+    // ── Hex armor plate segments ──
+    ctx.save();ctx.beginPath();ctx.arc(cx,cy,r*0.99,0,Math.PI*2);ctx.clip();
+    for(let i=0;i<8;i++){
+      const a0=(i/8)*Math.PI*2+0.05, a1=((i+1)/8)*Math.PI*2-0.05;
+      const dimL=12+hpPct*8;
+      ctx.fillStyle=`hsl(18,55%,${dimL}%)`;
+      ctx.strokeStyle=`rgba(255,${70+40*Math.sin(tT*1.5+i)},0,0.65)`;
+      ctx.lineWidth=1.5;ctx.shadowColor='rgba(255,80,0,0.8)';ctx.shadowBlur=5;
+      ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r*0.97,a0,a1);ctx.closePath();ctx.fill();ctx.stroke();
+    }
+    // Armor band rings
+    for(let b=1;b<=3;b++){
+      ctx.strokeStyle=`rgba(255,90,0,${0.25-b*0.05})`;ctx.lineWidth=1;ctx.shadowBlur=3;
+      ctx.beginPath();ctx.arc(cx,cy,r*(0.28+b*0.22),0,Math.PI*2);ctx.stroke();
+    }
+    ctx.restore();
+
+    // ── Energy veins (glowing circuitry) ──
+    ctx.save();ctx.beginPath();ctx.arc(cx,cy,r*0.99,0,Math.PI*2);ctx.clip();
+    const vp=0.4+0.6*Math.sin(tT*2.8);
+    ctx.strokeStyle=`rgba(255,${90+50*vp},0,${0.28+0.18*vp})`;
+    ctx.lineWidth=1;ctx.shadowColor='rgba(255,120,0,1)';ctx.shadowBlur=6;
+    for(let i=0;i<10;i++){
+      const va=(i/10)*Math.PI*2+tT*0.04;
+      ctx.beginPath();ctx.moveTo(cx+Math.cos(va)*r*0.18,cy+Math.sin(va)*r*0.18);
+      ctx.lineTo(cx+Math.cos(va)*r*0.86,cy+Math.sin(va)*r*0.86);ctx.stroke();
+    }
+    for(let i=-2;i<=2;i++){
+      const ly=cy+i*r*0.3, lhw=Math.sqrt(Math.max(0,r*r-(ly-cy)*(ly-cy)))*0.92;
+      ctx.beginPath();ctx.moveTo(cx-lhw,ly);ctx.lineTo(cx+lhw,ly);ctx.stroke();
+    }
+    ctx.restore();
+
+    // ── Rotating defense rings ──
+    this._ringAngles[0]+=0.008;this._ringAngles[1]-=0.005;this._ringAngles[2]+=0.012;
+    if(this.cannonCharging){const sp=this.cannonChargeT*0.0004;this._ringAngles[0]+=sp;this._ringAngles[1]-=sp;this._ringAngles[2]+=sp*1.3;}
+    [r*1.10,r*1.22,r*1.36].forEach((rr,ri)=>{
+      ctx.save();ctx.translate(cx,cy);ctx.rotate(this._ringAngles[ri]);
+      const segN=5+ri*3;
+      for(let si=0;si<segN;si++){
+        const sa=(si/segN)*Math.PI*2, ea=((si+0.72)/segN)*Math.PI*2;
+        ctx.strokeStyle=`rgba(255,${75+20*ri},0,${0.55-ri*0.12})`;
+        ctx.lineWidth=3-ri*0.7;ctx.shadowColor='rgba(255,80,0,0.9)';ctx.shadowBlur=10;
+        ctx.beginPath();ctx.arc(0,0,rr,sa,ea);ctx.stroke();
+        ctx.fillStyle=`rgba(255,${130+30*ri},50,0.85)`;ctx.shadowBlur=5;
+        ctx.beginPath();ctx.arc(Math.cos(sa)*rr,Math.sin(sa)*rr,2.5,0,Math.PI*2);ctx.fill();
+      }
+      ctx.restore();
+    });
+
+    // ── Drone launch bays (8 ports on sphere surface) ──
+    for(let i=0;i<8;i++){
+      const ba=(i/8)*Math.PI*2+tT*0.008;
+      const bxx=cx+Math.cos(ba)*r*0.80, byy=cy+Math.sin(ba)*r*0.80;
+      const bg=0.35+0.65*Math.sin(tT*2.2+i*0.78);
+      ctx.fillStyle='rgba(4,1,0,1)';
+      ctx.strokeStyle=`rgba(255,${75+55*bg},0,0.85)`;
+      ctx.lineWidth=1.5;ctx.shadowColor='rgba(255,80,0,1)';ctx.shadowBlur=9;
+      ctx.beginPath();ctx.arc(bxx,byy,r*0.053,0,Math.PI*2);ctx.fill();ctx.stroke();
+      const bdg=ctx.createRadialGradient(bxx,byy,0,bxx,byy,r*0.053);
+      bdg.addColorStop(0,`rgba(255,${150+70*bg},40,${bg*0.9})`);bdg.addColorStop(1,'rgba(255,60,0,0)');
+      ctx.fillStyle=bdg;ctx.beginPath();ctx.arc(bxx,byy,r*0.053,0,Math.PI*2);ctx.fill();
     }
 
-    // ── Outer threat glow ──
-    const gg=ctx.createRadialGradient(x+w*.5,y+h*.5,h*.1,x+w*.5,y+h*.5,h*.9);
-    gg.addColorStop(0,'rgba(255,60,0,.22)');
-    gg.addColorStop(1,'rgba(180,0,0,0)');
-    ctx.fillStyle=gg;
-    ctx.fillRect(x-w*.25,y-h*.2,w*1.5,h*1.4);
-
-    // ── Hull shape (angular, clearly not a circle) ──
-    // Dark gunmetal body with bright red trim
-    ctx.shadowColor='rgba(255,60,0,.9)';ctx.shadowBlur=24;
-    ctx.fillStyle='#1a0800';
-    ctx.strokeStyle='rgba(255,70,10,.85)';ctx.lineWidth=3;
-    ctx.beginPath();
-    ctx.moveTo(x+w*.08, y+h*.04);   // top-left notch
-    ctx.lineTo(x+w*.85, y+h*.12);   // top-right
-    ctx.lineTo(x+w,     y+h*.28);   // right top
-    ctx.lineTo(x+w,     y+h*.72);   // right bottom
-    ctx.lineTo(x+w*.85, y+h*.88);   // bottom-right
-    ctx.lineTo(x+w*.08, y+h*.96);   // bottom-left notch
-    ctx.lineTo(x,       y+h*.82);   // left bottom
-    ctx.lineTo(x,       y+h*.18);   // left top
-    ctx.closePath();
-    ctx.fill();ctx.stroke();
-
-    // ── Interior hull panels (make it look mechanical) ──
-    ctx.shadowBlur=0;
-    ctx.strokeStyle='rgba(255,80,20,.25)';ctx.lineWidth=1.2;
-    // Horizontal ribs
-    for(let i=1;i<6;i++){
-      const py=y+h*i/6;
-      ctx.beginPath();ctx.moveTo(x+w*.05,py);ctx.lineTo(x+w*.92,py);ctx.stroke();
+    // ── Central reactor eye ──
+    const eyePulse=0.8+0.2*Math.sin(tT*3.8);
+    const er=r*0.20*pulse*(this.cannonCharging?1+this.cannonChargeT*0.003:1);
+    // Outer core halo
+    const echg=ctx.createRadialGradient(cx,cy,0,cx,cy,er*3.2);
+    echg.addColorStop(0,`rgba(255,180,0,${eyePulse*0.7})`);echg.addColorStop(0.4,`rgba(255,80,0,${eyePulse*0.35})`);echg.addColorStop(1,'rgba(255,40,0,0)');
+    ctx.fillStyle=echg;ctx.shadowColor='rgba(255,160,0,1)';ctx.shadowBlur=45;
+    ctx.beginPath();ctx.arc(cx,cy,er*3.2,0,Math.PI*2);ctx.fill();
+    // Rotating tech rings around eye
+    for(let ri=0;ri<3;ri++){
+      ctx.save();ctx.translate(cx,cy);ctx.rotate(tT*(1.8+ri*0.9)*(ri%2?1:-1));
+      ctx.strokeStyle=`rgba(255,${130+40*ri},0,${0.65-ri*0.15})`;
+      ctx.lineWidth=1.8-ri*0.3;ctx.shadowColor='rgba(255,150,0,1)';ctx.shadowBlur=14;
+      ctx.setLineDash(ri===0?[9,5]:ri===1?[6,5]:[4,6]);
+      ctx.beginPath();ctx.arc(0,0,er*(0.65+ri*0.28),0,Math.PI*2);ctx.stroke();
+      ctx.setLineDash([]);ctx.restore();
     }
-    // Vertical panels
-    for(let i=1;i<4;i++){
-      ctx.beginPath();ctx.moveTo(x+w*i*.25,y+h*.08);ctx.lineTo(x+w*i*.25,y+h*.92);ctx.stroke();
-    }
+    // Iris
+    const eig=ctx.createRadialGradient(cx,cy,0,cx,cy,er);
+    eig.addColorStop(0,'rgba(255,240,180,1)');eig.addColorStop(0.25,`rgba(255,160,0,${eyePulse})`);
+    eig.addColorStop(0.65,`rgba(255,80,0,${eyePulse*0.8})`);eig.addColorStop(1,'rgba(140,30,0,0.35)');
+    ctx.fillStyle=eig;ctx.shadowColor='rgba(255,200,50,1)';ctx.shadowBlur=55;
+    ctx.beginPath();ctx.arc(cx,cy,er,0,Math.PI*2);ctx.fill();
+    // Pupil
+    ctx.fillStyle='rgba(8,3,0,0.80)';ctx.shadowBlur=0;
+    ctx.beginPath();ctx.arc(cx,cy,er*0.40,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle=`rgba(255,255,210,${eyePulse*0.95})`;
+    ctx.beginPath();ctx.arc(cx,cy,er*0.15,0,Math.PI*2);ctx.fill();
 
-    // ── Central reactor core ──
-    const corePulse=0.85+0.15*Math.sin(this.pulseT*3);
-    const coreR=w*.1*pulse;
-    const cg=ctx.createRadialGradient(x+w*.5,y+h*.5,0,x+w*.5,y+h*.5,coreR*2);
-    cg.addColorStop(0,`rgba(255,180,50,${corePulse})`);
-    cg.addColorStop(.5,`rgba(255,80,0,${corePulse*.6})`);
-    cg.addColorStop(1,'rgba(255,40,0,0)');
-    ctx.fillStyle=cg;ctx.shadowColor='rgba(255,120,0,1)';ctx.shadowBlur=30;
-    ctx.beginPath();ctx.arc(x+w*.5,y+h*.5,coreR*2,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle=`rgba(255,220,120,${corePulse})`;
-    ctx.beginPath();ctx.arc(x+w*.5,y+h*.5,coreR,0,Math.PI*2);ctx.fill();
-
-    // ── Weapon ports on right edge ──
-    const portCount=6;
-    for(let i=0;i<portCount;i++){
-      const py=y+h*(0.16+i*0.14);
-      const glow=0.5+0.5*Math.sin(this.pulseT*2.5+i*1.1);
-      // Port socket
-      ctx.fillStyle='rgba(10,5,0,1)';
-      ctx.strokeStyle='rgba(255,80,0,.6)';ctx.lineWidth=1.5;
-      ctx.shadowColor='rgba(255,80,0,1)';ctx.shadowBlur=12;
-      ctx.beginPath();ctx.arc(x+w*.95,py,7,0,Math.PI*2);ctx.fill();ctx.stroke();
-      // Inner glow dot
-      ctx.fillStyle=`rgba(255,${Math.floor(160+80*glow)},50,${glow})`;
-      ctx.beginPath();ctx.arc(x+w*.95,py,3.5,0,Math.PI*2);ctx.fill();
-      // Glow halo
-      const pg=ctx.createRadialGradient(x+w*.95,py,0,x+w*.95,py,18);
-      pg.addColorStop(0,`rgba(255,120,0,${glow*.35})`);pg.addColorStop(1,'rgba(255,80,0,0)');
-      ctx.fillStyle=pg;ctx.beginPath();ctx.arc(x+w*.95,py,18,0,Math.PI*2);ctx.fill();
+    // ── Thrusters (left side; flip transform mirrors them for rival) ──
+    const thrX=x+w*0.05;
+    for(let i=0;i<3;i++){
+      const ty=cy+(-1+i)*r*0.38, tf=0.55+0.45*Math.sin(tT*4.2+i*2.0);
+      ctx.fillStyle='#080300';ctx.strokeStyle='rgba(255,80,0,0.5)';ctx.lineWidth=1.5;
+      ctx.shadowColor='rgba(255,80,0,0.6)';ctx.shadowBlur=8;
+      ctx.beginPath();ctx.arc(thrX,ty,r*0.052,0,Math.PI*2);ctx.fill();ctx.stroke();
+      const tg=ctx.createRadialGradient(thrX,ty,0,thrX,ty,r*0.13*tf);
+      tg.addColorStop(0,`rgba(255,200,100,${tf*0.85})`);tg.addColorStop(0.5,`rgba(255,80,0,${tf*0.4})`);tg.addColorStop(1,'rgba(255,40,0,0)');
+      ctx.fillStyle=tg;ctx.beginPath();ctx.arc(thrX,ty,r*0.13*tf,0,Math.PI*2);ctx.fill();
     }
 
     // ── Cannon charge glow ──
     if(this.cannonCharging){
-      const cp=this.cannonChargeT/100;
-      const chargeR=15+cp*55;
-      const ccg=ctx.createRadialGradient(x+w,y+h*.5,0,x+w,y+h*.5,chargeR);
-      ccg.addColorStop(0,`rgba(255,255,100,${cp*.95})`);
-      ccg.addColorStop(.5,`rgba(255,200,0,${cp*.5})`);
-      ccg.addColorStop(1,'rgba(255,150,0,0)');
+      const chp=this.cannonChargeT/100;
+      const chargeR=r*0.12+chp*r*0.55;
+      const ccg=ctx.createRadialGradient(x+w,cy,0,x+w,cy,chargeR);
+      ccg.addColorStop(0,`rgba(255,255,100,${chp*0.95})`);ccg.addColorStop(0.5,`rgba(255,200,0,${chp*0.5})`);ccg.addColorStop(1,'rgba(255,150,0,0)');
       ctx.fillStyle=ccg;ctx.shadowColor='rgba(255,220,0,1)';ctx.shadowBlur=50;
-      ctx.beginPath();ctx.arc(x+w,y+h*.5,chargeR,0,Math.PI*2);ctx.fill();
-      // Warning text
-      if(cp>0.5){
-        ctx.fillStyle=`rgba(255,255,100,${(cp-.5)*2})`;
+      ctx.beginPath();ctx.arc(x+w,cy,chargeR,0,Math.PI*2);ctx.fill();
+      if(chp>0.5){
+        ctx.fillStyle=`rgba(255,255,100,${(chp-0.5)*2})`;
         ctx.font='bold 11px Orbitron,monospace';ctx.textAlign='center';ctx.shadowBlur=10;
-        ctx.fillText('⚡ CHARGING',x+w*.5,y-14);
+        ctx.fillText('⚡ CHARGING',cx,cy-r-18);
       }
     }
 
@@ -10110,31 +10147,31 @@ const MS={
     if(this._cannonBeamLife>0){
       this._cannonBeamLife--;
       const ba=this._cannonBeamLife/20;
-      ctx.save();
-      ctx.globalAlpha=ba;
-      // Outer bloom
+      ctx.save();ctx.globalAlpha=ba;
       ctx.fillStyle='rgba(255,200,0,.4)';ctx.shadowColor='rgba(255,220,0,1)';ctx.shadowBlur=60;
-      ctx.fillRect(x+w,y+h*.5-50,OF.W,100);
-      // Core beam
+      ctx.fillRect(x+w,cy-50,OF.W,100);
       ctx.fillStyle='rgba(255,240,100,.9)';ctx.shadowBlur=30;
-      ctx.fillRect(x+w,y+h*.5-20,OF.W,40);
-      // White spine
+      ctx.fillRect(x+w,cy-20,OF.W,40);
       ctx.fillStyle='rgba(255,255,255,1)';ctx.shadowBlur=15;
-      ctx.fillRect(x+w,y+h*.5-6,OF.W,12);
+      ctx.fillRect(x+w,cy-6,OF.W,12);
       ctx.restore();
     }
 
-    // ── Damage cracks at low HP ──
+    // ── Damage cracks & leaking energy ──
     if(hpPct<0.5){
-      const crackAlpha=(0.5-hpPct)/0.5;
-      ctx.strokeStyle=`rgba(255,140,50,${crackAlpha*.8})`;
-      ctx.lineWidth=1.5;ctx.shadowColor='#ff4400';ctx.shadowBlur=8;
-      [[.15,.25,.45,.55],[.5,.15,.7,.65],[.25,.7,.55,.85],[.6,.3,.8,.7],[.1,.5,.35,.65]].forEach(([x1,y1,x2,y2])=>{
-        ctx.beginPath();ctx.moveTo(x+w*x1,y+h*y1);ctx.lineTo(x+w*x2,y+h*y2);ctx.stroke();
+      const ca=(0.5-hpPct)/0.5;
+      ctx.save();ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.clip();
+      ctx.strokeStyle=`rgba(255,140,50,${ca*0.85})`;ctx.lineWidth=1.5;ctx.shadowColor='#ff4400';ctx.shadowBlur=8;
+      [[0.12,0.22,0.65,0.55],[0.58,0.10,0.38,0.72],[-.28,0.30,0.50,0.14],[0.22,-.20,-.10,0.60],[0.40,0.32,0.90,-.18]].forEach(([dx1,dy1,dx2,dy2])=>{
+        ctx.beginPath();ctx.moveTo(cx+r*dx1,cy+r*dy1);ctx.lineTo(cx+r*dx2,cy+r*dy2);ctx.stroke();
       });
-      // Random sparks from hull damage
-      if(Math.random()<.2*crackAlpha){
-        spawnSparks(x+Math.random()*w, y+Math.random()*h,'#ff6600',3);
+      ctx.restore();
+      if(Math.random()<0.18*ca){
+        const a=Math.random()*Math.PI*2, d=Math.random()*r;
+        spawnSparks(cx+Math.cos(a)*d,cy+Math.sin(a)*d,'#ff6600',2);
+      }
+      if(hpPct<0.25&&Math.random()<0.06){
+        spawnParticles(cx+(Math.random()-0.5)*r*1.4,cy+(Math.random()-0.5)*r*1.4,'#993300',4,3);
       }
     }
 
@@ -10142,13 +10179,10 @@ const MS={
     this.missiles.forEach(m=>{
       const ang=Math.atan2(m.vy,m.vx);
       ctx.save();ctx.translate(m.x,m.y);ctx.rotate(ang);
-      // Body
       ctx.fillStyle='rgba(220,100,0,.95)';ctx.shadowColor='rgba(255,80,0,1)';ctx.shadowBlur=16;
       ctx.beginPath();ctx.ellipse(0,0,m.r*2,m.r*.65,0,0,Math.PI*2);ctx.fill();
-      // Nose
       ctx.fillStyle='rgba(255,200,100,.9)';
       ctx.beginPath();ctx.ellipse(m.r*1.5,0,m.r*.7,m.r*.4,0,0,Math.PI*2);ctx.fill();
-      // Exhaust
       ctx.strokeStyle='rgba(255,180,50,.5)';ctx.lineWidth=m.r*.9;ctx.shadowBlur=8;
       ctx.beginPath();ctx.moveTo(-m.r*2,0);ctx.lineTo(-m.r*5,0);ctx.stroke();
       ctx.restore();
