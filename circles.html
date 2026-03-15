@@ -6901,7 +6901,8 @@ const OF={
     const now=Date.now();
     if(now-(this._lastClickTime||0)<100) return;
     this._lastClickTime=now;
-    if(this.battleRunning)return;
+    // Allow placement/deletion during active boss fights; only block for normal orb battles
+    if(this.battleRunning && !MS.active && !APEX.active && !TB.active)return;
     const rect=this.canvas.getBoundingClientRect();
     const x=e.clientX-rect.left, y=e.clientY-rect.top;
 
@@ -8531,7 +8532,7 @@ const OF={
       const bx=MS.x+MS.w/2, by=MS.y-30*bvbScale;
       this._drawBossHPBar(ctx,bx,by,MS.hp,MS.maxHp,'👾 MOTHERSHIP',
         MS.hp/MS.maxHp>0.5?'#ff6600':MS.hp/MS.maxHp>0.25?'#cc2200':'#880000',
-        'linear-gradient(90deg,#aa0000,#ff4400,#ff8800,#ffcc00)',bvbScale);
+        bvbScale);
     }
     if(APEX.active&&!APEX.spawning){
       const bx=APEX.x, by=APEX.y-APEX.r-45;
@@ -9479,14 +9480,17 @@ const MS={
     setTimeout(()=>{
       ann.style.transition='opacity .6s';ann.style.opacity='0';
       setTimeout(()=>ann.remove(),700);
-      document.getElementById('of-ms-hpbar').style.display='flex';
-      this._updateBar();
-      const sb=document.getElementById('of-start-btn');
-      sb.style.display='';sb.textContent='⚔ BEGIN BATTLE';
       const bvb=APEX.active;
-      document.getElementById('of-status-text').textContent=bvb
-        ?'⚔ BOSS VS BOSS — PLACE UNITS & BEGIN BATTLE'
-        :'👾 MOTHERSHIP DETECTED — BEGIN BATTLE WHEN READY';
+      if(OF.battleRunning){
+        // Battle already running (summoned as rival) — just update status
+        document.getElementById('of-status-text').textContent=bvb?'⚔ BOSS VS BOSS — FIGHT!':'👾 DESTROY THE MOTHERSHIP!';
+      } else {
+        const sb=document.getElementById('of-start-btn');
+        sb.style.display='';sb.textContent='⚔ BEGIN BATTLE';
+        document.getElementById('of-status-text').textContent=bvb
+          ?'⚔ BOSS VS BOSS — PLACE UNITS & BEGIN BATTLE'
+          :'👾 MOTHERSHIP DETECTED — BEGIN BATTLE WHEN READY';
+      }
       ofCheckLaserBtn();
     },2200);
   },
@@ -11425,8 +11429,7 @@ function ofSummonBoss(type){
   document.getElementById('of-summon-btn').style.display='none';
   if(type==='mothership'&&!MS.active){
     // Summon Mothership on the RIGHT side (Apex is on left)
-    MS._summonedAsRival=true;
-    MS.setup();
+    MS.setup(true); // pass rivalMode=true so _summonedAsRival stays true inside setup()
     // After setup, reposition Mothership to the right side
     setTimeout(()=>{
       MS.x=OF.W-MS.w*0.1; // will slide in from right
@@ -11436,8 +11439,7 @@ function ofSummonBoss(type){
     toast('👾 Mothership has entered the arena!','#ff8844');
   } else if(type==='apex'&&!APEX.active){
     // Summon Apex on the RIGHT side (Mothership is on left)
-    APEX._summonedAsRival=true;
-    APEX.setup();
+    APEX.setup(true); // pass rivalMode=true so _summonedAsRival stays true inside setup()
     // After setup, reposition Apex to the right side
     setTimeout(()=>{
       APEX.x=OF.W*0.78;
