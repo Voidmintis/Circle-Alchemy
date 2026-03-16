@@ -19,7 +19,7 @@ body.boss-phase3{background:#0a0000}
 
 /* STARFIELD */
 #stars{position:fixed;inset:0;pointer-events:none;z-index:0}
-.star-layer{position:absolute;inset:0;will-change:transform;}
+.star-layer{position:absolute;top:-40%;left:-40%;width:180%;height:180%;will-change:transform;}
 .star{position:absolute;border-radius:50%;background:#fff;animation:twinkle var(--d,3s) var(--delay,0s) ease-in-out infinite alternate}
 @keyframes twinkle{from{opacity:var(--a1,.1)}to{opacity:var(--a2,.6)}}
 #stars.pulling .star{animation:star-pull 2.2s ease-in forwards!important}
@@ -1273,12 +1273,8 @@ header h1{
 }
 
 /* ══════════════════════════════════════════
-   TAB-SWITCH BACKGROUND RIPPLE
+   TAB-SWITCH ORB TILT (stars handled by JS)
 ══════════════════════════════════════════ */
-body.tab-ripple .star-layer{transition:transform .7s cubic-bezier(.22,1,.36,1);}
-body.tab-ripple #stars-far {transform:scale(1.022) rotate(.5deg)!important;}
-body.tab-ripple #stars-mid {transform:scale(1.035) rotate(-.7deg)!important;}
-body.tab-ripple #stars-near{transform:scale(1.055) rotate(.9deg)!important;}
 body.tab-ripple #c-red,body.tab-ripple #c-blue,body.tab-ripple #c-green{
   transition:transform .55s cubic-bezier(.22,1,.36,1)!important;
   transform:rotate(-4deg) scale(.94)!important;
@@ -1858,21 +1854,41 @@ body.tab-ripple #c-red,body.tab-ripple #c-blue,body.tab-ripple #c-green{
   });
 
   // ── Mouse parallax — each layer drifts at its own speed ──
-  const MAX_SHIFT=18;   // max px for the nearest layer
-  const EASE_IN=0.045;  // follow speed
-  const EASE_OUT=0.028; // idle return speed
+  const MAX_SHIFT=18;
+  const EASE_IN=0.045;
+  const EASE_OUT=0.028;
   const IDLE_MS=800;
   let targetX=0,targetY=0,lastMove=0;
   const cur=layers.map(()=>({x:0,y:0}));
+
+  // ── Travel warp (active while body.tab-ripple) ──
+  let tVel=0;              // current velocity (near-layer px/frame)
+  const tOff=layers.map(()=>0);  // accumulated Y offset per layer
+  const T_MAX=5.5;         // peak speed for near layer
+  const T_ACC=0.16;        // acceleration rate
+  const T_DEC=0.055;       // deceleration rate after ripple ends
+  const T_RET=0.032;       // rate at which offset drifts back to 0
 
   function tick(){
     const idle=Date.now()-lastMove>IDLE_MS;
     if(idle){targetX+=(0-targetX)*EASE_OUT;targetY+=(0-targetY)*EASE_OUT;}
     const animating=starsEl.classList.contains('pulling')||starsEl.classList.contains('restoring');
+    const ripple=document.body.classList.contains('tab-ripple');
+
+    // Ramp velocity up during ripple, decay it after
+    tVel+=(ripple?(T_MAX-tVel)*T_ACC:(-tVel)*T_DEC);
+
+    const cap=window.innerHeight*0.36;  // safe buffer (star layers are 180% tall)
     layers.forEach((layer,i)=>{
       cur[i].x+=(targetX*layer.speed-cur[i].x)*EASE_IN;
       cur[i].y+=(targetY*layer.speed-cur[i].y)*EASE_IN;
-      if(!animating) layer.el.style.transform=`translate(${cur[i].x.toFixed(2)}px,${cur[i].y.toFixed(2)}px)`;
+      // Accumulate upward travel offset
+      tOff[i]-=tVel*layer.speed;
+      const lCap=cap*layer.speed;
+      if(tOff[i]<-lCap) tOff[i]=-lCap;
+      // When velocity has decayed, smoothly return offset to zero
+      if(Math.abs(tVel)<0.12) tOff[i]+=(0-tOff[i])*T_RET;
+      if(!animating) layer.el.style.transform=`translate(${cur[i].x.toFixed(1)}px,${(cur[i].y+tOff[i]).toFixed(1)}px)`;
     });
     requestAnimationFrame(tick);
   }
