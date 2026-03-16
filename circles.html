@@ -1436,6 +1436,14 @@ body.adv-mars-bg #adv-overlay{background:radial-gradient(ellipse at 50% 80%,#200
       <button class="of-rp-cancel" onclick="document.getElementById('of-boss-picker').style.display='none'">✕</button>
     </div>
 
+    <!-- Mothership variant picker -->
+    <div id="of-ms-picker" style="display:none">
+      <span class="of-rp-label">Which Mothership?</span>
+      <button class="of-rp-btn" onclick="ofPickMothership('regular')">👾 Mothership</button>
+      <button class="of-rp-btn of-rp-massive" onclick="ofPickMothership('oblivion')">💀 Oblivion Mothership</button>
+      <button class="of-rp-cancel" onclick="document.getElementById('of-ms-picker').style.display='none'">✕</button>
+    </div>
+
     <!-- Summon second boss picker -->
     <div id="of-summon-picker" style="display:none">
       <span class="of-rp-label">Summon a rival boss:</span>
@@ -6857,7 +6865,7 @@ const OF={
     this.active=false;
     this.battleRunning=false;
     this.deleteMode=false;
-    MS.stop();APEX.stop();TB.remove();
+    MS.stop();APEX.stop();OMS.stop();TB.remove();
     this._dmgNums=[];
     if(this.prismaticCdInterval){clearInterval(this.prismaticCdInterval);this.prismaticCdInterval=null;}
     if(this.loop){cancelAnimationFrame(this.loop);this.loop=null;}
@@ -6902,7 +6910,7 @@ const OF={
     if(now-(this._lastClickTime||0)<100) return;
     this._lastClickTime=now;
     // Allow placement/deletion during active boss fights; only block for normal orb battles
-    if(this.battleRunning && !MS.active && !APEX.active && !TB.active)return;
+    if(this.battleRunning && !MS.active && !APEX.active && !OMS.active && !TB.active)return;
     const rect=this.canvas.getBoundingClientRect();
     const x=e.clientX-rect.left, y=e.clientY-rect.top;
 
@@ -7183,10 +7191,11 @@ const OF={
   },
 
   startBattle(){
-    if(this.orbs.length<1&&!MS.active&&!APEX.active)return;
-    if((MS.active||APEX.active)&&!OF.battleRunning){
+    if(this.orbs.length<1&&!MS.active&&!APEX.active&&!OMS.active)return;
+    if((MS.active||APEX.active||OMS.active)&&!OF.battleRunning){
       if(MS.active) MS.beginBattle();
       if(APEX.active) APEX.beginBattle();
+      if(OMS.active) OMS.beginBattle();
       return;
     }
     this.battleRunning=true;
@@ -7205,7 +7214,7 @@ const OF={
 
   reset(){
     this.battleRunning=false;
-    MS.stop();APEX.stop();TB.remove();
+    MS.stop();APEX.stop();OMS.stop();TB.remove();
     this._dmgNums=[];
     if(this.prismaticCdInterval){clearInterval(this.prismaticCdInterval);this.prismaticCdInterval=null;}
     this.prismaticCooldown=0;
@@ -7264,17 +7273,18 @@ const OF={
         }
       }
     }
-    if(!this.battleRunning&&!MS.active&&!APEX.active&&!TB.active)return;
+    if(!this.battleRunning&&!MS.active&&!APEX.active&&!OMS.active&&!TB.active)return;
     if(MS.active) MS.update();
     if(APEX.active) APEX.update();
+    if(OMS.active) OMS.update();
     // If only bosses are fighting each other (no regular battle), skip orb-vs-orb logic
-    if((MS.active||APEX.active)&&!this.battleRunning) return;
+    if((MS.active||APEX.active||OMS.active)&&!this.battleRunning) return;
     const alive=this.orbs.filter(o=>!o.dead);
     const redAlive=alive.filter(o=>o.team==='red');
     const blueAlive=alive.filter(o=>o.team==='blue');
 
     // Victory check — skip if boss or test boss is active (red side may be intentionally empty)
-    if(!TB.active&&!MS.active&&!APEX.active&&alive.length>0&&(redAlive.length===0||blueAlive.length===0)){
+    if(!TB.active&&!MS.active&&!APEX.active&&!OMS.active&&alive.length>0&&(redAlive.length===0||blueAlive.length===0)){
       this.battleRunning=false;
       const winner=redAlive.length>0?'red':'blue';
       this.showVictory(winner,redAlive,blueAlive);
@@ -8498,6 +8508,7 @@ const OF={
 
     // Draw mothership (behind orbs)
     if(MS.active) MS.draw(ctx);
+    if(OMS.active) OMS.draw(ctx);
     if(APEX.active) APEX.draw(ctx);
 
     // Draw orbs (on top of mothership)
@@ -8533,6 +8544,11 @@ const OF={
       this._drawBossHPBar(ctx,bx,by,MS.hp,MS.maxHp,'👾 MOTHERSHIP',
         MS.hp/MS.maxHp>0.5?'#ff6600':MS.hp/MS.maxHp>0.25?'#cc2200':'#880000',
         bvbScale);
+    }
+    if(OMS.active&&!OMS.spawning){
+      const omx=OMS.x+OMS.w/2, omy=OMS.y-34;
+      this._drawBossHPBar(ctx,omx,omy,OMS.hp,OMS.maxHp,'💀 OBLIVION MOTHERSHIP',
+        OMS.hp/OMS.maxHp>0.5?'#ff4400':OMS.hp/OMS.maxHp>0.25?'#cc2200':'#880000',1);
     }
     if(APEX.active&&!APEX.spawning){
       const bx=APEX.x, by=APEX.y-APEX.r-45;
@@ -10201,8 +10217,800 @@ MS._fireEnergyBlast=function(){
 };
 
 // ═══════════════════════════════════════════════════════════════
-// OMNIVERSAL APEX — Ultimate god-tier orb boss
+// OBLIVION MOTHERSHIP — Endgame mechanical sphere fortress
 // ═══════════════════════════════════════════════════════════════
+const OMS={
+  active:false, spawning:false,
+  hp:0, maxHp:200000,
+  x:0, y:0, w:0, h:0,
+  pulseT:0, attackTimer:0, missileTimer:0, laserTimer:0, pulseTimer:0, spawnTimer:0,
+  missiles:[], minions:[],
+  laserCharging:false, laserChargeT:0, _laserBeamLife:0, _laserAngle:0,
+  _shieldActive:false, _repairCores:[], _repairPhases:[0.75,0.50,0.25], _repairPhasesDone:[],
+  _overload:false, _ringAngles:[0,0.9,1.9],
+  _battleFrames:0, _peakBlueCount:0,
+  _summonedAsRival:false,
+
+  setup(){
+    this.active=true; this.spawning=true;
+    this.hp=this.maxHp;
+    this.missiles=[]; this.minions=[];
+    this.laserCharging=false; this.laserChargeT=0; this._laserBeamLife=0;
+    this._shieldActive=false; this._repairCores=[]; this._repairPhasesDone=[];
+    this._overload=false; this._ringAngles=[0,0.9,1.9];
+    this.attackTimer=0; this.missileTimer=0; this.laserTimer=0; this.pulseTimer=0; this.spawnTimer=0;
+    this.pulseT=0; this._battleFrames=0; this._peakBlueCount=0;
+
+    const mzf=OF.zoomedOut?1/3:1;
+    this.w=OF.W*0.42*mzf; this.h=OF.H*0.78*mzf;
+    this.x=-this.w*1.1; this.y=(OF.H-this.h)/2;
+
+    OF.orbs=OF.orbs.filter(o=>o.team==='blue');
+    document.getElementById('of-ms-hpbar').style.display='none';
+    document.getElementById('of-start-btn').style.display='none';
+
+    // Portal entrance
+    this._portalR=0; this._portalActive=true;
+    const portalX=OF.W*0.21, portalY=OF.H*0.5;
+    let portalT=0;
+    SFX.portalOpen();
+    // Darken screen briefly
+    flashScreen('rgba(0,0,0,0.45)',800);
+    document.getElementById('of-status-text').textContent='';
+    const portalGrow=setInterval(()=>{
+      if(!this.active){clearInterval(portalGrow);return;}
+      portalT+=16; this._portalR=Math.min(this.h*.6,(portalT/1200)*this.h*.6);
+      if(portalT%200<16) shake('sm');
+      if(portalT>=1200){ clearInterval(portalGrow); this._doEntrance(portalX,portalY); }
+    },16);
+  },
+
+  _doEntrance(portalX,portalY){
+    const targetX=OF.W*0.005, startX=-this.w*1.1;
+    let t=0; const SLIDE_MS=900;
+    const slide=setInterval(()=>{
+      if(!this.active){clearInterval(slide);return;}
+      t+=16; const prog=Math.min(1,t/SLIDE_MS);
+      const ease=1-Math.pow(1-prog,3);
+      this.x=startX+(targetX-startX)*ease;
+      if(prog>0.5&&Math.random()<(prog-.5)*0.6) shake('sm');
+      if(prog>=1){ clearInterval(slide); this._portalActive=false; this._portalR=0; this.x=targetX; this._doArrival(); }
+    },16);
+  },
+
+  _doArrival(){
+    this.spawning=false;
+    shake('lg'); setTimeout(()=>shake('lg'),100); setTimeout(()=>shake('lg'),250);
+    flashScreen('rgba(255,80,0,.7)',100); setTimeout(()=>flashScreen('rgba(0,0,0,0.5)',80),120);
+    const cx=this.x+this.w/2, cy=this.y+this.h/2;
+    spawnParticles(cx,cy,'#ff4400',80,14); spawnParticles(cx,cy,'#ff8800',60,12); spawnParticles(cx,cy,'#ffffff',40,10);
+    spawnShockwave(cx,cy,'rgba(255,80,0,',OF.W,14);
+    SFX.mothershipArrive(); setTimeout(()=>SFX.bossDefeat(),200);
+    const ann=document.createElement('div');
+    ann.id='oms-arrival-text';
+    ann.style.cssText='position:absolute;inset:0;z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;background:rgba(0,0,0,0);transition:background .4s;';
+    ann.innerHTML=`<div style="font-family:'Orbitron',monospace;font-size:clamp(1.2rem,4vw,2.5rem);font-weight:900;letter-spacing:.2em;color:#ff6600;text-align:center;text-shadow:0 0 40px rgba(255,100,0,1),0 0 80px rgba(255,60,0,.8);line-height:1.4">💀 OBLIVION MOTHERSHIP<br><span style="font-size:0.6em;letter-spacing:.4em;color:#ff8844">APPROACHING</span></div>`;
+    document.getElementById('orbfight-overlay').appendChild(ann);
+    requestAnimationFrame(()=>{ann.style.background='rgba(0,0,0,.65)';});
+    setTimeout(()=>{
+      ann.style.opacity='0'; ann.style.transition='opacity .6s';
+      setTimeout(()=>ann.remove(),600);
+      document.getElementById('of-ms-hpbar').style.display='';
+      document.getElementById('of-ms-hpbar-label').textContent='💀 OBLIVION MOTHERSHIP';
+      this._updateBar();
+      document.getElementById('of-start-btn').style.display='';
+      document.getElementById('of-status-text').textContent='💀 DESTROY THE OBLIVION MOTHERSHIP!';
+      if(OF.battleRunning) this.beginBattle();
+    },2200);
+  },
+
+  beginBattle(){
+    OF.orbs.forEach(o=>{
+      o.x=Math.max(OF.W*0.52+o.r,Math.min(OF.W-o.r,o.x));
+      o.y=Math.max(o.r+50,Math.min(OF.H-o.r-50,o.y));
+    });
+    this._battleFrames=0; this._peakBlueCount=0; OF.battleRunning=true;
+    document.getElementById('of-start-btn').style.display='none';
+    document.getElementById('of-status-text').textContent='💀 DESTROY THE OBLIVION MOTHERSHIP!';
+    flashScreen('rgba(255,60,0,.6)'); shake('lg');
+    setTimeout(()=>{ shake('lg'); flashScreen('rgba(255,40,0,.4)',60); },200);
+    SFX.bossDefeat();
+  },
+
+  stop(){
+    this.active=false; this.spawning=false; this._portalActive=false; this._shieldActive=false;
+    this._repairCores=[]; this.missiles=[]; this.minions=[];
+    if(this._repairInterval){clearInterval(this._repairInterval);this._repairInterval=null;}
+    document.getElementById('oms-arrival-text')?.remove();
+    document.getElementById('of-ms-hpbar').style.display='none';
+    document.getElementById('of-ms-hpbar-label').textContent='\ud83d\udc7e MOTHERSHIP';
+  },
+
+  _updateBar(){
+    const pct=Math.max(0,this.hp/this.maxHp);
+    const fill=document.getElementById('of-ms-hpbar-fill');
+    const val=document.getElementById('of-ms-hpbar-val');
+    if(fill){
+      fill.style.width=(pct*100)+'%';
+      fill.style.background=pct>0.5?'linear-gradient(90deg,#880000,#cc3300,#ff6600,#ff9900)'
+        :pct>0.25?'linear-gradient(90deg,#660000,#aa1100,#dd3300)':'linear-gradient(90deg,#330000,#660000,#990000)';
+    }
+    if(val){
+      const hp=Math.ceil(this.hp);
+      const hs=hp>=1e6?(hp/1e6).toFixed(2)+'M':hp>=1e3?(hp/1e3).toFixed(1)+'K':hp.toLocaleString();
+      const ms=this.maxHp>=1e3?(this.maxHp/1e3).toFixed(0)+'K':this.maxHp.toLocaleString();
+      val.textContent=`${hs} / ${ms}  (${Math.ceil(pct*100)}%)`;
+    }
+  },
+
+  _dmgOrb(o,dmg){
+    if(o.isPrismatic&&o.shieldHp>0){
+      const abs=Math.min(o.shieldHp,dmg); o.shieldHp=Math.max(0,o.shieldHp-abs); spawnSparks(o.x,o.y,'#44ffff',3);
+      dmg-=abs; if(dmg<=0)return;
+    }
+    o.hp=Math.max(0,o.hp-dmg);
+    OF._dmgNums=OF._dmgNums||[];
+    const dl=dmg>=1000?(dmg/1000).toFixed(1)+'K':Math.round(dmg)+'';
+    OF._dmgNums.push({x:o.x+(-15+Math.random()*30),y:o.y-8,label:dl,life:1,vy:-(1+Math.random()*0.7),col:'#ff6600'});
+    if(o.hp<=0){
+      if(o.isPrismatic){o.dead=true;}
+      else{o.dead=true; spawnParticles(o.x,o.y,o.color,12,5); SFX.orbExplode();}
+    }
+    OF.updateHUD();
+  },
+
+  update(){
+    if(!this.active)return;
+    this.pulseT+=0.04;
+    if(this.spawning)return;
+    this._battleFrames++;
+
+    // ── Overload mode ──
+    if(!this._overload&&this.hp/this.maxHp<=0.10){
+      this._overload=true;
+      document.getElementById('of-status-text').textContent='🔥 OVERLOAD MODE — OBLIVION MOTHERSHIP IN RAGE!';
+      flashScreen('rgba(255,50,0,.5)',200); shake('lg');
+      setTimeout(()=>{ if(this.active) document.getElementById('of-status-text').textContent='💀 DESTROY THE OBLIVION MOTHERSHIP!'; },3000);
+    }
+
+    // ── Repair phase triggers ──
+    if(!this._shieldActive){
+      const pct=this.hp/this.maxHp;
+      for(const threshold of this._repairPhases){
+        if(!this._repairPhasesDone.includes(threshold)&&pct<=threshold){
+          this._repairPhasesDone.push(threshold);
+          this._activateRepairPhase();
+          return;
+        }
+      }
+    }
+
+    // ── Shield active — invincible, wait for cores ──
+    if(this._shieldActive){
+      this._repairCores=this._repairCores.filter(c=>c.hp>0);
+      // Heal from crimson core
+      const crimson=this._repairCores.find(c=>c.type==='crimson');
+      if(crimson){
+        this.hp=Math.min(this.maxHp,this.hp+180);
+        this._updateBar();
+      }
+      // Emerald core spawns drones
+      const emerald=this._repairCores.find(c=>c.type==='emerald');
+      if(emerald&&this._battleFrames%90===0) this._spawnRepairDrone(emerald);
+      // Update core projectiles & check blue orb hits
+      this._repairCores.forEach(c=>{
+        c.pulseT+=0.08;
+        c.projectiles=c.projectiles.filter(p=>{
+          p.x+=p.vx; p.y+=p.vy; p.life--;
+          if(p.life<=0)return false;
+          const hit=OF.orbs.find(o=>o.team==='blue'&&!o.dead&&Math.hypot(o.x-p.x,o.y-p.y)<o.r+p.r);
+          if(hit){this._dmgOrb(hit,p.dmg);spawnSparks(p.x,p.y,p.color,3);return false;}
+          return true;
+        });
+        // Resolve incoming blue orb projectiles hitting the core
+        OF.orbs.forEach(o=>{
+          if(o.team!=='blue'||o.dead)return;
+          o.projectiles=o.projectiles.filter(p=>{
+            p.x+=p.vx; p.y+=p.vy; p.life--;
+            if(p.life<=0)return false;
+            if(Math.hypot(p.x-c.x,p.y-c.y)<c.r+p.r){
+              c.hp=Math.max(0,c.hp-p.dmg);
+              spawnSparks(p.x,p.y,c.color,3);
+              OF._dmgNums=OF._dmgNums||[];
+              const dl=p.dmg>=1000?(p.dmg/1000).toFixed(1)+'K':Math.round(p.dmg)+'';
+              OF._dmgNums.push({x:p.x+(-10+Math.random()*20),y:p.y-6,label:dl,life:1,vy:-1.2,col:c.color});
+              return false;
+            }
+            if(p.x<0||p.x>OF.W||p.y<0||p.y>OF.H)return false;
+            return true;
+          });
+        });
+      });
+      if(this._repairCores.length===0){
+        this._shieldActive=false;
+        OF.battleRunning=true;
+        document.getElementById('of-status-text').textContent='⚡ DEFENSE PROTOCOL DISABLED — ATTACK!';
+        flashScreen('rgba(0,200,100,.4)',120); shake('md');
+        spawnShockwave(this.x+this.w/2,this.y+this.h/2,'rgba(0,255,100,',200,8);
+        setTimeout(()=>{ if(this.active) document.getElementById('of-status-text').textContent='💀 DESTROY THE OBLIVION MOTHERSHIP!'; },2500);
+        SFX.bossDefeat();
+      }
+      return;
+    }
+
+    const cx=this.x+this.w/2, cy=this.y+this.h/2;
+    const r=Math.min(this.w,this.h)*0.44;
+    const blueOrbs=OF.orbs.filter(o=>o.team==='blue'&&!o.dead);
+    const orate=this._overload?0.6:1;
+
+    // ── Attack timers ──
+    this.attackTimer++;
+    this.missileTimer++;
+    this.laserTimer++;
+    this.pulseTimer++;
+    this.spawnTimer++;
+
+    const missileRate=Math.round(280*orate);
+    const laserRate=Math.round(420*orate);
+    const pulseRate=Math.round(360*orate);
+    const spawnRate=Math.round(190*orate);
+
+    if(this.missileTimer>=missileRate){ this.missileTimer=0; this._launchMissiles(); }
+    if(this.laserTimer>=laserRate){ this.laserTimer=0; this.laserCharging=true; this.laserChargeT=0; }
+    if(this.laserCharging){
+      this.laserChargeT=Math.min(100,this.laserChargeT+1);
+      if(this.laserChargeT>=100){ this.laserCharging=false; this._fireLaser(); }
+    }
+    if(this.pulseTimer>=pulseRate){ this.pulseTimer=0; this._shockwavePulse(); }
+    if(this.spawnTimer>=spawnRate){ this.spawnTimer=0; this._spawnOrb(); }
+
+    // ── Resolve missiles ──
+    this.missiles=this.missiles.filter(m=>{
+      m.x+=m.vx; m.y+=m.vy; m.life--;
+      if(m.life<=0)return false;
+      const hit=blueOrbs.find(o=>Math.hypot(o.x-m.x,o.y-m.y)<o.r+m.r+8);
+      if(hit){
+        const dmg=3500+Math.floor(Math.random()*1500);
+        blueOrbs.forEach(o=>{if(Math.hypot(o.x-m.x,o.y-m.y)<60+o.r) this._dmgOrb(o,dmg*(1-Math.hypot(o.x-m.x,o.y-m.y)/(60+o.r)));});
+        spawnParticles(m.x,m.y,'#ff6600',20,8); spawnShockwave(m.x,m.y,'rgba(255,100,0,',100,6); shake('sm'); SFX.bossExplode();
+        return false;
+      }
+      if(m.x<0||m.x>OF.W||m.y<0||m.y>OF.H)return false;
+      return true;
+    });
+
+    // ── Laser beam hits ──
+    if(this._laserBeamLife>0){
+      this._laserBeamLife--;
+      blueOrbs.forEach(o=>{
+        const dx=o.x-cx, dy=o.y-cy;
+        const along=dx*Math.cos(this._laserAngle)+dy*Math.sin(this._laserAngle);
+        const perp=Math.abs(-dx*Math.sin(this._laserAngle)+dy*Math.cos(this._laserAngle));
+        if(along>0&&along<OF.W&&perp<50+o.r){ this._dmgOrb(o,4500+this._battleFrames*0.2); spawnSparks(o.x,o.y,'#ff8800',4); }
+      });
+    }
+
+    // ── Minion movement & attack ──
+    this.minions=this.minions.filter(m=>{
+      if(m.dead)return false;
+      m.pulseT+=0.05; m.attackTimer++;
+      let closest=null,closestD=Infinity;
+      blueOrbs.forEach(o=>{const d=Math.hypot(o.x-m.x,o.y-m.y);if(d<closestD){closest=o;closestD=d;}});
+      if(closest){
+        const ang=Math.atan2(closest.y-m.y,closest.x-m.x);
+        if(closestD>closest.r+m.r+20){ m.vx+=Math.cos(ang)*0.12; m.vy+=Math.sin(ang)*0.12; }
+        else { m.vx*=0.88; m.vy*=0.88; if(m.attackTimer>=60){ m.attackTimer=0; this._dmgOrb(closest,m.dmg*40); spawnSparks(closest.x,closest.y,'#ff4400',3); SFX.orbShoot(); } }
+        const spd=Math.hypot(m.vx,m.vy); if(spd>m.spd){m.vx=m.vx/spd*m.spd;m.vy=m.vy/spd*m.spd;}
+      }
+      m.x+=m.vx; m.y+=m.vy;
+      m.x=Math.max(OF.W*0.5+m.r,Math.min(OF.W-m.r,m.x));
+      m.y=Math.max(m.r+40,Math.min(OF.H-m.r-40,m.y));
+      // Ranged attack
+      if(m.attackTimer>=m.attackRate&&closest){
+        m.attackTimer=0;
+        const ang2=Math.atan2(closest.y-m.y,closest.x-m.x);
+        m.projectiles=m.projectiles||[];
+        m.projectiles.push({x:m.x,y:m.y,vx:Math.cos(ang2)*5.5,vy:Math.sin(ang2)*5.5,dmg:m.dmg*0.5,r:5,life:120,color:m.color});
+        SFX.orbShoot();
+      }
+      m.projectiles=(m.projectiles||[]).filter(p=>{
+        p.x+=p.vx; p.y+=p.vy; p.life--;
+        if(p.life<=0)return false;
+        const hit=blueOrbs.find(o=>Math.hypot(o.x-p.x,o.y-p.y)<o.r+p.r);
+        if(hit){this._dmgOrb(hit,p.dmg);spawnSparks(p.x,p.y,p.color,3);return false;}
+        return true;
+      });
+      return true;
+    });
+
+    // ── Blue orbs auto-attack OMS ──
+    blueOrbs.forEach(o=>{
+      o.projectiles=o.projectiles.filter(p=>{
+        p.x+=p.vx; p.y+=p.vy; p.life--;
+        if(p.life<=0)return false;
+        if(p.x<cx-this.w/2||p.x>cx+this.w/2||p.y<this.y||p.y>this.y+this.h){
+          if(Math.hypot(p.x-cx,p.y-cy)<r+p.r){ this._takeDmg(p.dmg); spawnSparks(p.x,p.y,'#ff6600',3); return false; }
+        } else {
+          if(Math.hypot(p.x-cx,p.y-cy)<r+p.r){ this._takeDmg(p.dmg); spawnSparks(p.x,p.y,'#ff6600',3); return false; }
+        }
+        if(p.x<0||p.x>OF.W||p.y<0||p.y>OF.H)return false;
+        return true;
+      });
+      // Move toward OMS
+      const ang=Math.atan2(cy-o.y,cx-o.x);
+      const dist=Math.hypot(o.x-cx,o.y-cy);
+      if(dist>r+o.r+60){o.vx+=Math.cos(ang)*0.15;o.vy+=Math.sin(ang)*0.15;const spd=Math.hypot(o.vx,o.vy);if(spd>o.spd){o.vx=o.vx/spd*o.spd;o.vy=o.vy/spd*o.spd;}}
+      else{o.vx*=0.85;o.vy*=0.85;}
+      o.x+=o.vx; o.y+=o.vy;
+      o.x=Math.max(OF.W*0.4+o.r,Math.min(OF.W-o.r,o.x));
+      o.y=Math.max(o.r+40,Math.min(OF.H-o.r-40,o.y));
+      // Auto-shoot
+      o.attackTimer++;
+      if(o.attackTimer>=o.attackRate){
+        o.attackTimer=0;
+        const a2=Math.atan2(cy-o.y,cx-o.x);
+        o.projectiles.push({x:o.x,y:o.y,vx:Math.cos(a2)*6,vy:Math.sin(a2)*6,dmg:o.dmg*.6,r:5,life:140,color:o.color});
+        if(o.isBoss)SFX.bossShoot();else SFX.orbShoot();
+      }
+    });
+
+    // ── Victory check ──
+    const blueLeft=OF.orbs.filter(o=>o.team==='blue'&&!o.dead);
+    if(blueLeft.length===0&&this._battleFrames>180&&this._peakBlueCount>0&&this.hp>0){
+      this.active=false; OF.battleRunning=false; this.stop();
+      document.getElementById('of-victory').style.display='flex';
+      document.getElementById('of-victory-icon').textContent='💀';
+      document.getElementById('of-victory-title').textContent='OBLIVION MOTHERSHIP WINS!';
+      document.getElementById('of-victory-title').style.color='#ff6600';
+      document.getElementById('of-victory-sub').textContent='Your fleet was obliterated by the war machine.';
+      SFX.bossDefeat(); shake('lg');
+    }
+    if(blueLeft.length>this._peakBlueCount) this._peakBlueCount=blueLeft.length;
+  },
+
+  _takeDmg(dmg){
+    if(this._shieldActive)return;
+    this.hp=Math.max(0,this.hp-dmg); this._updateBar();
+    if(this.hp<=0) this._destroy();
+  },
+
+  _launchMissiles(){
+    const count=this._overload?6:3+Math.floor(Math.random()*3);
+    const targets=OF.orbs.filter(o=>o.team==='blue'&&!o.dead);
+    if(targets.length===0)return;
+    shake('sm'); SFX.missileLaunch();
+    const cx=this.x+this.w/2, cy=this.y+this.h/2, r=Math.min(this.w,this.h)*0.44;
+    document.getElementById('of-status-text').textContent='🚀 MISSILE BARRAGE INCOMING!';
+    for(let i=0;i<count;i++){
+      const target=targets[Math.floor(Math.random()*targets.length)];
+      const ba=(i/count)*Math.PI*2;
+      const sx=cx+Math.cos(ba)*r*0.85, sy=cy+Math.sin(ba)*r*0.85;
+      const ang=Math.atan2(target.y-sy,target.x-sx)+(-0.3+Math.random()*.6);
+      const spd=2.8+Math.random()*1.8;
+      this.missiles.push({x:sx,y:sy,vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd,r:12,life:320});
+    }
+    setTimeout(()=>{if(this.active)document.getElementById('of-status-text').textContent='💀 DESTROY THE OBLIVION MOTHERSHIP!';},2000);
+  },
+
+  _fireLaser(){
+    shake('lg'); setTimeout(()=>shake('lg'),100); setTimeout(()=>shake('md'),220);
+    flashScreen('rgba(255,100,0,.7)',100); setTimeout(()=>flashScreen('rgba(255,60,0,.4)',80),120);
+    const targets=OF.orbs.filter(o=>o.team==='blue'&&!o.dead);
+    const cx=this.x+this.w/2, cy=this.y+this.h/2;
+    if(targets.length>0){
+      const t=targets[Math.floor(Math.random()*targets.length)];
+      this._laserAngle=Math.atan2(t.y-cy,t.x-cx);
+    } else { this._laserAngle=0; }
+    this._laserBeamLife=35;
+    SFX.cannonFire();
+    document.getElementById('of-status-text').textContent='⚡ OBLIVION LASER FIRING!';
+    setTimeout(()=>{if(this.active)document.getElementById('of-status-text').textContent='💀 DESTROY THE OBLIVION MOTHERSHIP!';},2200);
+  },
+
+  _shockwavePulse(){
+    const cx=this.x+this.w/2, cy=this.y+this.h/2, r=Math.min(this.w,this.h)*0.44;
+    shake('md'); flashScreen('rgba(255,80,0,.35)',80);
+    SFX.bossExplode();
+    spawnShockwave(cx,cy,'rgba(255,100,0,',r*2.8,8);
+    spawnShockwave(cx,cy,'rgba(255,50,0,',r*1.8,6);
+    document.getElementById('of-status-text').textContent='💥 SHOCKWAVE PULSE!';
+    OF.orbs.filter(o=>o.team==='blue'&&!o.dead).forEach(o=>{
+      const d=Math.hypot(o.x-cx,o.y-cy);
+      if(d<r*2.8+o.r){ const ko=Math.atan2(o.y-cy,o.x-cx); o.vx+=Math.cos(ko)*10; o.vy+=Math.sin(ko)*10; this._dmgOrb(o,1200); }
+    });
+    setTimeout(()=>{if(this.active)document.getElementById('of-status-text').textContent='💀 DESTROY THE OBLIVION MOTHERSHIP!';},2000);
+  },
+
+  _spawnOrb(){
+    const types=[
+      {r:13,hp:60,dmg:10,spd:2.2,color:'#ff4400',glow:'rgba(255,80,0,',ability:'basic'},
+      {r:15,hp:80,dmg:14,spd:1.8,color:'#ff7700',glow:'rgba(255,140,0,',ability:'basic'},
+      {r:11,hp:45,dmg:18,spd:2.6,color:'#cc2200',glow:'rgba(200,50,0,',ability:'shards'},
+    ];
+    const t=types[Math.floor(Math.random()*types.length)];
+    const cx=this.x+this.w/2, cy=this.y+this.h/2, r=Math.min(this.w,this.h)*0.44;
+    // Pick one of the 8 bay positions
+    const bay=Math.floor(Math.random()*8);
+    const ba=(bay/8)*Math.PI*2+this.pulseT*0.008;
+    const bx=cx+Math.cos(ba)*r*0.85, by=cy+Math.sin(ba)*r*0.85;
+    const ang=Math.atan2(cy-by,cx-bx)+Math.PI; // launch outward then drift to right side
+    spawnSparks(bx,by,'#ff6600',5);
+    this.minions.push({
+      ...t,r:t.r,team:'red',type:'oms_drone',label:'Oblivion Drone',
+      x:bx,y:by,maxHp:t.hp,hp:t.hp,
+      vx:Math.cos(ang)*3.5,vy:Math.sin(ang)*3.5,
+      attackTimer:0,attackRate:75,pulseT:Math.random()*Math.PI*2,
+      projectiles:[],dead:false,id:Date.now()+Math.random()
+    });
+    OF.orbs.push({
+      ...t,r:t.r,team:'red',type:'oms_drone',label:'Oblivion Drone',
+      x:bx,y:by,maxHp:t.hp,hp:t.hp,
+      vx:Math.cos(ang)*3.5,vy:Math.sin(ang)*3.5,
+      attackTimer:0,attackRate:75,pulseT:Math.random()*Math.PI*2,
+      projectiles:[],dead:false,id:Date.now()+Math.random()+1,
+      orbitLocked:false,shieldAngle:0,orbitPullActive:false,orbitPullT:0,orbitCaptured:[]
+    });
+  },
+
+  _spawnRepairDrone(core){
+    const ang=Math.random()*Math.PI*2;
+    OF.orbs.push({
+      r:12,team:'red',type:'oms_repair_drone',label:'Repair Drone',
+      x:core.x+Math.cos(ang)*30,y:core.y+Math.sin(ang)*30,maxHp:40,hp:40,
+      vx:Math.cos(ang)*2.5,vy:Math.sin(ang)*2.5,
+      dmg:8,spd:2.2,color:'#00cc44',glow:'rgba(0,200,80,',ability:'basic',
+      attackTimer:0,attackRate:80,pulseT:0,projectiles:[],dead:false,id:Date.now()+Math.random(),
+      orbitLocked:false,shieldAngle:0,orbitPullActive:false,orbitPullT:0,orbitCaptured:[]
+    });
+  },
+
+  _activateRepairPhase(){
+    const cx=this.x+this.w/2, cy=this.y+this.h/2;
+    this._shieldActive=true;
+    OF.battleRunning=false;
+    document.getElementById('of-status-text').textContent='🛡 OBLIVION DEFENSE PROTOCOL ACTIVATED!';
+    shake('lg'); flashScreen('rgba(255,180,0,.5)',150);
+    spawnShockwave(cx,cy,'rgba(255,150,0,',300,10);
+    spawnParticles(cx,cy,'#ffaa00',40,8);
+    SFX.portalOpen(); SFX.bossDefeat();
+
+    const ann=document.createElement('div');
+    ann.id='oms-shield-text';
+    ann.style.cssText='position:absolute;inset:0;z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;background:rgba(0,0,0,0);transition:background .3s;';
+    ann.innerHTML=`<div style="font-family:'Orbitron',monospace;font-size:clamp(1rem,3.5vw,2rem);font-weight:900;letter-spacing:.2em;color:#ffaa00;text-align:center;text-shadow:0 0 30px rgba(255,180,0,1);line-height:1.5">🛡 DEFENSE PROTOCOL ACTIVATED<br><span style="font-size:0.6em;color:#ff8800">DESTROY ALL THREE REPAIR CORES</span></div>`;
+    document.getElementById('orbfight-overlay').appendChild(ann);
+    requestAnimationFrame(()=>{ann.style.background='rgba(0,0,0,.55)';});
+    setTimeout(()=>{ ann.style.opacity='0'; ann.style.transition='opacity .5s'; setTimeout(()=>ann.remove(),500); },2800);
+
+    // Spawn three cores — spread across the blue side
+    const coreDefs=[
+      {type:'crimson',color:'#ff2222',label:'🔴 CRIMSON REPAIR',x:OF.W*0.62,y:OF.H*0.25,hp:4000,maxHp:4000},
+      {type:'azure',  color:'#2244ff',label:'🔵 AZURE SHIELD',  x:OF.W*0.78,y:OF.H*0.50,hp:4000,maxHp:4000},
+      {type:'emerald',color:'#22cc44',label:'🟢 EMERALD DRONE', x:OF.W*0.62,y:OF.H*0.75,hp:4000,maxHp:4000},
+    ];
+    this._repairCores=coreDefs.map(cd=>({...cd,pulseT:0,projectiles:[]}));
+
+    setTimeout(()=>{
+      document.getElementById('of-status-text').textContent='🛡 DESTROY THE THREE REPAIR CORES TO BREAK THE SHIELD!';
+    },3000);
+  },
+
+  _destroy(){
+    this.hp=0; this._updateBar();
+    OF.battleRunning=false;
+    document.getElementById('of-status-text').textContent='💀 OBLIVION MOTHERSHIP COLLAPSING...';
+    const cx=this.x+this.w/2, cy=this.y+this.h/2;
+    let t=0;
+    const deathAnim=setInterval(()=>{
+      t++;
+      const ea=Math.random()*Math.PI*2, ed=Math.random()*Math.min(this.w,this.h)*0.44;
+      const ex=cx+Math.cos(ea)*ed, ey=cy+Math.sin(ea)*ed;
+      spawnParticles(ex,ey,`hsl(${20+Math.random()*30},100%,55%)`,14,6);
+      spawnShockwave(ex,ey,'rgba(255,100,0,',50+Math.random()*60,4);
+      if(Math.random()<.5) flashScreen(`rgba(255,${Math.floor(50+Math.random()*100)},0,.25)`,40);
+      shake(t<12?'sm':t<22?'md':'lg');
+      SFX.orbExplode();
+      if(t>=30){
+        clearInterval(deathAnim);
+        flashScreen('rgba(255,140,0,1)',200);
+        setTimeout(()=>flashScreen('rgba(200,60,0,.7)',100),100);
+        setTimeout(()=>flashScreen('rgba(100,20,0,.4)',80),260);
+        shake('lg'); setTimeout(()=>shake('lg'),100); setTimeout(()=>shake('lg'),230);
+        spawnParticles(cx,cy,'#ff6600',160,20); spawnParticles(cx,cy,'#ff2200',100,16); spawnParticles(cx,cy,'#ffffff',60,12);
+        for(let i=0;i<8;i++) setTimeout(()=>spawnShockwave(cx,cy,`rgba(${255},${80+i*12},0,`,OF.W*(0.35+i*0.1),10),i*60);
+        SFX.mothershipDestroy(); setTimeout(()=>SFX.bossDefeat(),300);
+        this.minions=[];
+        const _stop=()=>this.stop();
+        setTimeout(()=>{
+          _stop();
+          document.getElementById('of-victory').style.display='flex';
+          document.getElementById('of-victory-icon').textContent='💀';
+          document.getElementById('of-victory-title').textContent='OBLIVION MOTHERSHIP DESTROYED';
+          document.getElementById('of-victory-title').style.color='#ff6600';
+          document.getElementById('of-victory-sub').textContent='The war machine has been obliterated. The battlefield is yours.';
+          SFX.bossDefeat(); shake('lg');
+        },600);
+      }
+    },100);
+  },
+
+  draw(ctx){
+    if(!this.active)return;
+
+    // ── Portal ──
+    if(this._portalActive&&this._portalR>0){
+      const px=OF.W*0.21, py=OF.H*0.5;
+      ctx.save();
+      for(let i=3;i>=1;i--){
+        ctx.beginPath();ctx.arc(px,py,this._portalR*i/3+Math.sin(this.pulseT*4)*6,0,Math.PI*2);
+        ctx.strokeStyle=`rgba(255,${80+i*40},0,${0.15*i})`;ctx.lineWidth=8*i;ctx.shadowColor='rgba(255,100,0,1)';ctx.shadowBlur=30;ctx.stroke();
+      }
+      const pg=ctx.createRadialGradient(px,py,0,px,py,this._portalR);
+      pg.addColorStop(0,'rgba(255,200,50,.6)');pg.addColorStop(.4,'rgba(255,80,0,.4)');pg.addColorStop(1,'rgba(100,0,0,0)');
+      ctx.beginPath();ctx.arc(px,py,this._portalR,0,Math.PI*2);ctx.fillStyle=pg;ctx.fill();
+      ctx.translate(px,py);ctx.rotate(this.pulseT*3);
+      for(let i=0;i<8;i++){
+        const a=(i/8)*Math.PI*2;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(Math.cos(a)*this._portalR,Math.sin(a)*this._portalR);
+        ctx.strokeStyle=`rgba(255,150,50,${0.15+.1*Math.sin(this.pulseT*5+i)})`;ctx.lineWidth=3;ctx.shadowBlur=10;ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    if(this.spawning)return;
+
+    const x=this.x, y=this.y, w=this.w, h=this.h;
+    const cx=x+w*0.5, cy=y+h*0.5;
+    const r=Math.min(w,h)*0.44;
+    const hpPct=this.hp/this.maxHp;
+    const tT=this.pulseT;
+    const pulse=0.97+0.03*Math.sin(tT*1.5);
+
+    ctx.save();
+
+    // ── Outer aura ──
+    const ag=ctx.createRadialGradient(cx,cy,r*0.4,cx,cy,r*2.6);
+    ag.addColorStop(0,`rgba(255,${this._shieldActive?200:80},0,${this._shieldActive?0.35:0.22})`);
+    ag.addColorStop(0.5,'rgba(140,30,0,0.08)');ag.addColorStop(1,'rgba(80,10,0,0)');
+    ctx.fillStyle=ag;ctx.beginPath();ctx.arc(cx,cy,r*2.6,0,Math.PI*2);ctx.fill();
+
+    // ── Shield overlay (when invincible) ──
+    if(this._shieldActive){
+      const sa=0.30+0.18*Math.sin(tT*3);
+      ctx.save();ctx.translate(cx,cy);ctx.rotate(tT*0.6);
+      ctx.strokeStyle=`rgba(255,180,0,${sa})`;ctx.lineWidth=5;ctx.shadowColor='rgba(255,200,0,1)';ctx.shadowBlur=25;
+      ctx.setLineDash([18,10]);ctx.beginPath();ctx.arc(0,0,r*1.18,0,Math.PI*2);ctx.stroke();
+      ctx.rotate(-tT*1.1);ctx.strokeStyle=`rgba(255,120,0,${sa*0.7})`;ctx.lineWidth=3;
+      ctx.setLineDash([12,14]);ctx.beginPath();ctx.arc(0,0,r*1.32,0,Math.PI*2);ctx.stroke();
+      ctx.setLineDash([]);ctx.restore();
+    }
+
+    // ── Base sphere ──
+    const sg=ctx.createRadialGradient(cx-r*0.28,cy-r*0.28,r*0.04,cx,cy,r);
+    sg.addColorStop(0,'#1e0600');sg.addColorStop(0.45,'#0f0200');sg.addColorStop(0.78,'#080100');sg.addColorStop(1,'#000000');
+    ctx.shadowColor='rgba(255,60,0,0.7)';ctx.shadowBlur=32;
+    ctx.fillStyle=sg;ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fill();
+
+    // ── Heavy armor plates (6 sectors, darker/heavier than regular MS) ──
+    ctx.save();ctx.beginPath();ctx.arc(cx,cy,r*0.99,0,Math.PI*2);ctx.clip();
+    for(let i=0;i<6;i++){
+      const a0=(i/6)*Math.PI*2+0.06, a1=((i+1)/6)*Math.PI*2-0.06;
+      const dimL=8+hpPct*10;
+      ctx.fillStyle=`hsl(15,50%,${dimL}%)`;
+      ctx.strokeStyle=`rgba(255,${60+50*Math.sin(tT*1.5+i)},0,0.75)`;ctx.lineWidth=2;
+      ctx.shadowColor='rgba(255,60,0,0.9)';ctx.shadowBlur=6;
+      ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r*0.97,a0,a1);ctx.closePath();ctx.fill();ctx.stroke();
+    }
+    // Deeper armor grooves
+    for(let b=1;b<=4;b++){
+      ctx.strokeStyle=`rgba(255,70,0,${0.28-b*0.04})`;ctx.lineWidth=1;ctx.shadowBlur=3;
+      ctx.beginPath();ctx.arc(cx,cy,r*(0.22+b*0.19),0,Math.PI*2);ctx.stroke();
+    }
+    ctx.restore();
+
+    // ── Energy veins (denser / more aggressive than regular MS) ──
+    ctx.save();ctx.beginPath();ctx.arc(cx,cy,r*0.99,0,Math.PI*2);ctx.clip();
+    const vp=0.4+0.6*Math.sin(tT*2.8);
+    ctx.strokeStyle=`rgba(255,${80+60*vp},0,${0.32+0.20*vp})`;
+    ctx.lineWidth=1.2;ctx.shadowColor='rgba(255,100,0,1)';ctx.shadowBlur=8;
+    for(let i=0;i<14;i++){
+      const va=(i/14)*Math.PI*2+tT*0.04;
+      ctx.beginPath();ctx.moveTo(cx+Math.cos(va)*r*0.14,cy+Math.sin(va)*r*0.14);
+      ctx.lineTo(cx+Math.cos(va)*r*0.90,cy+Math.sin(va)*r*0.90);ctx.stroke();
+    }
+    for(let i=-3;i<=3;i++){
+      const ly=cy+i*r*0.26,lhw=Math.sqrt(Math.max(0,r*r-(ly-cy)*(ly-cy)))*0.90;
+      ctx.beginPath();ctx.moveTo(cx-lhw,ly);ctx.lineTo(cx+lhw,ly);ctx.stroke();
+    }
+    ctx.restore();
+
+    // ── Rotating defense rings (4 rings, heavier) ──
+    if(!this._ringAngles)this._ringAngles=[0,0.9,1.9,3.0];
+    this._ringAngles[0]+=0.010;this._ringAngles[1]-=0.007;this._ringAngles[2]+=0.014;
+    if(this._ringAngles[3]===undefined)this._ringAngles[3]=3.0;
+    this._ringAngles[3]-=0.005;
+    if(this.laserCharging){const sp=this.laserChargeT*0.0006;this._ringAngles[0]+=sp;this._ringAngles[1]-=sp;this._ringAngles[2]+=sp*1.5;this._ringAngles[3]-=sp*0.8;}
+    [r*1.12,r*1.24,r*1.38,r*1.54].forEach((rr,ri)=>{
+      ctx.save();ctx.translate(cx,cy);ctx.rotate(this._ringAngles[ri]);
+      const segN=4+ri*2;
+      for(let si=0;si<segN;si++){
+        const sa=(si/segN)*Math.PI*2, ea=((si+0.68)/segN)*Math.PI*2;
+        ctx.strokeStyle=`rgba(255,${65+18*ri},0,${0.60-ri*0.10})`;
+        ctx.lineWidth=3.5-ri*0.6;ctx.shadowColor='rgba(255,70,0,1)';ctx.shadowBlur=12;
+        ctx.beginPath();ctx.arc(0,0,rr,sa,ea);ctx.stroke();
+        ctx.fillStyle=`rgba(255,${120+25*ri},40,0.90)`;ctx.shadowBlur=6;
+        ctx.beginPath();ctx.arc(Math.cos(sa)*rr,Math.sin(sa)*rr,3,0,Math.PI*2);ctx.fill();
+      }
+      ctx.restore();
+    });
+
+    // ── Drone bays (8, larger, more prominent) ──
+    for(let i=0;i<8;i++){
+      const ba=(i/8)*Math.PI*2+tT*0.008;
+      const bxx=cx+Math.cos(ba)*r*0.82, byy=cy+Math.sin(ba)*r*0.82;
+      const bg=0.35+0.65*Math.sin(tT*2.2+i*0.78);
+      ctx.fillStyle='rgba(3,0,0,1)';ctx.strokeStyle=`rgba(255,${70+60*bg},0,0.90)`;
+      ctx.lineWidth=2;ctx.shadowColor='rgba(255,70,0,1)';ctx.shadowBlur=12;
+      ctx.beginPath();ctx.arc(bxx,byy,r*0.062,0,Math.PI*2);ctx.fill();ctx.stroke();
+      const bdg=ctx.createRadialGradient(bxx,byy,0,bxx,byy,r*0.062);
+      bdg.addColorStop(0,`rgba(255,${140+80*bg},30,${bg*0.95})`);bdg.addColorStop(1,'rgba(255,50,0,0)');
+      ctx.fillStyle=bdg;ctx.beginPath();ctx.arc(bxx,byy,r*0.062,0,Math.PI*2);ctx.fill();
+    }
+
+    // ── Central reactor eye (larger, more intimidating) ──
+    const eyePulse=0.8+0.2*Math.sin(tT*3.8);
+    const er=r*0.23*pulse*(this.laserCharging?1+this.laserChargeT*0.004:1);
+    const echg=ctx.createRadialGradient(cx,cy,0,cx,cy,er*3.4);
+    echg.addColorStop(0,`rgba(255,${this._shieldActive?180:140},0,${eyePulse*0.8})`);
+    echg.addColorStop(0.4,`rgba(255,60,0,${eyePulse*0.4})`);echg.addColorStop(1,'rgba(255,30,0,0)');
+    ctx.fillStyle=echg;ctx.shadowColor='rgba(255,140,0,1)';ctx.shadowBlur=50;
+    ctx.beginPath();ctx.arc(cx,cy,er*3.4,0,Math.PI*2);ctx.fill();
+    for(let ri=0;ri<4;ri++){
+      ctx.save();ctx.translate(cx,cy);ctx.rotate(tT*(1.6+ri*0.8)*(ri%2?1:-1));
+      ctx.strokeStyle=`rgba(255,${110+35*ri},0,${0.70-ri*0.14})`;
+      ctx.lineWidth=2-ri*0.3;ctx.shadowColor='rgba(255,130,0,1)';ctx.shadowBlur=16;
+      ctx.setLineDash(ri%2===0?[8,5]:[5,7]);ctx.beginPath();ctx.arc(0,0,er*(0.60+ri*0.26),0,Math.PI*2);ctx.stroke();
+      ctx.setLineDash([]);ctx.restore();
+    }
+    const eig=ctx.createRadialGradient(cx,cy,0,cx,cy,er);
+    eig.addColorStop(0,'rgba(255,240,200,1)');eig.addColorStop(0.22,`rgba(255,150,0,${eyePulse})`);
+    eig.addColorStop(0.65,`rgba(255,60,0,${eyePulse*0.8})`);eig.addColorStop(1,'rgba(120,20,0,0.4)');
+    ctx.fillStyle=eig;ctx.shadowColor='rgba(255,180,40,1)';ctx.shadowBlur=60;
+    ctx.beginPath();ctx.arc(cx,cy,er,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='rgba(5,1,0,0.85)';ctx.shadowBlur=0;
+    ctx.beginPath();ctx.arc(cx,cy,er*0.38,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle=`rgba(255,255,220,${eyePulse})`;
+    ctx.beginPath();ctx.arc(cx,cy,er*0.13,0,Math.PI*2);ctx.fill();
+
+    // ── Thrusters ──
+    for(let i=0;i<3;i++){
+      const ty=cy+(-1+i)*r*0.38, tf=0.55+0.45*Math.sin(tT*4.2+i*2.0);
+      ctx.fillStyle='#050100';ctx.strokeStyle='rgba(255,70,0,0.55)';ctx.lineWidth=1.5;
+      ctx.shadowColor='rgba(255,70,0,0.7)';ctx.shadowBlur=8;
+      ctx.beginPath();ctx.arc(x+w*0.05,ty,r*0.055,0,Math.PI*2);ctx.fill();ctx.stroke();
+      const tg=ctx.createRadialGradient(x+w*0.05,ty,0,x+w*0.05,ty,r*0.15*tf);
+      tg.addColorStop(0,`rgba(255,180,80,${tf*0.9})`);tg.addColorStop(0.5,`rgba(255,70,0,${tf*0.45})`);tg.addColorStop(1,'rgba(255,30,0,0)');
+      ctx.fillStyle=tg;ctx.beginPath();ctx.arc(x+w*0.05,ty,r*0.15*tf,0,Math.PI*2);ctx.fill();
+    }
+
+    // ── Laser charge glow ──
+    if(this.laserCharging){
+      const chp=this.laserChargeT/100;
+      const chargeR=r*0.14+chp*r*0.65;
+      const ccg=ctx.createRadialGradient(cx,cy,0,cx,cy,chargeR);
+      ccg.addColorStop(0,`rgba(255,255,100,${chp*0.9})`);ccg.addColorStop(0.5,`rgba(255,180,0,${chp*0.5})`);ccg.addColorStop(1,'rgba(255,120,0,0)');
+      ctx.fillStyle=ccg;ctx.shadowColor='rgba(255,200,0,1)';ctx.shadowBlur=55;
+      ctx.beginPath();ctx.arc(cx,cy,chargeR,0,Math.PI*2);ctx.fill();
+      if(chp>0.5){
+        ctx.fillStyle=`rgba(255,255,100,${(chp-0.5)*2})`;
+        ctx.font='bold 11px Orbitron,monospace';ctx.textAlign='center';ctx.shadowBlur=10;
+        ctx.fillText('⚡ LASER CHARGING',cx,cy-r-20);
+      }
+    }
+
+    // ── Laser beam ──
+    if(this._laserBeamLife>0){
+      this._laserBeamLife--;
+      const ba=this._laserBeamLife/35;
+      ctx.save();ctx.globalAlpha=ba;
+      const beamX=cx+Math.cos(this._laserAngle)*r, beamY=cy+Math.sin(this._laserAngle)*r;
+      ctx.save();ctx.translate(beamX,beamY);ctx.rotate(this._laserAngle);
+      ctx.fillStyle='rgba(255,120,0,.45)';ctx.shadowColor='rgba(255,140,0,1)';ctx.shadowBlur=60;ctx.fillRect(0,-55,OF.W,110);
+      ctx.fillStyle='rgba(255,200,0,.9)';ctx.shadowBlur=30;ctx.fillRect(0,-22,OF.W,44);
+      ctx.fillStyle='rgba(255,255,255,.95)';ctx.shadowBlur=15;ctx.fillRect(0,-7,OF.W,14);
+      ctx.restore();ctx.restore();
+    }
+
+    // ── Repair cores ──
+    this._repairCores.forEach(c=>{
+      const cp=c.hp/c.maxHp;
+      const cp2=0.7+0.3*Math.sin(c.pulseT*3.5);
+      const cr=22*cp2;
+      const cg=ctx.createRadialGradient(c.x,c.y,0,c.x,c.y,cr*2.5);
+      cg.addColorStop(0,c.color+'ee');cg.addColorStop(0.5,c.color+'66');cg.addColorStop(1,c.color+'00');
+      ctx.fillStyle=cg;ctx.beginPath();ctx.arc(c.x,c.y,cr*2.5,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle=c.color;ctx.shadowColor=c.color;ctx.shadowBlur=20;
+      ctx.beginPath();ctx.arc(c.x,c.y,cr,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='rgba(255,255,255,0.9)';ctx.shadowBlur=0;
+      ctx.beginPath();ctx.arc(c.x,c.y,cr*0.4,0,Math.PI*2);ctx.fill();
+      // HP bar
+      const bw=60,bh=5,bx=c.x-bw/2,by=c.y-cr-14;
+      ctx.fillStyle='rgba(0,0,0,.7)';ctx.fillRect(bx,by,bw,bh);
+      ctx.fillStyle=c.color;ctx.fillRect(bx,by,bw*cp,bh);
+      // Label
+      ctx.fillStyle='rgba(255,255,255,.85)';ctx.font='bold 9px Orbitron,monospace';ctx.textAlign='center';ctx.shadowBlur=0;
+      ctx.fillText(c.label,c.x,by-4);
+      // Energy beam to mothership
+      ctx.strokeStyle=c.color+'88';ctx.lineWidth=2;ctx.shadowColor=c.color;ctx.shadowBlur=8;
+      ctx.setLineDash([6,8]);ctx.beginPath();ctx.moveTo(c.x,c.y);ctx.lineTo(cx,cy);ctx.stroke();ctx.setLineDash([]);
+      // Outgoing projectiles
+      c.projectiles.forEach(p=>{
+        ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle=p.color;ctx.shadowColor=p.color;ctx.shadowBlur=8;ctx.fill();
+      });
+    });
+
+    // ── Damage cracks ──
+    if(hpPct<0.5){
+      const ca=(0.5-hpPct)/0.5;
+      ctx.save();ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.clip();
+      ctx.strokeStyle=`rgba(255,140,50,${ca*0.9})`;ctx.lineWidth=1.8;ctx.shadowColor='#ff3300';ctx.shadowBlur=10;
+      [[0.10,0.18,0.68,0.52],[0.55,0.08,0.35,0.75],[-.30,0.28,0.52,0.10],[0.20,-.22,-.12,0.62],[0.38,0.30,0.92,-.20]].forEach(([dx1,dy1,dx2,dy2])=>{
+        ctx.beginPath();ctx.moveTo(cx+r*dx1,cy+r*dy1);ctx.lineTo(cx+r*dx2,cy+r*dy2);ctx.stroke();
+      });
+      ctx.restore();
+      if(Math.random()<0.22*ca){
+        const a=Math.random()*Math.PI*2,d=Math.random()*r;
+        spawnSparks(cx+Math.cos(a)*d,cy+Math.sin(a)*d,'#ff4400',2);
+      }
+      if(hpPct<0.25&&Math.random()<0.08) spawnParticles(cx+(Math.random()-0.5)*r*1.6,cy+(Math.random()-0.5)*r*1.6,'#882200',4,3);
+    }
+
+    // ── Overload glow ──
+    if(this._overload){
+      const oa=0.12+0.10*Math.sin(tT*6);
+      ctx.fillStyle=`rgba(255,30,0,${oa})`;ctx.beginPath();ctx.arc(cx,cy,r*1.05,0,Math.PI*2);ctx.fill();
+    }
+
+    // ── Minion orbs ──
+    this.minions.forEach(m=>{
+      if(m.dead)return;
+      const mp=0.93+0.07*Math.sin(m.pulseT); const mr=m.r*mp;
+      ctx.save();
+      const mg=ctx.createRadialGradient(m.x,m.y,0,m.x,m.y,mr*2);
+      mg.addColorStop(0,m.color+'cc');mg.addColorStop(1,m.color+'00');
+      ctx.beginPath();ctx.arc(m.x,m.y,mr*2,0,Math.PI*2);ctx.fillStyle=mg;ctx.fill();
+      ctx.beginPath();ctx.arc(m.x,m.y,mr,0,Math.PI*2);ctx.fillStyle=m.color;ctx.shadowColor=m.color;ctx.shadowBlur=14;ctx.fill();
+      (m.projectiles||[]).forEach(p=>{
+        ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle=p.color;ctx.shadowColor=p.color;ctx.shadowBlur=8;ctx.fill();
+      });
+      ctx.restore();
+    });
+
+    // ── Missiles ──
+    this.missiles.forEach(m=>{
+      const ang=Math.atan2(m.vy,m.vx);
+      ctx.save();ctx.translate(m.x,m.y);ctx.rotate(ang);
+      ctx.fillStyle='rgba(200,80,0,.95)';ctx.shadowColor='rgba(255,70,0,1)';ctx.shadowBlur=18;
+      ctx.beginPath();ctx.ellipse(0,0,m.r*2.2,m.r*.75,0,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='rgba(255,180,80,.9)';
+      ctx.beginPath();ctx.ellipse(m.r*1.6,0,m.r*.8,m.r*.45,0,0,Math.PI*2);ctx.fill();
+      ctx.strokeStyle='rgba(255,160,40,.55)';ctx.lineWidth=m.r;ctx.shadowBlur=10;
+      ctx.beginPath();ctx.moveTo(-m.r*2.2,0);ctx.lineTo(-m.r*6,0);ctx.stroke();
+      ctx.restore();
+    });
+
+    // ── Label ──
+    ctx.fillStyle=`rgba(255,${this._overload?80:120},0,0.80)`;
+    ctx.font='bold 10px Orbitron,monospace';ctx.textAlign='center';
+    ctx.shadowColor='rgba(255,80,0,1)';ctx.shadowBlur=10;
+    ctx.fillText('💀 OBLIVION MOTHERSHIP',cx,cy+r+20);
+    if(this._overload){
+      ctx.fillStyle='rgba(255,60,0,0.75)';ctx.font='bold 8px Orbitron,monospace';
+      ctx.fillText('⚠ OVERLOAD MODE',cx,cy+r+32);
+    }
+
+    ctx.restore();
+  },
+};
 const APEX={
   active:false,
   hp:0, maxHp:500000,
@@ -11441,12 +12249,25 @@ function ofShowBossPicker(){
 }
 function ofPickBoss(type){
   document.getElementById('of-boss-picker').style.display='none';
-  if(type==='mothership') ofStartMothership();
+  if(type==='mothership'){
+    // Show mothership variant sub-picker
+    document.getElementById('of-ms-picker').style.display='flex';
+  }
   else if(type==='apex') ofStartApex();
+}
+function ofPickMothership(variant){
+  document.getElementById('of-ms-picker').style.display='none';
+  if(variant==='oblivion') ofStartOMS();
+  else ofStartMothership();
 }
 function ofStartApex(){
   if(TB.active){ toast('Remove the Test Boss first!','#ffaa44'); return; }
   APEX.setup();
+  ofCheckLaserBtn();
+}
+function ofStartOMS(){
+  if(TB.active){ toast('Remove the Test Boss first!','#ffaa44'); return; }
+  OMS.setup();
   ofCheckLaserBtn();
 }
 
