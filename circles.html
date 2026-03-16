@@ -310,6 +310,130 @@ body.scifi-active .circle{z-index:20!important;}
   color:rgba(68,200,255,.3);pointer-events:none;z-index:6;
 }
 
+/* ══════════════════════════════════════════
+   SCIFI NAV BAR
+══════════════════════════════════════════ */
+#scifi-nav{
+  position:absolute;top:12px;left:50%;transform:translateX(-50%);
+  display:none;flex-direction:row;gap:8px;z-index:11;pointer-events:all;
+}
+#scifi-overlay.show #scifi-nav{display:flex;}
+.snav-btn{
+  font-family:'Orbitron',monospace;font-size:.44rem;letter-spacing:.18em;
+  padding:6px 18px;border-radius:5px;cursor:pointer;white-space:nowrap;
+  background:rgba(3,6,20,.94);border:1px solid rgba(68,170,255,.22);
+  color:rgba(100,180,255,.58);transition:all .22s;user-select:none;
+}
+.snav-btn:hover{border-color:rgba(68,170,255,.65);color:#88ccff;box-shadow:0 0 10px rgba(68,170,255,.18);}
+.snav-btn.active{border-color:rgba(68,255,200,.68);color:#44ffcc;background:rgba(0,20,30,.97);box-shadow:0 0 12px rgba(68,255,200,.24);}
+.snav-btn.notify{animation:snav-notify 1.8s ease-in-out infinite;}
+@keyframes snav-notify{0%,100%{box-shadow:0 0 6px rgba(68,255,150,.2)}50%{box-shadow:0 0 18px rgba(68,255,150,.55)}}
+
+/* ══════════════════════════════════════════
+   RESEARCH LAB FULL PANEL
+══════════════════════════════════════════ */
+#rl-panel{
+  position:absolute;inset:0;z-index:7;
+  background:rgba(3,6,18,.97);
+  display:none;flex-direction:column;align-items:center;
+  padding:54px 24px 110px;overflow-y:auto;
+  scrollbar-width:thin;scrollbar-color:rgba(68,170,255,.28) transparent;
+  pointer-events:all;
+}
+#rl-panel.show{display:flex;}
+#rl-header{
+  font-family:'Orbitron',monospace;font-size:.88rem;font-weight:700;
+  letter-spacing:.36em;color:#44aaff;margin-bottom:4px;
+  text-shadow:0 0 22px rgba(68,170,255,.45);
+}
+#rl-subheader{
+  font-family:'Rajdhani',sans-serif;font-size:.72rem;letter-spacing:.14em;
+  color:rgba(100,180,255,.35);margin-bottom:20px;
+}
+/* Offline research notification */
+#rl-offline-note{
+  font-family:'Orbitron',monospace;font-size:.5rem;letter-spacing:.12em;
+  background:rgba(68,255,150,.07);border:1px solid rgba(68,255,150,.32);
+  border-radius:5px;padding:9px 20px;color:#44ff99;margin-bottom:18px;
+  display:none;text-align:center;animation:rl-note-pulse 2.2s ease-in-out infinite;
+  max-width:700px;width:100%;
+}
+#rl-offline-note.show{display:block;}
+@keyframes rl-note-pulse{0%,100%{box-shadow:0 0 8px rgba(68,255,150,.15)}50%{box-shadow:0 0 20px rgba(68,255,150,.42)}}
+/* Project grid */
+#rl-projects{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+  gap:12px;width:100%;max-width:880px;
+}
+.rl-project{
+  background:rgba(5,10,26,.92);border:1px solid rgba(68,170,255,.18);
+  border-radius:7px;padding:14px 16px;position:relative;overflow:hidden;
+  transition:border-color .22s,box-shadow .22s;
+}
+.rl-project:hover{border-color:rgba(68,170,255,.45);box-shadow:0 0 12px rgba(68,170,255,.1);}
+.rl-project.researching{border-color:rgba(68,255,200,.52);box-shadow:0 0 14px rgba(68,255,200,.18);}
+.rl-project.done{border-color:rgba(68,220,100,.35);box-shadow:0 0 10px rgba(68,220,100,.1);}
+/* scanline sweep on active project */
+.rl-project.researching::before{
+  content:'';position:absolute;left:0;right:0;height:55%;top:-55%;
+  background:linear-gradient(180deg,transparent,rgba(68,170,255,.04),transparent);
+  animation:rl-scan 3s linear infinite;pointer-events:none;
+}
+@keyframes rl-scan{from{top:-55%}to{top:110%}}
+.rl-project-head{display:flex;align-items:center;gap:8px;margin-bottom:7px;}
+.rl-proj-icon{font-size:1.05rem;flex-shrink:0;}
+.rl-proj-name{
+  font-family:'Orbitron',monospace;font-size:.46rem;letter-spacing:.13em;
+  color:#88bbff;line-height:1.45;flex:1;
+}
+.rl-proj-cat{
+  font-family:'Orbitron',monospace;font-size:.34rem;letter-spacing:.1em;
+  color:rgba(68,170,255,.38);background:rgba(68,170,255,.07);
+  padding:2px 7px;border-radius:3px;flex-shrink:0;
+}
+.rl-proj-desc{
+  font-family:'Rajdhani',sans-serif;font-size:.69rem;letter-spacing:.04em;
+  color:rgba(200,220,255,.46);margin-bottom:10px;line-height:1.55;
+}
+.rl-proj-bar-wrap{
+  height:4px;background:rgba(255,255,255,.04);border-radius:3px;
+  overflow:hidden;margin-bottom:8px;border:1px solid rgba(68,170,255,.09);
+}
+.rl-proj-bar{
+  height:100%;width:0%;border-radius:3px;
+  background:linear-gradient(90deg,#004acc,#44aaff,#44ffee);
+  box-shadow:0 0 7px rgba(68,200,255,.65);position:relative;overflow:hidden;
+}
+.rl-proj-bar::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.32),transparent);
+  animation:rl-bar-shine 1.6s linear infinite;
+}
+@keyframes rl-bar-shine{from{transform:translateX(-100%)}to{transform:translateX(300%)}}
+.rl-project:not(.researching) .rl-proj-bar::after{display:none;}
+.rl-proj-foot{display:flex;justify-content:space-between;align-items:center;gap:8px;}
+.rl-proj-time{
+  font-family:'Orbitron',monospace;font-size:.38rem;letter-spacing:.1em;
+  color:rgba(100,170,255,.45);flex:1;
+}
+.researching .rl-proj-time{color:#44ffcc;}
+.done .rl-proj-time{color:rgba(68,200,100,.7);}
+.rl-proj-btn{
+  font-family:'Orbitron',monospace;font-size:.39rem;letter-spacing:.12em;
+  padding:4px 13px;border-radius:4px;cursor:pointer;flex-shrink:0;
+  background:rgba(15,30,70,.95);border:1px solid rgba(68,170,255,.32);
+  color:rgba(100,180,255,.65);transition:all .2s;
+}
+.rl-proj-btn:hover:not(:disabled){border-color:#44aaff;color:#44aaff;box-shadow:0 0 8px rgba(68,170,255,.28);}
+.rl-proj-btn:disabled{opacity:.28;cursor:default;pointer-events:none;}
+.done .rl-proj-btn{background:rgba(0,25,12,.95);border-color:rgba(68,200,100,.3);color:rgba(68,200,100,.55);}
+/* Active slot note at bottom of panel */
+#rl-slot-note{
+  font-family:'Rajdhani',sans-serif;font-size:.68rem;letter-spacing:.08em;
+  color:rgba(100,170,255,.3);margin-top:16px;text-align:center;max-width:700px;
+}
+
 /* TIMER */
 #timer-display{position:absolute;top:10px;left:14px;z-index:20;display:none;flex-direction:column;gap:2px}
 #timer-display.show{display:flex}
@@ -1769,6 +1893,22 @@ body.tab-ripple #c-red,body.tab-ripple #c-blue,body.tab-ripple #c-green{
     <!-- Lab background grid -->
     <canvas id="scifi-bg-canvas"></canvas>
 
+    <!-- ══ SCIFI NAVIGATION BAR ══ -->
+    <div id="scifi-nav">
+      <div class="snav-btn active" id="snav-reactor" onclick="ScifiNav.go('reactor')">⬡ REACTOR</div>
+      <div class="snav-btn" id="snav-lab" onclick="ScifiNav.go('lab')">⚗ RESEARCH LAB</div>
+      <div class="snav-btn" id="snav-experiments" onclick="ScifiNav.go('experiments')">⚙ EXPERIMENTS</div>
+    </div>
+
+    <!-- ══ RESEARCH LAB PANEL ══ -->
+    <div id="rl-panel">
+      <div id="rl-header">⬡ RESEARCH LABORATORY</div>
+      <div id="rl-subheader">ORBITAL RESEARCH FACILITY · SECTOR R-7</div>
+      <div id="rl-offline-note"></div>
+      <div id="rl-projects"></div>
+      <div id="rl-slot-note">ONE RESEARCH PROJECT CAN RUN AT A TIME · PROGRESS SAVES AUTOMATICALLY</div>
+    </div>
+
     <!-- Reactor chamber -->
     <div id="reactor-chamber">
       <div id="reactor-door-left"></div>
@@ -2540,6 +2680,8 @@ const SCIFI={
     document.getElementById('reactor-chamber').classList.remove('open','doors-closing');
     this.loop();
     QL.init();
+    ScifiNav.reset();
+    RL.init();
   },
 
   stop(){
@@ -2558,6 +2700,8 @@ const SCIFI={
     const el=document.getElementById('ai-terminal-lines');if(el)el.innerHTML='';
     this._resetOrbLabels();
     QL.stop();
+    ScifiNav.reset();
+    RL.stop();
   },
 
   showTerminal(){
@@ -3157,7 +3301,11 @@ const QL={
     this._setPanels();
   },
 
-  chargeMultiplier(){return this.amp?1.8:this.over?2.2:1;},
+  chargeMultiplier(){
+    const base=this.amp?1.8:this.over?2.2:1;
+    const bonus=typeof RL!=='undefined'?RL.chargeBonus():0;
+    return base+bonus;
+  },
   instabilityBonus(){return this.over?0.4:0;},
 
   togglePanel(id){
@@ -3277,7 +3425,8 @@ const QL={
     if(s)s.textContent=immediate?'COOLDOWN':'READY';
     if(immediate&&btn){
       btn.style.opacity='.4';
-      setTimeout(()=>{if(btn)btn.style.opacity='';const s2=document.getElementById('ql-s-port');if(s2)s2.textContent='READY';SCIFI.aiSay('PORTAL GENERATOR RECHARGED','dim');},6000);
+      const _pcd=typeof RL!=='undefined'?RL.portalCooldown():6000;
+      setTimeout(()=>{if(btn)btn.style.opacity='';const s2=document.getElementById('ql-s-port');if(s2)s2.textContent='READY';SCIFI.aiSay('PORTAL GENERATOR RECHARGED','dim');},_pcd);
     }
   },
 
@@ -3361,7 +3510,8 @@ const QL={
           if(e.classList.contains('hidden')||e===dragging)return;
           const c=getCenter(e),dx=ox-c.x,dy=oy-c.y,dist=Math.hypot(dx,dy);
           if(dist<28)return;
-          setPos(e,parseFloat(e.style.left)+(dx/dist)*2.8,parseFloat(e.style.top)+(dy/dist)*2.8);
+          const _sc=typeof RL!=='undefined'?RL.stormScale():1;
+          setPos(e,parseFloat(e.style.left)+(dx/dist)*2.8*_sc,parseFloat(e.style.top)+(dy/dist)*2.8*_sc);
         });
         if(elapsed>=2200){clearInterval(pull);if(banner)banner.classList.remove('show');}
       },16);
@@ -3389,6 +3539,306 @@ const QL={
     if(s)s.textContent='READY';
   },
 };
+
+// ══════════════════════════════════════════
+// SCIFI NAV (view router)
+// ══════════════════════════════════════════
+const ScifiNav={
+  current:'reactor',
+
+  go(view){
+    if(!QL.active)return;
+    this.current=view;
+    ['reactor','lab','experiments'].forEach(v=>{
+      document.getElementById('snav-'+v)?.classList.toggle('active',v===view);
+    });
+    document.getElementById('rl-panel')?.classList.toggle('show',view==='lab');
+    if(view==='lab'){
+      RL.openPanel();
+      SCIFI.aiSay('RESEARCH LAB ACCESS GRANTED','dim');
+    } else if(view==='experiments'){
+      SCIFI.aiSay('EXPERIMENT CONTROL PANELS','dim');
+    } else {
+      SCIFI.aiSay('REACTOR VIEW','dim');
+    }
+  },
+
+  reset(){
+    this.current='reactor';
+    ['reactor','lab','experiments'].forEach(v=>{
+      document.getElementById('snav-'+v)?.classList.toggle('active',v==='reactor');
+    });
+    document.getElementById('rl-panel')?.classList.remove('show');
+    document.getElementById('snav-lab')?.classList.remove('notify');
+  },
+
+  notifyLab(){
+    if(this.current!=='lab')
+      document.getElementById('snav-lab')?.classList.add('notify');
+  },
+};
+
+// ══════════════════════════════════════════
+// RESEARCH LAB (idle research + offline progress)
+// ══════════════════════════════════════════
+const RL={
+  SAVE_KEY:'ca_rl_v1',
+
+  PROJECTS:[
+    {
+      id:'orb_resonance',
+      name:'ORB RESONANCE',
+      icon:'⊕',
+      cat:'ORBITAL',
+      dur:90,
+      desc:'Orbs emit a proximity attraction field, easing natural alignment and fusion attempts.',
+      effect:'orbResonance',
+    },
+    {
+      id:'reactor_eff',
+      name:'REACTOR EFFICIENCY',
+      icon:'⚙',
+      cat:'REACTOR',
+      dur:120,
+      desc:'Core charge rate boosted by +30%. Faster energy buildup accelerates all fusion events.',
+      effect:'reactorEff',
+    },
+    {
+      id:'void_core',
+      name:'VOID CORE MATRIX',
+      icon:'◈',
+      cat:'CORES',
+      dur:200,
+      desc:'Unlocks VOID CORE — a rare dark energy class with extreme gravitational output and unique visual signature.',
+      effect:'voidCore',
+    },
+    {
+      id:'research_drone',
+      name:'RESEARCH DRONE MK-II',
+      icon:'🛸',
+      cat:'DRONES',
+      dur:150,
+      desc:'Deploys a permanent autonomous research drone to the orbital laboratory. Assists in real-time analysis.',
+      effect:'drone',
+    },
+    {
+      id:'quantum_ent',
+      name:'QUANTUM ENTANGLEMENT',
+      icon:'∞',
+      cat:'PORTAL',
+      dur:240,
+      desc:'Portal generator cooldown reduced by 66%. Quantum channel range expanded significantly.',
+      effect:'quantumEnt',
+    },
+    {
+      id:'plasma_shield',
+      name:'PLASMA SHIELDING',
+      icon:'⬡',
+      cat:'DEFENSE',
+      dur:100,
+      desc:'Electromagnetic barriers reduce gravitational storm displacement forces by 50%.',
+      effect:'plasmaShield',
+    },
+  ],
+
+  _state:{active:null,startTime:0,completed:[],effects:{}},
+  _tickTimer:null,
+
+  init(){
+    this._loadState();
+    this._checkOffline();
+    this._startTick();
+    // Re-apply all completed effects silently
+    this._state.completed.forEach(id=>{
+      const p=this.PROJECTS.find(x=>x.id===id);
+      if(p)this._applyEffect(p,false);
+    });
+  },
+
+  stop(){
+    clearInterval(this._tickTimer);
+    this._saveState();
+  },
+
+  openPanel(){
+    this._renderProjects();
+    document.getElementById('snav-lab')?.classList.remove('notify');
+    document.getElementById('rl-panel')?.scrollTo(0,0);
+  },
+
+  // Bonuses consumed by other systems
+  chargeBonus(){return this._state.effects.reactorEff?0.3:0;},
+  stormScale(){return this._state.effects.plasmaShield?0.5:1;},
+  portalCooldown(){return this._state.effects.quantumEnt?2000:6000;},
+
+  _loadState(){
+    try{
+      const raw=localStorage.getItem(this.SAVE_KEY);
+      if(!raw)return;
+      const s=JSON.parse(raw);
+      if(s&&typeof s==='object'){
+        this._state={
+          active:s.active||null,
+          startTime:Number(s.startTime)||0,
+          completed:Array.isArray(s.completed)?s.completed:[],
+          effects:(s.effects&&typeof s.effects==='object')?s.effects:{},
+        };
+      }
+    }catch(e){/* corrupt save — use defaults */}
+  },
+
+  _saveState(){
+    try{localStorage.setItem(this.SAVE_KEY,JSON.stringify(this._state));}catch(e){}
+  },
+
+  _checkOffline(){
+    if(!this._state.active)return;
+    const p=this.PROJECTS.find(x=>x.id===this._state.active);
+    if(!p)return;
+    const elapsed=(Date.now()-this._state.startTime)/1000;
+    if(elapsed>=p.dur)this._completeProject(p,true);
+  },
+
+  _startTick(){
+    clearInterval(this._tickTimer);
+    this._tickTimer=setInterval(()=>{
+      if(!this._state.active)return;
+      const p=this.PROJECTS.find(x=>x.id===this._state.active);
+      if(!p)return;
+      const elapsed=(Date.now()-this._state.startTime)/1000;
+      if(elapsed>=p.dur){this._completeProject(p,false);return;}
+      this._saveState();
+      // Update bar if panel is open
+      const item=document.getElementById('rlp-'+p.id);
+      if(!item)return;
+      const pct=Math.min(100,(elapsed/p.dur)*100);
+      const bar=item.querySelector('.rl-proj-bar');
+      if(bar)bar.style.width=pct.toFixed(1)+'%';
+      const timeEl=item.querySelector('.rl-proj-time');
+      if(timeEl)timeEl.textContent=this._fmt(p.dur-elapsed)+' REMAINING';
+    },1000);
+  },
+
+  startProject(id){
+    if(this._state.active){SCIFI.aiSay('RESEARCH IN PROGRESS','warn');return;}
+    if(this._state.completed.includes(id)){SCIFI.aiSay('ALREADY COMPLETED','dim');return;}
+    const p=this.PROJECTS.find(x=>x.id===id);
+    if(!p)return;
+    this._state.active=id;
+    this._state.startTime=Date.now();
+    this._saveState();
+    SCIFI.aiSay(`RESEARCH STARTED: ${p.name}`,'warn');
+    SCIFI.aiSay(`EST. COMPLETION: ${this._fmt(p.dur)}`,'dim');
+    this._renderProjects();
+  },
+
+  _completeProject(p,offline){
+    this._state.completed.push(p.id);
+    this._state.active=null;
+    this._state.startTime=0;
+    this._saveState();
+    this._applyEffect(p,true);
+    this._renderProjects();
+    if(offline){
+      // Show offline note
+      const note=document.getElementById('rl-offline-note');
+      if(note){
+        note.textContent=`⬡ OFFLINE RESEARCH COMPLETE — ${p.name}`;
+        note.classList.add('show');
+        setTimeout(()=>note.classList.remove('show'),12000);
+      }
+      ScifiNav.notifyLab();
+      setTimeout(()=>SCIFI.aiSay('OFFLINE RESEARCH FINISHED','warn'),500);
+      setTimeout(()=>SCIFI.aiSay(`${p.name} COMPLETE`),900);
+    } else {
+      SCIFI.aiSay(`✓ ${p.name} COMPLETE`,'warn');
+      SCIFI.aiSay('BREAKTHROUGH ACHIEVED');
+      // Visual fanfare
+      spawnParticles(cW()/2,cH()/3,'#44ffcc',40,6);
+      spawnShockwave(cW()/2,cH()/3,'rgba(68,255,200,',120,5);
+      flashScreen('rgba(68,255,200,.22)',420);
+      SFX.reactorCharged();
+    }
+  },
+
+  _applyEffect(p,announce){
+    const say=m=>{if(announce)SCIFI.aiSay(m,'dim');};
+    switch(p.effect){
+      case 'orbResonance':
+        this._state.effects.orbResonance=true;
+        say('ORB RESONANCE FIELD ACTIVE');
+        break;
+      case 'reactorEff':
+        this._state.effects.reactorEff=true;
+        say('REACTOR EFFICIENCY +30%');
+        break;
+      case 'voidCore':{
+        if(!SCIFI.CORE_TYPES.find(c=>c.id==='void')){
+          SCIFI.CORE_TYPES.push({
+            id:'void',name:'VOID CORE',color:'#1a0033',color2:'#440088',
+            glow:'rgba(60,0,120,',rarity:'LEGENDARY',
+            desc:'Dark energy anomaly\nEvent horizon forming',weight:6,
+          });
+        }
+        say('VOID CORE UNLOCKED');
+        break;
+      }
+      case 'drone':
+        if(QL.active)QL._spawnDrone('repair');
+        say('RESEARCH DRONE DEPLOYED');
+        break;
+      case 'quantumEnt':
+        this._state.effects.quantumEnt=true;
+        say('QUANTUM ENTANGLEMENT ONLINE');
+        break;
+      case 'plasmaShield':
+        this._state.effects.plasmaShield=true;
+        say('PLASMA SHIELDING ACTIVE');
+        break;
+    }
+    this._saveState();
+  },
+
+  _fmt(secs){
+    secs=Math.max(0,Math.floor(secs));
+    const m=Math.floor(secs/60),s=secs%60;
+    return m>0?`${m}m ${s.toString().padStart(2,'0')}s`:`${s}s`;
+  },
+
+  _renderProjects(){
+    const c=document.getElementById('rl-projects');
+    if(!c)return;
+    c.innerHTML='';
+    this.PROJECTS.forEach(p=>{
+      const done=this._state.completed.includes(p.id);
+      const active=this._state.active===p.id;
+      const elapsed=active?(Date.now()-this._state.startTime)/1000:0;
+      const pct=active?Math.min(100,(elapsed/p.dur)*100):done?100:0;
+      const timeStr=active
+        ?this._fmt(p.dur-elapsed)+' REMAINING'
+        :done?'COMPLETE':this._fmt(p.dur);
+      const btnLabel=done?'✓ COMPLETE':active?'WORKING...':'▶ RESEARCH';
+      const btnDis=(done||active||!!this._state.active)?'disabled':'';
+      const div=document.createElement('div');
+      div.className='rl-project'+(active?' researching':done?' done':'');
+      div.id='rlp-'+p.id;
+      div.innerHTML=
+        `<div class="rl-project-head">`+
+          `<span class="rl-proj-icon">${p.icon}</span>`+
+          `<span class="rl-proj-name">${p.name}</span>`+
+          `<span class="rl-proj-cat">${p.cat}</span>`+
+        `</div>`+
+        `<div class="rl-proj-desc">${p.desc}</div>`+
+        `<div class="rl-proj-bar-wrap"><div class="rl-proj-bar" style="width:${pct.toFixed(1)}%"></div></div>`+
+        `<div class="rl-proj-foot">`+
+          `<span class="rl-proj-time">${timeStr}</span>`+
+          `<button class="rl-proj-btn" ${btnDis} onclick="RL.startProject('${p.id}')">${btnLabel}</button>`+
+        `</div>`;
+      c.appendChild(div);
+    });
+  },
+};
+
 // ══════════════════════════════════════════
 function updateBeams(rb,bg,rg){
   const cr=getCenter(els.red),cb=getCenter(els.blue),cg=getCenter(els.green);
