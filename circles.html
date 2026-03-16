@@ -18,7 +18,7 @@ body.boss-phase2{background:#100300}
 body.boss-phase3{background:#0a0000}
 
 /* STARFIELD */
-#stars{position:fixed;inset:0;pointer-events:none;z-index:0}
+#stars{position:fixed;inset:0;pointer-events:none;z-index:0;will-change:transform;transition:transform .05s linear}
 .star{position:absolute;border-radius:50%;background:#fff;animation:twinkle var(--d,3s) var(--delay,0s) ease-in-out infinite alternate}
 @keyframes twinkle{from{opacity:var(--a1,.1)}to{opacity:var(--a2,.6)}}
 #stars.pulling .star{animation:star-pull 2.2s ease-in forwards!important}
@@ -1605,6 +1605,43 @@ body.adv-mars-bg #adv-overlay{background:radial-gradient(ellipse at 50% 80%,#200
     d.style.cssText=`width:${sz}px;height:${sz}px;top:${top}%;left:${left}%;--d:${(Math.random()*4+2).toFixed(1)}s;--delay:${(Math.random()*5).toFixed(1)}s;--a1:${(Math.random()*.15).toFixed(2)};--a2:${(Math.random()*.7+.2).toFixed(2)};--pull-x:${pullX}vw;--pull-y:${pullY}vh`;
     s.appendChild(d);
   }
+
+  // ── Mouse parallax ──
+  // Stars drift softly toward the cursor, then ease back to origin.
+  // MAX_SHIFT: maximum pixel offset at screen edge (~1% of viewport)
+  const MAX_SHIFT=14;
+  // Easing speed: lower = slower/smoother drift
+  const EASE_IN=0.045;   // how fast stars follow the mouse
+  const EASE_OUT=0.028;  // how fast they drift back when idle
+  const IDLE_MS=800;     // ms after last mouse move before drifting back
+
+  let targetX=0,targetY=0,curX=0,curY=0;
+  let lastMove=0,rafId=null;
+
+  function tickParallax(){
+    // When mouse is idle, ease target back to center
+    const idle=Date.now()-lastMove>IDLE_MS;
+    if(idle){ targetX+=(0-targetX)*EASE_OUT; targetY+=(0-targetY)*EASE_OUT; }
+    // Smoothly interpolate current toward target
+    curX+=(targetX-curX)*EASE_IN;
+    curY+=(targetY-curY)*EASE_IN;
+    // Only apply when not in pull/restore animation
+    if(!s.classList.contains('pulling')&&!s.classList.contains('restoring')){
+      s.style.transform=`translate(${curX.toFixed(2)}px,${curY.toFixed(2)}px)`;
+    }
+    rafId=requestAnimationFrame(tickParallax);
+  }
+
+  document.addEventListener('mousemove',e=>{
+    lastMove=Date.now();
+    // Normalize cursor to [-1,+1] relative to screen center
+    const nx=(e.clientX/window.innerWidth -0.5)*2;
+    const ny=(e.clientY/window.innerHeight-0.5)*2;
+    targetX=nx*MAX_SHIFT;
+    targetY=ny*MAX_SHIFT;
+  },{ passive:true });
+
+  rafId=requestAnimationFrame(tickParallax);
 })();
 
 // ══════════════════════════════════════════
