@@ -18,7 +18,8 @@ body.boss-phase2{background:#100300}
 body.boss-phase3{background:#0a0000}
 
 /* STARFIELD */
-#stars{position:fixed;inset:0;pointer-events:none;z-index:0;will-change:transform;transition:transform .05s linear}
+#stars{position:fixed;inset:0;pointer-events:none;z-index:0}
+.star-layer{position:absolute;inset:0;will-change:transform;}
 .star{position:absolute;border-radius:50%;background:#fff;animation:twinkle var(--d,3s) var(--delay,0s) ease-in-out infinite alternate}
 @keyframes twinkle{from{opacity:var(--a1,.1)}to{opacity:var(--a2,.6)}}
 #stars.pulling .star{animation:star-pull 2.2s ease-in forwards!important}
@@ -1082,7 +1083,7 @@ body.adv-mars-bg #adv-overlay{background:radial-gradient(ellipse at 50% 80%,#200
 </head>
 <body>
 
-<div id="stars"></div>
+<div id="stars"><div class="star-layer" id="stars-far"></div><div class="star-layer" id="stars-mid"></div><div class="star-layer" id="stars-near"></div></div>
 <div id="warp"></div>
 <div id="flash"></div>
 <div id="space-distort"></div>
@@ -1596,52 +1597,54 @@ body.adv-mars-bg #adv-overlay{background:radial-gradient(ellipse at 50% 80%,#200
 // STARS
 // ══════════════════════════════════════════
 (()=>{
-  const s=document.getElementById('stars');
-  for(let i=0;i<130;i++){
-    const d=document.createElement('div');d.className='star';
-    const sz=Math.random()*2+.4;
-    const left=Math.random()*100,top=Math.random()*100;
-    const pullX=((50-left)/100*60).toFixed(1),pullY=((50-top)/100*60).toFixed(1);
-    d.style.cssText=`width:${sz}px;height:${sz}px;top:${top}%;left:${left}%;--d:${(Math.random()*4+2).toFixed(1)}s;--delay:${(Math.random()*5).toFixed(1)}s;--a1:${(Math.random()*.15).toFixed(2)};--a2:${(Math.random()*.7+.2).toFixed(2)};--pull-x:${pullX}vw;--pull-y:${pullY}vh`;
-    s.appendChild(d);
-  }
-
-  // ── Mouse parallax ──
-  // Stars drift softly toward the cursor, then ease back to origin.
-  // MAX_SHIFT: maximum pixel offset at screen edge (~1% of viewport)
-  const MAX_SHIFT=14;
-  // Easing speed: lower = slower/smoother drift
-  const EASE_IN=0.045;   // how fast stars follow the mouse
-  const EASE_OUT=0.028;  // how fast they drift back when idle
-  const IDLE_MS=800;     // ms after last mouse move before drifting back
-
-  let targetX=0,targetY=0,curX=0,curY=0;
-  let lastMove=0,rafId=null;
-
-  function tickParallax(){
-    // When mouse is idle, ease target back to center
-    const idle=Date.now()-lastMove>IDLE_MS;
-    if(idle){ targetX+=(0-targetX)*EASE_OUT; targetY+=(0-targetY)*EASE_OUT; }
-    // Smoothly interpolate current toward target
-    curX+=(targetX-curX)*EASE_IN;
-    curY+=(targetY-curY)*EASE_IN;
-    // Only apply when not in pull/restore animation
-    if(!s.classList.contains('pulling')&&!s.classList.contains('restoring')){
-      s.style.transform=`translate(${curX.toFixed(2)}px,${curY.toFixed(2)}px)`;
+  // Three depth layers: far = distant/faint/slow, near = bright/fast
+  const layers=[
+    {id:'stars-far',  count:55, minSz:.3, maxSz:1.0, minA:.04, maxA:.42, speed:0.25},
+    {id:'stars-mid',  count:50, minSz:.8, maxSz:1.5, minA:.10, maxA:.60, speed:0.55},
+    {id:'stars-near', count:25, minSz:1.4,maxSz:2.8, minA:.20, maxA:.88, speed:1.00},
+  ];
+  const starsEl=document.getElementById('stars');
+  layers.forEach(layer=>{
+    layer.el=document.getElementById(layer.id);
+    for(let i=0;i<layer.count;i++){
+      const d=document.createElement('div');d.className='star';
+      const sz=(Math.random()*(layer.maxSz-layer.minSz)+layer.minSz);
+      const left=Math.random()*100,top=Math.random()*100;
+      const a2=(Math.random()*(layer.maxA-layer.minA)+layer.minA).toFixed(2);
+      const a1=(Math.random()*0.07).toFixed(2);
+      const pullX=((50-left)/100*60).toFixed(1),pullY=((50-top)/100*60).toFixed(1);
+      d.style.cssText=`width:${sz.toFixed(1)}px;height:${sz.toFixed(1)}px;top:${top.toFixed(1)}%;left:${left.toFixed(1)}%;--d:${(Math.random()*4+2).toFixed(1)}s;--delay:${(Math.random()*5).toFixed(1)}s;--a1:${a1};--a2:${a2};--pull-x:${pullX}vw;--pull-y:${pullY}vh`;
+      layer.el.appendChild(d);
     }
-    rafId=requestAnimationFrame(tickParallax);
+  });
+
+  // ── Mouse parallax — each layer drifts at its own speed ──
+  const MAX_SHIFT=18;   // max px for the nearest layer
+  const EASE_IN=0.045;  // follow speed
+  const EASE_OUT=0.028; // idle return speed
+  const IDLE_MS=800;
+  let targetX=0,targetY=0,lastMove=0;
+  const cur=layers.map(()=>({x:0,y:0}));
+
+  function tick(){
+    const idle=Date.now()-lastMove>IDLE_MS;
+    if(idle){targetX+=(0-targetX)*EASE_OUT;targetY+=(0-targetY)*EASE_OUT;}
+    const animating=starsEl.classList.contains('pulling')||starsEl.classList.contains('restoring');
+    layers.forEach((layer,i)=>{
+      cur[i].x+=(targetX*layer.speed-cur[i].x)*EASE_IN;
+      cur[i].y+=(targetY*layer.speed-cur[i].y)*EASE_IN;
+      if(!animating) layer.el.style.transform=`translate(${cur[i].x.toFixed(2)}px,${cur[i].y.toFixed(2)}px)`;
+    });
+    requestAnimationFrame(tick);
   }
 
   document.addEventListener('mousemove',e=>{
     lastMove=Date.now();
-    // Normalize cursor to [-1,+1] relative to screen center
-    const nx=(e.clientX/window.innerWidth -0.5)*2;
-    const ny=(e.clientY/window.innerHeight-0.5)*2;
-    targetX=nx*MAX_SHIFT;
-    targetY=ny*MAX_SHIFT;
-  },{ passive:true });
+    targetX=(e.clientX/window.innerWidth -0.5)*2*MAX_SHIFT;
+    targetY=(e.clientY/window.innerHeight-0.5)*2*MAX_SHIFT;
+  },{passive:true});
 
-  rafId=requestAnimationFrame(tickParallax);
+  requestAnimationFrame(tick);
 })();
 
 // ══════════════════════════════════════════
