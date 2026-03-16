@@ -1081,6 +1081,29 @@ body.adv-mars-bg #adv-overlay{background:radial-gradient(ellipse at 50% 80%,#200
 @keyframes admin-pulse{0%,100%{box-shadow:0 0 16px rgba(255,180,30,.15)}50%{box-shadow:0 0 28px rgba(255,180,30,.4)}}
 
 /* ══════════════════════════════════════════
+   PAUSE SCREEN
+══════════════════════════════════════════ */
+#pause-screen{
+  position:fixed;inset:0;z-index:180;display:flex;align-items:center;justify-content:center;
+  background:rgba(3,5,16,.78);backdrop-filter:blur(7px);
+  opacity:1;transition:opacity .25s ease;
+}
+#pause-screen.ps-hidden{opacity:0;pointer-events:none;}
+#pause-inner{text-align:center;display:flex;flex-direction:column;align-items:center;}
+#pause-title{
+  font-family:'Orbitron',monospace;font-size:clamp(1rem,3vw,1.8rem);font-weight:900;
+  letter-spacing:.38em;color:#fff;
+  text-shadow:0 0 28px rgba(80,160,255,.55),0 0 60px rgba(60,120,255,.2);
+  margin-bottom:6px;
+}
+#pause-sub{
+  font-family:'Rajdhani',sans-serif;font-size:clamp(.75rem,2vw,1rem);
+  letter-spacing:.55em;color:rgba(100,180,255,.55);text-transform:uppercase;
+  margin-bottom:38px;
+}
+#pause-buttons{display:flex;flex-direction:column;align-items:center;gap:12px;width:210px;}
+
+/* ══════════════════════════════════════════
    MAIN MENU
 ══════════════════════════════════════════ */
 #main-menu{
@@ -1287,6 +1310,18 @@ header h1{
       </div>
     </div>
     <div id="mm-version">v1.0 &nbsp;·&nbsp; One file. Pure chaos.</div>
+  </div>
+</div>
+
+<!-- ══ PAUSE SCREEN ══ -->
+<div id="pause-screen" class="ps-hidden" style="display:none">
+  <div id="pause-inner">
+    <div id="pause-title">CIRCLE ALCHEMY</div>
+    <div id="pause-sub">Paused</div>
+    <div id="pause-buttons">
+      <button class="mm-btn" onclick="pauseContinue()">▶ &nbsp; CONTINUE</button>
+      <button class="mm-btn" onclick="mmReturnToMenu()">⌂ &nbsp; MAIN MENU</button>
+    </div>
   </div>
 </div>
 
@@ -5017,15 +5052,53 @@ function stopBoss(){
 // ══════════════════════════════════════════
 // MAIN MENU
 // ══════════════════════════════════════════
+let _pauseOpen=false;
+
 function mmPlay(){
   const menu=document.getElementById('main-menu');
+  // Warp + fade out menu
   document.body.classList.add('mm-launching');
   menu.classList.add('mm-exit');
+  SFX.stopMenuMusic(0.75);           // fast fade during warp
   setTimeout(()=>{
     menu.style.display='none';
     document.body.classList.remove('mm-launching');
-  },800);
+    SFX.startGameMusic();            // fade in ambient once game is visible
+  },820);
 }
+
+function mmReturnToMenu(){
+  // Close pause if open
+  if(_pauseOpen) pauseContinue();
+  SFX.stopGameMusic(1.8);
+  // Show + animate main menu back in
+  const menu=document.getElementById('main-menu');
+  menu.style.opacity='0';
+  menu.style.transition='none';
+  menu.style.display='flex';
+  menu.classList.remove('mm-exit');
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    menu.style.transition='';
+    menu.style.opacity='';
+  }));
+  setTimeout(()=>SFX.startMenuMusic(),400);
+}
+
+function pauseGame(){
+  if(document.getElementById('main-menu').style.display!=='none')return;
+  _pauseOpen=true;
+  const ps=document.getElementById('pause-screen');
+  ps.style.display='flex';
+  requestAnimationFrame(()=>ps.classList.remove('ps-hidden'));
+}
+
+function pauseContinue(){
+  _pauseOpen=false;
+  const ps=document.getElementById('pause-screen');
+  ps.classList.add('ps-hidden');
+  setTimeout(()=>ps.style.display='none',260);
+}
+
 function mmToggleSettings(){
   const p=document.getElementById('mm-settings-panel');
   const open=p.style.display==='none';
@@ -5033,6 +5106,7 @@ function mmToggleSettings(){
   document.getElementById('mm-settings-btn').style.borderColor=
     open?'rgba(80,160,255,.6)':'rgba(80,160,255,.35)';
 }
+
 function mmToggleSound(){
   const on=SFX.toggle();
   document.getElementById('mm-sound-btn').textContent=on?'🔊 ON':'🔇 OFF';
@@ -5162,6 +5236,8 @@ function restart(){
 const SFX=(()=>{
   let ctx=null;
   let muted=false;
+  let _menuMu=null;  // menu music nodes
+  let _gameMu=null;  // game ambient nodes
 
   function ac(){
     if(!ctx) ctx=new(window.AudioContext||window.webkitAudioContext)();
@@ -5237,9 +5313,69 @@ const SFX=(()=>{
     freqs.forEach((f,i)=>setTimeout(()=>osc(type,f,dur,vol),i*18));
   }
 
+  // ── Procedural ambient music engine ──
+  function _stopMu(nodes,dur){
+    if(!nodes)return null;
+    const t=ac().currentTime;
+    nodes.mg.gain.cancelScheduledValues(t);
+    nodes.mg.gain.setValueAtTime(nodes.mg.gain.value||0.01,t);
+    nodes.mg.gain.linearRampToValueAtTime(0.0001,t+dur);
+    setTimeout(()=>{try{nodes.os.forEach(o=>o.stop());}catch(e){}},(dur+0.35)*1000);
+    return null;
+  }
+  function _buildMu(targetVol,fadeIn,droneFreqs,padFreqs,shimFreqs){
+    const a=ac();const now=a.currentTime;
+    const mg=a.createGain();
+    mg.gain.setValueAtTime(0.0001,now);
+    mg.gain.linearRampToValueAtTime(muted?0.0001:targetVol,now+fadeIn);
+    mg.connect(a.destination);
+    const os=[];
+    // Deep space drones (detuned sines for that thick pad sound)
+    droneFreqs.forEach(({f,v})=>{
+      const o=a.createOscillator(),g=a.createGain();
+      o.type='sine';o.frequency.value=f;g.gain.value=v;
+      o.connect(g);g.connect(mg);o.start(now);os.push(o);
+    });
+    // Slow-pulsing chord pad with LFO tremolo
+    const padG=a.createGain();padG.gain.value=0.15;padG.connect(mg);
+    const lfo=a.createOscillator(),lg=a.createGain();
+    lfo.type='sine';lfo.frequency.value=0.06;lg.gain.value=0.05;
+    lfo.connect(lg);lg.connect(padG.gain);lfo.start(now);os.push(lfo);
+    padFreqs.forEach(f=>{
+      const o=a.createOscillator(),g=a.createGain();
+      o.type='sine';o.frequency.value=f;g.gain.value=0.2;
+      o.connect(g);g.connect(padG);o.start(now);os.push(o);
+    });
+    // High shimmer sparkles (each on its own ultra-slow LFO)
+    shimFreqs.forEach((f,i)=>{
+      const o=a.createOscillator(),g=a.createGain();
+      o.type='sine';o.frequency.value=f;g.gain.value=0.01;
+      const sl=a.createOscillator(),slg=a.createGain();
+      sl.type='sine';sl.frequency.value=0.036+i*0.021;slg.gain.value=0.007;
+      sl.connect(slg);slg.connect(g.gain);
+      o.connect(g);g.connect(mg);o.start(now);sl.start(now);os.push(o,sl);
+    });
+    // Low-pass filtered noise for deep atmospheric texture
+    const sr=a.sampleRate,buf=a.createBuffer(1,sr*6,sr);
+    const dat=buf.getChannelData(0);for(let i=0;i<dat.length;i++)dat[i]=Math.random()*2-1;
+    const ns=a.createBufferSource();ns.buffer=buf;ns.loop=true;
+    const nf=a.createBiquadFilter();nf.type='lowpass';nf.frequency.value=130;
+    const ng=a.createGain();ng.gain.value=0.016;
+    ns.connect(nf);nf.connect(ng);ng.connect(mg);ns.start(now);os.push(ns);
+    return{mg,os,targetVol};
+  }
+
   // ── Named sounds ──
   return {
-    toggle(){ muted=!muted; return !muted; },
+    toggle(){
+      muted=!muted;
+      if(ctx){
+        const t=ctx.currentTime;
+        if(_menuMu){_menuMu.mg.gain.cancelScheduledValues(t);_menuMu.mg.gain.linearRampToValueAtTime(muted?0.0001:_menuMu.targetVol,t+0.5);}
+        if(_gameMu){_gameMu.mg.gain.cancelScheduledValues(t);_gameMu.mg.gain.linearRampToValueAtTime(muted?0.0001:_gameMu.targetVol,t+0.5);}
+      }
+      return !muted;
+    },
     isMuted(){ return muted; },
 
     // Gravity bounce — pitch and volume scale with speed
@@ -5596,6 +5732,31 @@ const SFX=(()=>{
       setTimeout(()=>noise(0.06,0.18,300,5),500);
       setTimeout(()=>sweep('sawtooth',150,8,0.8,0.1),700);
     },
+
+    // ── Ambient music ──
+    // Main menu: rich detuned drone + minor chord pad + high shimmer
+    startMenuMusic(){
+      if(_menuMu)return;
+      _menuMu=_buildMu(
+        0.17, 3.5,
+        [{f:41,v:.36},{f:41.28,v:.22},{f:82,v:.15},{f:123,v:.09}],
+        [110,138.6,164.8,220],
+        [880,1108,1320]
+      );
+    },
+    stopMenuMusic(dur=2.5){_menuMu=_stopMu(_menuMu,dur);},
+
+    // In-game: quieter version, no shimmer — sits under SFX without fighting it
+    startGameMusic(){
+      if(_gameMu)return;
+      _gameMu=_buildMu(
+        0.062, 4.5,
+        [{f:41,v:.4},{f:41.25,v:.25},{f:82,v:.13}],
+        [110,138.6,164.8],
+        []
+      );
+    },
+    stopGameMusic(dur=2.0){_gameMu=_stopMu(_gameMu,dur);},
   };
 })();
 
@@ -13366,6 +13527,16 @@ Object.entries(ADMIN_ITEMS).forEach(([k,v])=>v.key=k);
 // Wait two animation frames so the browser fully lays out header + canvas area
 // before placing circles — fixes the "circles in corner" bug on mobile
 requestAnimationFrame(()=>requestAnimationFrame(()=>setMode('fusion')));
+
+// Start menu music on first user interaction (AudioContext requires a gesture)
+document.addEventListener('pointerdown',()=>SFX.startMenuMusic(),{once:true});
+
+// ESC key — toggle pause screen (only when in-game)
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Escape')return;
+  if(document.getElementById('main-menu').style.display!=='none')return; // on menu, ignore
+  _pauseOpen?pauseContinue():pauseGame();
+});
 </script>
 <!-- ═══════════════════════════════════════════════════
      ADVENTURE MODE OVERLAY
