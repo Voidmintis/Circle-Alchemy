@@ -251,6 +251,65 @@ header.boss-header h1{color:#ffaa44;text-shadow:0 0 20px rgba(255,100,0,.6)}
 body.scifi-active #scifi-overlay{display:flex;}
 body.scifi-active .circle{z-index:20!important;}
 
+/* ══════════════════════════════════════════
+   QUANTUM LAB PANELS
+══════════════════════════════════════════ */
+#ql-panels{
+  position:absolute;bottom:20px;left:50%;transform:translateX(-50%);
+  display:none;flex-direction:row;gap:8px;z-index:6;pointer-events:all;
+}
+#scifi-overlay.show #ql-panels{display:flex;}
+.ql-panel{
+  font-family:'Orbitron',monospace;font-size:.42rem;letter-spacing:.12em;
+  padding:10px 12px;border-radius:6px;cursor:pointer;text-align:center;
+  border:1px solid rgba(68,170,255,.28);background:rgba(3,6,20,.92);
+  color:rgba(100,180,255,.65);transition:all .22s;min-width:74px;
+  box-shadow:0 0 8px rgba(68,170,255,.07);user-select:none;
+}
+.ql-panel:hover{
+  border-color:rgba(68,170,255,.7);color:#88ccff;
+  box-shadow:0 0 14px rgba(68,170,255,.22);
+}
+.ql-panel.active{
+  border-color:rgba(68,255,200,.75);color:#44ffcc;
+  background:rgba(0,20,30,.96);
+  box-shadow:0 0 16px rgba(68,255,200,.32);
+}
+.ql-panel-icon{font-size:.9rem;margin-bottom:4px;}
+.ql-panel-stat{
+  font-size:.37rem;letter-spacing:.08em;margin-top:5px;
+  opacity:.55;transition:all .22s;
+}
+.ql-panel.active .ql-panel-stat{color:#44ffcc;opacity:1;}
+/* Portal ring */
+#ql-portal-ring{
+  position:absolute;border-radius:50%;pointer-events:none;z-index:6;
+  opacity:0;transform:translate(-50%,-50%) scale(.1);
+  transition:opacity .45s,transform .45s cubic-bezier(.175,.885,.32,1.4);
+  border:2px solid #44ffcc;
+  box-shadow:0 0 28px rgba(68,255,200,.55),0 0 60px rgba(68,255,200,.2),inset 0 0 20px rgba(68,255,200,.1);
+}
+#ql-portal-ring.open{opacity:1;transform:translate(-50%,-50%) scale(1);animation:ql-portal-spin 2s linear infinite;}
+#ql-portal-ring.shrink{opacity:0;transform:translate(-50%,-50%) scale(.05);transition:opacity .25s,transform .25s;}
+@keyframes ql-portal-spin{from{filter:hue-rotate(0deg)}to{filter:hue-rotate(360deg)}}
+/* Storm event banner */
+#ql-storm-banner{
+  position:absolute;top:28%;left:50%;transform:translate(-50%,-50%);
+  font-family:'Orbitron',monospace;font-size:clamp(.6rem,2vw,.85rem);
+  font-weight:900;letter-spacing:.32em;text-align:center;
+  pointer-events:none;z-index:10;padding:10px 22px;border-radius:6px;
+  opacity:0;transition:opacity .3s;
+  border:1px solid currentColor;background:rgba(3,6,20,.9);
+  text-shadow:0 0 16px currentColor;
+}
+#ql-storm-banner.show{opacity:1;}
+/* Drone lab glow frame */
+#ql-drone-label{
+  position:absolute;right:16px;bottom:20px;
+  font-family:'Orbitron',monospace;font-size:.38rem;letter-spacing:.18em;
+  color:rgba(68,200,255,.3);pointer-events:none;z-index:6;
+}
+
 /* TIMER */
 #timer-display{position:absolute;top:10px;left:14px;z-index:20;display:none;flex-direction:column;gap:2px}
 #timer-display.show{display:flex}
@@ -1741,6 +1800,42 @@ body.tab-ripple #c-red,body.tab-ripple #c-blue,body.tab-ripple #c-green{
     <div id="launch-tube">
       <div id="launch-tube-inner"></div>
     </div>
+
+    <!-- ══ QUANTUM LAB INTERFACE ══ -->
+    <!-- Tech panels -->
+    <div id="ql-panels">
+      <div class="ql-panel" id="ql-p-grav" onclick="QL.togglePanel('grav')">
+        <div class="ql-panel-icon">⛛</div>
+        <div>GRAVITY</div><div>CONTROL</div>
+        <div class="ql-panel-stat" id="ql-s-grav">OFFLINE</div>
+      </div>
+      <div class="ql-panel" id="ql-p-amp" onclick="QL.togglePanel('amp')">
+        <div class="ql-panel-icon">⚡</div>
+        <div>ENERGY</div><div>AMPLIFIER</div>
+        <div class="ql-panel-stat" id="ql-s-amp">OFFLINE</div>
+      </div>
+      <div class="ql-panel" id="ql-p-over" onclick="QL.togglePanel('over')">
+        <div class="ql-panel-icon">🔴</div>
+        <div>REACTOR</div><div>OVERCLOCK</div>
+        <div class="ql-panel-stat" id="ql-s-over">OFFLINE</div>
+      </div>
+      <div class="ql-panel" id="ql-p-port" onclick="QL.activatePortal()">
+        <div class="ql-panel-icon">🌀</div>
+        <div>PORTAL</div><div>GENERATOR</div>
+        <div class="ql-panel-stat" id="ql-s-port">READY</div>
+      </div>
+      <div class="ql-panel" id="ql-p-drone" onclick="QL.spawnDroneWave()">
+        <div class="ql-panel-icon">🛸</div>
+        <div>DRONE</div><div>FACTORY</div>
+        <div class="ql-panel-stat" id="ql-s-drone">LAUNCH</div>
+      </div>
+    </div>
+    <!-- Portal ring -->
+    <div id="ql-portal-ring"></div>
+    <!-- Storm banner -->
+    <div id="ql-storm-banner"></div>
+    <!-- Drone label -->
+    <div id="ql-drone-label">◆ DRONE SQUADRON ACTIVE</div>
   </div>
 </div>
 
@@ -2444,6 +2539,7 @@ const SCIFI={
     document.getElementById('launch-tube').classList.remove('open');
     document.getElementById('reactor-chamber').classList.remove('open','doors-closing');
     this.loop();
+    QL.init();
   },
 
   stop(){
@@ -2461,6 +2557,7 @@ const SCIFI={
     document.getElementById('reactor-chamber')?.classList.remove('open','doors-closing');
     const el=document.getElementById('ai-terminal-lines');if(el)el.innerHTML='';
     this._resetOrbLabels();
+    QL.stop();
   },
 
   showTerminal(){
@@ -2722,13 +2819,13 @@ const SCIFI={
     const pct=document.getElementById('reactor-charge-pct');
     this.aiSay('CORE CHARGING...','dim');
 
-    // Decide if instability occurs (30% chance, not for mega)
-    const unstable=this.coreType.id!=='mega' && Math.random()<.30;
+    // Decide if instability occurs (30% chance + overclock bonus, not for mega)
+    const unstable=this.coreType.id!=='mega' && Math.random()<(.30+QL.instabilityBonus());
     let instabilityFired=false;
 
     this.chargeTimer=setInterval(()=>{
       if(this.phase!=='charging')return;
-      this.chargeLevel=Math.min(100,this.chargeLevel+.5);
+      this.chargeLevel=Math.min(100,this.chargeLevel+.5*QL.chargeMultiplier());
       fill.style.width=this.chargeLevel+'%';
       pct.textContent=Math.round(this.chargeLevel)+'%';
       SFX.sepPulse(this.chargeLevel);
@@ -2897,6 +2994,40 @@ const SCIFI={
     // Horizontal scan lines
     ctx.strokeStyle='rgba(68,170,255,0.04)';ctx.lineWidth=1;
     for(let y=0;y<H;y+=18){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+    // Circuit network — static computed once, then redrawn each frame with pulsing opacity
+    if(!this._circuits){
+      this._circuits=[];
+      // Horizontal conduit lines
+      for(let i=0;i<6;i++){
+        const y=H*.12+i*(H*.13);
+        const x1=W*.06+Math.random()*W*.1,x2=W*.82+Math.random()*W*.1;
+        this._circuits.push({type:'h',x1,y1:y,x2,y2:y,phase:Math.random()*Math.PI*2});
+      }
+      // Vertical conduit segments
+      for(let i=0;i<4;i++){
+        const x=W*.18+i*(W*.2);
+        const y1=H*.1+Math.random()*H*.1,y2=y1+H*.15+Math.random()*H*.2;
+        this._circuits.push({type:'v',x1:x,y1,x2:x,y2,phase:Math.random()*Math.PI*2});
+      }
+      // Circuit nodes at intersections
+      this._cnodes=[];
+      for(let i=0;i<20;i++)
+        this._cnodes.push({x:W*.1+Math.random()*W*.8,y:H*.1+Math.random()*H*.8,r:.5+Math.random()*1.5,phase:Math.random()*Math.PI*2,spd:.018+Math.random()*.025});
+    }
+    const t2=Date.now()*.001;
+    const isActive=this.phase!=='idle';
+    this._circuits.forEach(c=>{
+      c.phase+=.005;
+      const a=(isActive?.06:.025)*(0.5+0.5*Math.sin(c.phase));
+      ctx.strokeStyle=`rgba(68,170,255,${a})`;ctx.lineWidth=.8;
+      ctx.beginPath();ctx.moveTo(c.x1,c.y1);ctx.lineTo(c.x2,c.y2);ctx.stroke();
+    });
+    this._cnodes.forEach(n=>{
+      n.phase+=n.spd;
+      const a=(isActive?.4:.15)*(0.5+0.5*Math.sin(n.phase));
+      ctx.beginPath();ctx.arc(n.x,n.y,n.r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(68,220,255,${a})`;ctx.fill();
+    });
     // Corner brackets
     const bS=30;
     ctx.strokeStyle='rgba(68,170,255,0.3)';ctx.lineWidth=1.5;
@@ -2957,6 +3088,8 @@ const SCIFI={
         this._drawArc(ctx,cx,cy);
       }
     }
+    // Drones
+    QL.drawDrones(ctx,cx,cy);
   },
 
   _drawArc(ctx,cx,cy){
@@ -2980,7 +3113,282 @@ const SCIFI={
 };
 
 // ══════════════════════════════════════════
-// BEAMS / ENERGY
+// QUANTUM LAB (Sci-Fi sandbox extras)
+// ══════════════════════════════════════════
+const QL={
+  active:false,
+  grav:false, amp:false, over:false, portal:false,
+  gravTimer:null, stormCycle:null, portalCheckInterval:null, portalCloseTimer:null,
+  drones:[],
+  portalX:0, portalY:0,
+
+  init(){
+    this.active=true;
+    this.grav=false;this.amp=false;this.over=false;this.portal=false;
+    this.drones=[];
+    clearInterval(this.gravTimer);clearTimeout(this.stormCycle);
+    clearInterval(this.portalCheckInterval);clearTimeout(this.portalCloseTimer);
+    this._setPanels();
+    const pr=document.getElementById('ql-portal-ring');
+    if(pr){pr.className='';pr.style.width='';pr.style.height='';}
+    const sb=document.getElementById('ql-storm-banner');
+    if(sb){sb.classList.remove('show');sb.textContent='';}
+    // Spawn 3 starter drones
+    SCIFI.aiSay('QUANTUM LAB ONLINE','dim');
+    SCIFI.aiSay('TECH PANELS READY');
+    setTimeout(()=>{
+      ['attack','repair','shield'].forEach(k=>this._spawnDrone(k));
+      SCIFI.aiSay('DRONE SQUADRON ACTIVE','dim');
+    },1800);
+    this._scheduleStorm();
+  },
+
+  stop(){
+    this.active=false;
+    clearInterval(this.gravTimer);
+    clearTimeout(this.stormCycle);
+    clearInterval(this.portalCheckInterval);
+    clearTimeout(this.portalCloseTimer);
+    this.drones=[];
+    this.portal=false;
+    this.grav=false;this.amp=false;this.over=false;
+    const pr=document.getElementById('ql-portal-ring');if(pr)pr.className='';
+    const sb=document.getElementById('ql-storm-banner');if(sb)sb.classList.remove('show');
+    this._setPanels();
+  },
+
+  chargeMultiplier(){return this.amp?1.8:this.over?2.2:1;},
+  instabilityBonus(){return this.over?0.4:0;},
+
+  togglePanel(id){
+    if(!this.active)return;
+    this[id]=!this[id];
+    const btn=document.getElementById('ql-p-'+id);
+    if(btn)btn.classList.toggle('active',this[id]);
+    const s=document.getElementById('ql-s-'+id);
+    if(s)s.textContent=this[id]?'ONLINE':'OFFLINE';
+    const names={grav:'GRAVITY CONTROL',amp:'ENERGY AMPLIFIER',over:'REACTOR OVERCLOCK'};
+    SCIFI.aiSay(`${names[id]} ${this[id]?'ONLINE':'OFFLINE'}`,this[id]?'warn':'dim');
+    if(id==='grav')this._applyGrav();
+    if(id==='over'&&this.over)SCIFI.aiSay('⚠ INSTABILITY RISK ELEVATED','err');
+    if(id==='amp'&&this.amp)SCIFI.aiSay('CHARGE RATE ×1.8x');
+  },
+
+  _applyGrav(){
+    clearInterval(this.gravTimer);
+    if(!this.grav)return;
+    this.gravTimer=setInterval(()=>{
+      if(!this.active||!this.grav){clearInterval(this.gravTimer);return;}
+      if(SCIFI.phase!=='idle')return;
+      const cx=cW()/2,cy=cH()/2;
+      [els.red,els.blue,els.green].forEach(e=>{
+        if(e.classList.contains('hidden')||e===dragging)return;
+        const c=getCenter(e),dx=cx-c.x,dy=cy-c.y;
+        const dist=Math.hypot(dx,dy);
+        if(dist<35)return;
+        const f=0.9;
+        setPos(e,parseFloat(e.style.left)+(dx/dist)*f,parseFloat(e.style.top)+(dy/dist)*f);
+      });
+    },16);
+  },
+
+  activatePortal(){
+    if(!this.active||this.portal)return;
+    if(SCIFI.phase!=='idle'){SCIFI.aiSay('PORTAL BLOCKED — FUSION ACTIVE','err');return;}
+    this.portal=true;
+    const btn=document.getElementById('ql-p-port');
+    if(btn){btn.classList.add('active');btn.style.opacity='';}
+    const s=document.getElementById('ql-s-port');if(s)s.textContent='ACTIVE';
+    SCIFI.aiSay('PORTAL GENERATOR ONLINE','warn');
+    SCIFI.aiSay('DRAG AN ORB INTO THE PORTAL');
+    // Place portal at random position in canvas area
+    const mg=90;
+    this.portalX=mg+Math.random()*(cW()-mg*2);
+    this.portalY=mg+Math.random()*(cH()-mg*2);
+    const ring=document.getElementById('ql-portal-ring');
+    ring.style.width='88px';ring.style.height='88px';
+    ring.style.left=this.portalX+'px';ring.style.top=this.portalY+'px';
+    ring.classList.remove('shrink');
+    ring.classList.add('open');
+    // Check if orb enters portal
+    this.portalCheckInterval=setInterval(()=>{
+      if(!this.active||!this.portal){clearInterval(this.portalCheckInterval);return;}
+      [els.red,els.blue,els.green].forEach(e=>{
+        if(e===dragging||e.classList.contains('hidden'))return;
+        const c=getCenter(e);
+        if(Math.hypot(c.x-this.portalX,c.y-this.portalY)<52){
+          clearInterval(this.portalCheckInterval);
+          this._orbEntersPortal(e);
+        }
+      });
+    },50);
+    // Auto-close after 9s if unused
+    this.portalCloseTimer=setTimeout(()=>{
+      if(this.portal){
+        clearInterval(this.portalCheckInterval);
+        this._closePortal(false);
+        SCIFI.aiSay('PORTAL COLLAPSED — INSUFFICIENT ENERGY','err');
+      }
+    },9000);
+  },
+
+  _orbEntersPortal(orbEl){
+    const c=getCenter(orbEl);
+    spawnParticles(c.x,c.y,'#44ffcc',55,8);
+    spawnShockwave(c.x,c.y,'rgba(68,255,200,',180,8);
+    flashScreen('rgba(68,255,200,.3)',280);
+    SFX.portalOpen();
+    this._closePortal(true);
+    if(Math.random()<0.5){
+      // Teleport
+      const mg=65;
+      setPos(orbEl,mg+Math.random()*(cW()-mg*2)-R,mg+Math.random()*(cH()-mg*2)-R);
+      spawnParticles(parseFloat(orbEl.style.left)+R,parseFloat(orbEl.style.top)+R,'#44ffcc',35,6);
+      SCIFI.aiSay('ORB COORDINATES RANDOMIZED','warn');
+    } else {
+      // Duplicate ghost for 3s
+      SCIFI.aiSay('⚠ ANOMALY: DUPLICATE SIGNATURE!','err');
+      const ghost=orbEl.cloneNode(true);
+      ghost.id='ql-ghost';ghost.style.opacity='.65';
+      ghost.style.animation='none';ghost.style.pointerEvents='none';
+      ghost.style.zIndex='25';ghost.style.filter='hue-rotate(90deg) brightness(1.2)';
+      area.appendChild(ghost);
+      const mg=65;
+      setPos(ghost,mg+Math.random()*(cW()-mg*2)-R,mg+Math.random()*(cH()-mg*2)-R);
+      spawnParticles(parseFloat(ghost.style.left)+R,parseFloat(ghost.style.top)+R,'#44ffcc',28,5);
+      setTimeout(()=>{
+        ghost.style.transition='opacity .45s';
+        ghost.style.opacity='0';
+        setTimeout(()=>{if(ghost.parentNode)ghost.parentNode.removeChild(ghost);},500);
+        SCIFI.aiSay('DUPLICATE COLLAPSED','dim');
+      },3000);
+    }
+  },
+
+  _closePortal(immediate){
+    this.portal=false;
+    clearTimeout(this.portalCloseTimer);
+    clearInterval(this.portalCheckInterval);
+    const ring=document.getElementById('ql-portal-ring');
+    if(ring){ring.classList.remove('open');ring.classList.add('shrink');}
+    const btn=document.getElementById('ql-p-port');
+    if(btn)btn.classList.remove('active');
+    const s=document.getElementById('ql-s-port');
+    if(s)s.textContent=immediate?'COOLDOWN':'READY';
+    if(immediate&&btn){
+      btn.style.opacity='.4';
+      setTimeout(()=>{if(btn)btn.style.opacity='';const s2=document.getElementById('ql-s-port');if(s2)s2.textContent='READY';SCIFI.aiSay('PORTAL GENERATOR RECHARGED','dim');},6000);
+    }
+  },
+
+  spawnDroneWave(){
+    if(!this.active)return;
+    const kinds=['attack','repair','shield'];
+    const k=kinds[Math.floor(Math.random()*3)];
+    this._spawnDrone(k);
+    spawnSparks(cW()/2,cH()/2,'#44ffcc',8);
+    SCIFI.aiSay(`${k.toUpperCase()} DRONE DEPLOYED`);
+  },
+
+  _spawnDrone(kind){
+    this.drones.push({
+      kind,
+      angle:Math.random()*Math.PI*2,
+      orbitR:88+Math.random()*35,
+      speed:(.006+Math.random()*.009)*(Math.random()<.5?1:-1),
+      pulse:Math.random()*Math.PI*2,
+    });
+  },
+
+  drawDrones(ctx,cx,cy){
+    if(!this.active||this.drones.length===0)return;
+    const colors={attack:'rgba(255,90,90,',repair:'rgba(68,255,140,',shield:'rgba(68,160,255,'};
+    this.drones.forEach(d=>{
+      d.angle+=d.speed;
+      d.pulse+=0.045;
+      const x=cx+Math.cos(d.angle)*d.orbitR;
+      const y=cy+Math.sin(d.angle)*d.orbitR*0.36;
+      const al=0.5+0.3*Math.sin(d.pulse);
+      const col=colors[d.kind];
+      // Shadow
+      ctx.shadowColor=col+'0.8)';ctx.shadowBlur=8;
+      // Body
+      ctx.beginPath();ctx.arc(x,y,4.5,0,Math.PI*2);
+      ctx.fillStyle=col+al+')';ctx.fill();
+      // Trail
+      ctx.beginPath();
+      ctx.arc(x-Math.cos(d.angle)*9,y-Math.sin(d.angle)*9*0.36,2,0,Math.PI*2);
+      ctx.fillStyle=col+(al*.28)+')';ctx.fill();
+      ctx.shadowBlur=0;
+    });
+  },
+
+  _scheduleStorm(){
+    if(!this.active)return;
+    const delay=14000+Math.random()*18000;
+    this.stormCycle=setTimeout(()=>{
+      if(!this.active)return;
+      const types=['ion','grav','burst'];
+      this._triggerStorm(types[Math.floor(Math.random()*3)]);
+      this._scheduleStorm();
+    },delay);
+  },
+
+  _triggerStorm(type){
+    const cfg={
+      ion:  {label:'⚡ ION STORM',   color:'#ffff55',msg:'ION STORM INCOMING'},
+      grav: {label:'🌀 GRAVITY SURGE',color:'#cc44ff',msg:'GRAVITATIONAL ANOMALY'},
+      burst:{label:'💥 ENERGY BURST', color:'#ff6622',msg:'PLASMA DISCHARGE EVENT'},
+    }[type];
+    const banner=document.getElementById('ql-storm-banner');
+    if(banner){banner.textContent=cfg.label;banner.style.color=cfg.color;banner.style.borderColor=cfg.color;banner.classList.add('show');}
+    SCIFI.aiSay(`⚠ ${cfg.msg}`,'err');
+    shake('md');
+    if(type==='ion'){
+      let n=0;
+      const loop=setInterval(()=>{
+        n++;
+        flashScreen('rgba(255,255,80,.18)',80);
+        spawnSparks(Math.random()*cW(),Math.random()*cH(),'#ffff44',7);
+        if(n>=7){clearInterval(loop);if(banner)banner.classList.remove('show');}
+      },320);
+    } else if(type==='grav'){
+      const ox=cW()/2,oy=cH()/2;
+      let elapsed=0;
+      const pull=setInterval(()=>{
+        elapsed+=16;
+        [els.red,els.blue,els.green].forEach(e=>{
+          if(e.classList.contains('hidden')||e===dragging)return;
+          const c=getCenter(e),dx=ox-c.x,dy=oy-c.y,dist=Math.hypot(dx,dy);
+          if(dist<28)return;
+          setPos(e,parseFloat(e.style.left)+(dx/dist)*2.8,parseFloat(e.style.top)+(dy/dist)*2.8);
+        });
+        if(elapsed>=2200){clearInterval(pull);if(banner)banner.classList.remove('show');}
+      },16);
+    } else {
+      let n=0;
+      const burst=setInterval(()=>{
+        n++;
+        const bx=60+Math.random()*(cW()-120),by=60+Math.random()*(cH()-120);
+        spawnParticles(bx,by,'#ff6622',22,7);
+        spawnShockwave(bx,by,'rgba(255,100,30,',110,5);
+        flashScreen('rgba(255,70,0,.1)',100);
+        if(n>=5){clearInterval(burst);if(banner)banner.classList.remove('show');}
+      },480);
+    }
+  },
+
+  _setPanels(){
+    ['grav','amp','over'].forEach(id=>{
+      const btn=document.getElementById('ql-p-'+id);
+      if(btn)btn.classList.toggle('active',!!this[id]);
+      const s=document.getElementById('ql-s-'+id);
+      if(s)s.textContent=this[id]?'ONLINE':'OFFLINE';
+    });
+    const s=document.getElementById('ql-s-port');
+    if(s)s.textContent='READY';
+  },
+};
 // ══════════════════════════════════════════
 function updateBeams(rb,bg,rg){
   const cr=getCenter(els.red),cb=getCenter(els.blue),cg=getCenter(els.green);
@@ -5475,6 +5883,13 @@ const SFX=(()=>{
       sweep('sine',200,2000,0.8,0.2);
       setTimeout(()=>noise(0.3,0.12,800,3),100);
       setTimeout(()=>sweep('sawtooth',800,80,0.6,0.1),200);
+    },
+
+    // QL Portal open / orb teleport
+    portalOpen(){
+      sweep('sine',300,2400,0.35,0.18);
+      setTimeout(()=>chord([523,784,1047,1568],'sine',0.3,0.14),80);
+      setTimeout(()=>sweep('sine',2400,400,0.2,0.22),200);
     },
 
     // Circle pickup (drag start)
