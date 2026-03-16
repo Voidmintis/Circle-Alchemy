@@ -1449,6 +1449,7 @@ body.adv-mars-bg #adv-overlay{background:radial-gradient(ellipse at 50% 80%,#200
       <span class="of-rp-label">Summon a rival boss:</span>
       <button class="of-rp-btn" id="of-summon-ms-btn" onclick="ofSummonBoss('mothership')">👾 Mothership</button>
       <button class="of-rp-btn of-rp-massive" id="of-summon-apex-btn" onclick="ofSummonBoss('apex')">🌌 Omniversal Apex</button>
+      <button class="of-rp-btn of-rp-massive" id="of-summon-oms-btn" onclick="ofSummonBoss('oms')">💀 Oblivion MS</button>
       <button class="of-rp-cancel" onclick="document.getElementById('of-summon-picker').style.display='none'">✕</button>
     </div>
 
@@ -9395,7 +9396,7 @@ const MS={
     document.getElementById('of-start-btn').style.display='none';
     document.getElementById('of-status-text').textContent='';
     // Show summon button (to summon rival boss)
-    if(!APEX.active) document.getElementById('of-summon-btn').style.display='';
+    if(!APEX.active||!OMS.active) document.getElementById('of-summon-btn').style.display='';
 
     // ── PHASE 1: Portal appears (0–1.2s) ──
     this._portalR=0;
@@ -9418,7 +9419,10 @@ const MS={
   _doEntrance(portalX,portalY){
     // ── PHASE 2: Ship slides in (0–1s) ──
     const fromRight=this._summonedAsRival;
-    const targetX=fromRight?OF.W-this.w-OF.W*0.005:OF.W*0.005;
+const mz=OF.zoomedOut;
+      const targetX=fromRight
+        ?(mz?OF.W*0.75-this.w/2:OF.W-this.w-OF.W*0.005)
+        :(mz?OF.W*0.25-this.w/2:OF.W*0.005);
     const startX=fromRight?OF.W+this.w*0.1:-this.w*1.1;
     let t=0;
     const SLIDE_MS=900;
@@ -10243,15 +10247,17 @@ const OMS={
 
     const mzf=OF.zoomedOut?1/3:1;
     this.w=OF.W*0.42*mzf; this.h=OF.H*0.78*mzf;
-    this.x=-this.w*1.1; this.y=(OF.H-this.h)/2;
+    if(this._summonedAsRival){ this.x=OF.W+this.w*0.1; } else { this.x=-this.w*1.1; }
+    this.y=(OF.H-this.h)/2;
 
-    OF.orbs=OF.orbs.filter(o=>o.team==='blue');
+    if(!this._summonedAsRival) OF.orbs=OF.orbs.filter(o=>o.team==='blue');
     document.getElementById('of-ms-hpbar').style.display='none';
     document.getElementById('of-start-btn').style.display='none';
+    if(!MS.active&&!APEX.active) document.getElementById('of-summon-btn').style.display='';
 
     // Portal entrance
     this._portalR=0; this._portalActive=true;
-    const portalX=OF.W*0.21, portalY=OF.H*0.5;
+    const portalX=this._summonedAsRival?OF.W*0.79:OF.W*0.21, portalY=OF.H*0.5;
     let portalT=0;
     SFX.portalOpen();
     // Darken screen briefly
@@ -10266,7 +10272,12 @@ const OMS={
   },
 
   _doEntrance(portalX,portalY){
-    const targetX=OF.W*0.005, startX=-this.w*1.1;
+    const fromRight=this._summonedAsRival;
+    const mz=OF.zoomedOut;
+    const targetX=fromRight
+      ?(mz?OF.W*0.75-this.w/2:OF.W-this.w-OF.W*0.005)
+      :(mz?OF.W*0.25-this.w/2:OF.W*0.005);
+    const startX=fromRight?OF.W+this.w*0.1:-this.w*1.1;
     let t=0; const SLIDE_MS=900;
     const slide=setInterval(()=>{
       if(!this.active){clearInterval(slide);return;}
@@ -10305,10 +10316,12 @@ const OMS={
   },
 
   beginBattle(){
-    OF.orbs.forEach(o=>{
-      o.x=Math.max(OF.W*0.52+o.r,Math.min(OF.W-o.r,o.x));
-      o.y=Math.max(o.r+50,Math.min(OF.H-o.r-50,o.y));
-    });
+    if(!this._summonedAsRival){
+      OF.orbs.forEach(o=>{
+        o.x=Math.max(OF.W*0.52+o.r,Math.min(OF.W-o.r,o.x));
+        o.y=Math.max(o.r+50,Math.min(OF.H-o.r-50,o.y));
+      });
+    }
     this._battleFrames=0; this._peakBlueCount=0; OF.battleRunning=true;
     document.getElementById('of-start-btn').style.display='none';
     document.getElementById('of-status-text').textContent='💀 DESTROY THE OBLIVION MOTHERSHIP!';
@@ -10319,6 +10332,7 @@ const OMS={
 
   stop(){
     this.active=false; this.spawning=false; this._portalActive=false; this._shieldActive=false;
+    this._summonedAsRival=false;
     this._repairCores=[]; this.missiles=[]; this.minions=[];
     if(this._repairInterval){clearInterval(this._repairInterval);this._repairInterval=null;}
     document.getElementById('oms-arrival-text')?.remove();
@@ -10385,19 +10399,18 @@ const OMS={
       }
     }
 
-    // ── Shield active — invincible, wait for cores ──
+    // ── Shield active — invincible, wait for cores to be destroyed ──
     if(this._shieldActive){
       this._repairCores=this._repairCores.filter(c=>c.hp>0);
-      // Heal from crimson core
-      const crimson=this._repairCores.find(c=>c.type==='crimson');
-      if(crimson){
-        this.hp=Math.min(this.maxHp,this.hp+180);
+      // Crimson core: barely heals OMS
+      if(this._repairCores.find(c=>c.type==='crimson')){
+        this.hp=Math.min(this.maxHp,this.hp+5);
         this._updateBar();
       }
-      // Emerald core spawns drones
+      // Emerald core spawns repair drones
       const emerald=this._repairCores.find(c=>c.type==='emerald');
       if(emerald&&this._battleFrames%90===0) this._spawnRepairDrone(emerald);
-      // Update core projectiles & check blue orb hits
+      // Advance core pulse + fire outgoing core projectiles at blue orbs
       this._repairCores.forEach(c=>{
         c.pulseT+=0.08;
         c.projectiles=c.projectiles.filter(p=>{
@@ -10407,12 +10420,34 @@ const OMS={
           if(hit){this._dmgOrb(hit,p.dmg);spawnSparks(p.x,p.y,p.color,3);return false;}
           return true;
         });
-        // Resolve incoming blue orb projectiles hitting the core
-        OF.orbs.forEach(o=>{
-          if(o.team!=='blue'||o.dead)return;
-          o.projectiles=o.projectiles.filter(p=>{
-            p.x+=p.vx; p.y+=p.vy; p.life--;
-            if(p.life<=0)return false;
+      });
+      // Blue orbs: move toward nearest core, fire at it, projectiles checked against all cores
+      const blueOrbs=OF.orbs.filter(o=>o.team==='blue'&&!o.dead);
+      blueOrbs.forEach(o=>{
+        let tgt=null,td=Infinity;
+        this._repairCores.forEach(c=>{const d=Math.hypot(o.x-c.x,o.y-c.y);if(d<td){td=d;tgt=c;}});
+        if(!tgt)return;
+        const ang=Math.atan2(tgt.y-o.y,tgt.x-o.x);
+        if(!o.isInfinite){
+          if(td>tgt.r+o.r+20){o.vx+=Math.cos(ang)*0.15;o.vy+=Math.sin(ang)*0.15;}else{o.vx*=0.85;o.vy*=0.85;}
+          const spd=Math.hypot(o.vx,o.vy);if(spd>(o.spd||2)){o.vx=o.vx/spd*(o.spd||2);o.vy=o.vy/spd*(o.spd||2);}
+          o.x+=o.vx;o.y+=o.vy;
+          o.x=Math.max(OF.W*0.5+o.r,Math.min(OF.W-o.r,o.x));
+          o.y=Math.max(o.r+40,Math.min(OF.H-o.r-40,o.y));
+        }
+        o.attackTimer=(o.attackTimer||0)+1;
+        if(o.attackTimer>=(o.attackRate||90)){
+          o.attackTimer=0;
+          const ps=6+(o.spd||2)*0.5;
+          o.projectiles=o.projectiles||[];
+          o.projectiles.push({x:o.x,y:o.y,vx:Math.cos(ang)*ps,vy:Math.sin(ang)*ps,dmg:o.dmg||10,r:5,life:180,color:o.color||'#44aaff'});
+          SFX.orbShoot();
+        }
+        // Move projectiles once and check against all repair cores
+        o.projectiles=(o.projectiles||[]).filter(p=>{
+          p.x+=p.vx;p.y+=p.vy;p.life--;
+          if(p.life<=0||p.x<0||p.x>OF.W||p.y<0||p.y>OF.H)return false;
+          for(const c of this._repairCores){
             if(Math.hypot(p.x-c.x,p.y-c.y)<c.r+p.r){
               c.hp=Math.max(0,c.hp-p.dmg);
               spawnSparks(p.x,p.y,c.color,3);
@@ -10421,9 +10456,8 @@ const OMS={
               OF._dmgNums.push({x:p.x+(-10+Math.random()*20),y:p.y-6,label:dl,life:1,vy:-1.2,col:c.color});
               return false;
             }
-            if(p.x<0||p.x>OF.W||p.y<0||p.y>OF.H)return false;
-            return true;
-          });
+          }
+          return true;
         });
       });
       if(this._repairCores.length===0){
@@ -10684,9 +10718,9 @@ const OMS={
 
     // Spawn three cores — spread across the blue side
     const coreDefs=[
-      {type:'crimson',color:'#ff2222',label:'🔴 CRIMSON REPAIR',x:OF.W*0.62,y:OF.H*0.25,hp:4000,maxHp:4000},
-      {type:'azure',  color:'#2244ff',label:'🔵 AZURE SHIELD',  x:OF.W*0.78,y:OF.H*0.50,hp:4000,maxHp:4000},
-      {type:'emerald',color:'#22cc44',label:'🟢 EMERALD DRONE', x:OF.W*0.62,y:OF.H*0.75,hp:4000,maxHp:4000},
+      {type:'crimson',color:'#ff2222',label:'🔴 CRIMSON REPAIR',x:OF.W*0.62,y:OF.H*0.25,r:28,hp:4000,maxHp:4000},
+      {type:'azure',  color:'#2244ff',label:'🔵 AZURE SHIELD',  x:OF.W*0.78,y:OF.H*0.50,r:28,hp:4000,maxHp:4000},
+      {type:'emerald',color:'#22cc44',label:'🟢 EMERALD DRONE', x:OF.W*0.62,y:OF.H*0.75,r:28,hp:4000,maxHp:4000},
     ];
     this._repairCores=coreDefs.map(cd=>({...cd,pulseT:0,projectiles:[]}));
 
@@ -11080,7 +11114,7 @@ const APEX={
     document.getElementById('of-start-btn').style.display='none';
     document.getElementById('of-status-text').textContent='';
     // Show summon button (to summon rival boss)
-    if(!MS.active) document.getElementById('of-summon-btn').style.display='';
+    if(!MS.active||!OMS.active) document.getElementById('of-summon-btn').style.display='';
 
     // Spawn sequence — screen darkens, boss materializes
     this._spawnAlpha=0;
@@ -12257,6 +12291,21 @@ function ofPickBoss(type){
 }
 function ofPickMothership(variant){
   document.getElementById('of-ms-picker').style.display='none';
+  // Brief announcement card
+  const el=document.createElement('div');
+  el.style.cssText='position:absolute;top:18%;left:50%;transform:translateX(-50%);z-index:35;pointer-events:none;text-align:center;white-space:nowrap;background:rgba(4,10,28,.92);padding:12px 28px;border-radius:8px;font-family:\'Orbitron\',monospace;letter-spacing:.15em;opacity:0;transition:opacity .25s;';
+  if(variant==='oblivion'){
+    el.style.border='2px solid rgba(255,60,0,.8)';
+    el.style.boxShadow='0 0 24px rgba(255,60,0,.5)';
+    el.innerHTML='<div style="font-size:clamp(.9rem,2.5vw,1.4rem);color:#ff4400;font-weight:900">💀 OBLIVION MOTHERSHIP</div><div style="font-size:.6rem;color:rgba(255,100,50,.7);margin-top:4px;letter-spacing:.25em">APPROACHING</div>';
+  } else {
+    el.style.border='2px solid rgba(255,130,60,.7)';
+    el.style.boxShadow='0 0 24px rgba(255,130,60,.4)';
+    el.innerHTML='<div style="font-size:clamp(.9rem,2.5vw,1.4rem);color:#ff8844;font-weight:900">👾 MOTHERSHIP</div><div style="font-size:.6rem;color:rgba(255,180,80,.6);margin-top:4px;letter-spacing:.25em">APPROACHING</div>';
+  }
+  document.getElementById('orbfight-overlay').appendChild(el);
+  requestAnimationFrame(()=>{el.style.opacity='1';});
+  setTimeout(()=>{el.style.opacity='0';el.style.transition='opacity .4s';setTimeout(()=>el.remove(),400);},1600);
   if(variant==='oblivion') ofStartOMS();
   else ofStartMothership();
 }
@@ -12276,6 +12325,7 @@ function ofShowSummonPicker(){
   // Hide options for already-active bosses
   document.getElementById('of-summon-ms-btn').style.display=MS.active?'none':'';
   document.getElementById('of-summon-apex-btn').style.display=APEX.active?'none':'';
+  document.getElementById('of-summon-oms-btn').style.display=OMS.active?'none':'';
   picker.style.display='flex';
 }
 
@@ -12303,12 +12353,18 @@ function ofSummonBoss(type){
     },50);
     ofCheckLaserBtn();
     toast('🌌 Omniversal Apex has entered the arena!','#aa66ff');
+  } else if(type==='oms'&&!OMS.active){
+    OMS._summonedAsRival=true;
+    OMS.setup();
+    ofCheckLaserBtn();
+    toast('💀 Oblivion Mothership has entered the arena!','#ff4400');
   }
   // If battle was already running, auto-start for the new boss
   if(OF.battleRunning){
     setTimeout(()=>{
       if(type==='mothership'&&MS.active&&MS.spawning===false) MS.beginBattle();
       if(type==='apex'&&APEX.active&&APEX.spawning===false) APEX.beginBattle();
+      if(type==='oms'&&OMS.active&&OMS.spawning===false) OMS.beginBattle();
     },3500); // Wait for entrance animation
   }
 }
