@@ -72,9 +72,9 @@ header.boss-header h1{color:#ffaa44;text-shadow:0 0 20px rgba(255,100,0,.6)}
 .circle:active{cursor:grabbing}
 .circle-label{font-family:'Orbitron',monospace;font-size:.48rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.8);pointer-events:none;text-shadow:0 1px 4px rgba(0,0,0,.9)}
 .circle-sub{font-family:'Rajdhani',sans-serif;font-size:.55rem;color:rgba(255,255,255,.45);pointer-events:none;margin-top:1px}
-#c-red{width:110px;height:110px;background:radial-gradient(circle at 32% 30%,#ffb0b0 0%,#ff3355 38%,#aa0022 68%,#550010 100%);box-shadow:0 0 26px rgba(220,30,60,.55),0 0 55px rgba(200,20,40,.22),inset 0 1px 0 rgba(255,255,255,.22);overflow:hidden;isolation:isolate;animation:orb-pulse-red 3.2s ease-in-out infinite}
-#c-blue{width:110px;height:110px;background:radial-gradient(circle at 32% 30%,#a8d4ff 0%,#2255ff 38%,#0820aa 68%,#020840 100%);box-shadow:0 0 26px rgba(30,80,230,.55),0 0 55px rgba(20,60,200,.22),inset 0 1px 0 rgba(255,255,255,.22);overflow:hidden;isolation:isolate;animation:orb-pulse-blue 3.8s ease-in-out infinite}
-#c-green{width:110px;height:110px;background:radial-gradient(circle at 32% 30%,#a0ffcc 0%,#22cc55 38%,#076830 68%,#023016 100%);box-shadow:0 0 26px rgba(20,180,80,.55),0 0 55px rgba(10,150,60,.22),inset 0 1px 0 rgba(255,255,255,.22);overflow:hidden;isolation:isolate;animation:orb-pulse-green 3s ease-in-out infinite}
+#c-red{width:110px;height:110px;background:radial-gradient(circle at 36% 30%,rgba(255,210,210,.85) 0%,#e52244 42%,#7c001a 100%);box-shadow:0 0 0 2px rgba(70,0,14,.5),0 0 20px rgba(220,40,65,.38),inset 0 2px 0 rgba(255,255,255,.16);animation:orb-breathe-r 4s ease-in-out infinite;}
+#c-blue{width:110px;height:110px;background:radial-gradient(circle at 36% 30%,rgba(200,225,255,.85) 0%,#1e4edf 42%,#06108a 100%);box-shadow:0 0 0 2px rgba(4,8,70,.5),0 0 20px rgba(30,75,220,.38),inset 0 2px 0 rgba(255,255,255,.16);animation:orb-breathe-b 5s ease-in-out infinite;}
+#c-green{width:110px;height:110px;background:radial-gradient(circle at 36% 30%,rgba(200,255,220,.85) 0%,#1ab84a 42%,#065a22 100%);box-shadow:0 0 0 2px rgba(2,40,14,.5),0 0 20px rgba(20,175,75,.38),inset 0 2px 0 rgba(255,255,255,.16);animation:orb-breathe-g 3.6s ease-in-out infinite;}
 .circle.fading{transition:opacity .4s ease,transform .45s ease!important;opacity:0!important;transform:scale(.15)!important;pointer-events:none!important}
 .circle.hidden{display:none!important}
 .circle.knocked{transition:left .3s ease,top .3s ease!important}
@@ -1257,59 +1257,31 @@ header h1{
 }
 
 /* ══════════════════════════════════════════
-   ANIMATED BASE ORBS
+   BASE ORB BREATHE ANIMATIONS
 ══════════════════════════════════════════ */
-/* Swirling inner energy – behind the labels (z-index:-1 inside isolation:isolate parent) */
-#c-red::before,#c-blue::before,#c-green::before{
-  content:'';position:absolute;
-  width:200%;height:200%;top:-50%;left:-50%;
-  border-radius:50%;z-index:-1;pointer-events:none;
-  animation:orb-swirl 7s linear infinite;
-  will-change:transform;
+@keyframes orb-breathe-r{
+  0%,100%{box-shadow:0 0 0 2px rgba(70,0,14,.5),0 0 18px rgba(220,40,65,.32),inset 0 2px 0 rgba(255,255,255,.16)}
+  50%{box-shadow:0 0 0 2px rgba(70,0,14,.5),0 0 30px rgba(228,50,75,.6),inset 0 2px 0 rgba(255,255,255,.22)}
 }
-#c-red::before{background:conic-gradient(from 0deg at 40% 40%,transparent 0%,rgba(255,160,60,.32) 18%,transparent 32%,rgba(255,80,30,.2) 56%,transparent 70%,rgba(255,210,90,.24) 84%,transparent 100%);}
-#c-blue::before{background:conic-gradient(from 0deg at 40% 40%,transparent 0%,rgba(60,155,255,.32) 18%,transparent 32%,rgba(140,220,255,.2) 56%,transparent 70%,rgba(80,100,255,.24) 84%,transparent 100%);animation-direction:reverse;animation-duration:8s;}
-#c-green::before{background:conic-gradient(from 0deg at 40% 40%,transparent 0%,rgba(60,220,100,.32) 18%,transparent 32%,rgba(120,255,155,.2) 56%,transparent 70%,rgba(40,190,80,.24) 84%,transparent 100%);animation-duration:5.8s;}
-/* Inner shifting highlight / core shimmer */
-#c-red::after,#c-blue::after,#c-green::after{
-  content:'';position:absolute;
-  width:58%;height:58%;left:8%;top:6%;
-  border-radius:50%;z-index:-1;pointer-events:none;
-  animation:orb-core-flicker 3s ease-in-out infinite;
+@keyframes orb-breathe-b{
+  0%,100%{box-shadow:0 0 0 2px rgba(4,8,70,.5),0 0 18px rgba(30,75,220,.32),inset 0 2px 0 rgba(255,255,255,.16)}
+  50%{box-shadow:0 0 0 2px rgba(4,8,70,.5),0 0 30px rgba(40,92,235,.6),inset 0 2px 0 rgba(255,255,255,.22)}
 }
-#c-red::after{background:radial-gradient(circle at 38% 30%,rgba(255,230,210,.72),rgba(255,130,80,.18) 62%,transparent);animation-delay:-.8s;}
-#c-blue::after{background:radial-gradient(circle at 38% 30%,rgba(210,235,255,.72),rgba(100,170,255,.18) 62%,transparent);animation-delay:-1.6s;}
-#c-green::after{background:radial-gradient(circle at 38% 30%,rgba(205,255,225,.72),rgba(80,230,130,.18) 62%,transparent);animation-delay:-.35s;}
-/* Make sure orb text sits above pseudo-elements */
-#c-red .circle-label,#c-blue .circle-label,#c-green .circle-label,
-#c-red .circle-sub,#c-blue .circle-sub,#c-green .circle-sub{
-  position:relative;z-index:1;
-}
-@keyframes orb-swirl{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
-@keyframes orb-core-flicker{
-  0%,100%{opacity:.68;transform:scale(1) translate(0,0)}
-  35%{opacity:1;transform:scale(1.14) translate(4%,-5%)}
-  65%{opacity:.5;transform:scale(.9) translate(-4%,3%)}
-}
-@keyframes orb-pulse-red{
-  0%,100%{box-shadow:0 0 26px rgba(220,30,60,.55),0 0 55px rgba(200,20,40,.22),inset 0 1px 0 rgba(255,255,255,.22)}
-  50%{box-shadow:0 0 50px rgba(255,80,80,.82),0 0 105px rgba(230,30,40,.42),inset 0 1px 0 rgba(255,255,255,.38)}
-}
-@keyframes orb-pulse-blue{
-  0%,100%{box-shadow:0 0 26px rgba(30,80,230,.55),0 0 55px rgba(20,60,200,.22),inset 0 1px 0 rgba(255,255,255,.22)}
-  50%{box-shadow:0 0 50px rgba(80,140,255,.82),0 0 105px rgba(40,100,230,.42),inset 0 1px 0 rgba(255,255,255,.38)}
-}
-@keyframes orb-pulse-green{
-  0%,100%{box-shadow:0 0 26px rgba(20,180,80,.55),0 0 55px rgba(10,150,60,.22),inset 0 1px 0 rgba(255,255,255,.22)}
-  50%{box-shadow:0 0 50px rgba(60,220,100,.82),0 0 105px rgba(20,185,75,.42),inset 0 1px 0 rgba(255,255,255,.38)}
+@keyframes orb-breathe-g{
+  0%,100%{box-shadow:0 0 0 2px rgba(2,40,14,.5),0 0 18px rgba(20,175,75,.32),inset 0 2px 0 rgba(255,255,255,.16)}
+  50%{box-shadow:0 0 0 2px rgba(2,40,14,.5),0 0 30px rgba(28,195,88,.6),inset 0 2px 0 rgba(255,255,255,.22)}
 }
 
 /* ══════════════════════════════════════════
-   TAB WARP CANVAS
+   TAB-SWITCH BACKGROUND RIPPLE
 ══════════════════════════════════════════ */
-#tab-warp-canvas{
-  position:fixed;inset:0;z-index:155;pointer-events:none;
-  display:none;opacity:0;
+.star-layer{transition:transform .7s cubic-bezier(.22,1,.36,1);}
+body.tab-ripple #stars-far {transform:scale(1.022) rotate(.5deg)!important;}
+body.tab-ripple #stars-mid {transform:scale(1.035) rotate(-.7deg)!important;}
+body.tab-ripple #stars-near{transform:scale(1.055) rotate(.9deg)!important;}
+body.tab-ripple #c-red,body.tab-ripple #c-blue,body.tab-ripple #c-green{
+  transition:transform .55s cubic-bezier(.22,1,.36,1)!important;
+  transform:rotate(-4deg) scale(.94)!important;
 }
 </style>
 </head>
@@ -1317,7 +1289,6 @@ header h1{
 
 <div id="stars"><div class="star-layer" id="stars-far"></div><div class="star-layer" id="stars-mid"></div><div class="star-layer" id="stars-near"></div></div>
 <div id="warp"></div>
-<canvas id="tab-warp-canvas"></canvas>
 <div id="flash"></div>
 <div id="space-distort"></div>
 <div id="supernova-flash"></div>
@@ -13584,112 +13555,20 @@ Object.entries(ADMIN_ITEMS).forEach(([k,v])=>v.key=k);
 // Wait two animation frames so the browser fully lays out header + canvas area
 // before placing circles — fixes the "circles in corner" bug on mobile
 requestAnimationFrame(()=>requestAnimationFrame(()=>{
-  WarpTransition.init();
   setMode('fusion');
 }));
 
 // ══════════════════════════════════════════
-// WARP TAB TRANSITION
+// TAB RIPPLE + SWITCH MODE
 // ══════════════════════════════════════════
-const WarpTransition=(()=>{
-  let cv,x2d,raf=null,W,H,cx,cy;
-  const STARS=260;
-  let stars=[];
-  let _running=false;
-  const HUES=[195,215,238,262,178];
-  return{
-    get running(){return _running;},
-    init(){
-      cv=document.getElementById('tab-warp-canvas');
-      x2d=cv.getContext('2d');
-      W=cv.width=window.innerWidth;
-      H=cv.height=window.innerHeight;
-      cx=W/2;cy=H/2;
-    },
-    run(cb){
-      if(_running)return;
-      _running=true;
-      W=cv.width=window.innerWidth;H=cv.height=window.innerHeight;
-      cx=W/2;cy=H/2;
-      cv.style.display='block';cv.style.opacity='1';
-      x2d.clearRect(0,0,W,H);
-      stars=[];
-      for(let i=0;i<STARS;i++){
-        const a=Math.random()*Math.PI*2,r=Math.random()*26+3;
-        stars.push({
-          x:cx+Math.cos(a)*r,y:cy+Math.sin(a)*r,
-          px:cx+Math.cos(a)*r,py:cy+Math.sin(a)*r,
-          angle:a,spd:1.1+Math.random()*1.9,
-          op:.35+Math.random()*.65,
-          hue:HUES[i%5]+Math.random()*22,
-          sz:.5+Math.random()*1.3,
-        });
-      }
-      let t=0,last=null,fired=false;
-      const PEAK=680,TOTAL=1500;
-      function frame(ts){
-        const dt=last?Math.min(ts-last,33):16;
-        last=ts;t+=dt;
-        if(t>=TOTAL){
-          cv.style.transition='opacity .4s';
-          cv.style.opacity='0';
-          setTimeout(()=>{cv.style.display='none';cv.style.transition='';_running=false;},450);
-          return;
-        }
-        raf=requestAnimationFrame(frame);
-        let sf=t<PEAK?Math.pow(t/PEAK,1.4):1-Math.pow((t-PEAK)/(TOTAL-PEAK),.72);
-        sf=Math.max(.005,sf);
-        if(!fired&&t>TOTAL*.43){fired=true;cb();}
-        // Trail fade
-        x2d.fillStyle=`rgba(2,4,18,${.15+sf*.11})`;
-        x2d.fillRect(0,0,W,H);
-        // Centre glow
-        if(sf>.07){
-          const g=x2d.createRadialGradient(cx,cy,0,cx,cy,Math.min(W,H)*.44*sf);
-          g.addColorStop(0,`rgba(120,185,255,${sf*.13})`);
-          g.addColorStop(.45,`rgba(70,25,210,${sf*.06})`);
-          g.addColorStop(1,'rgba(0,0,0,0)');
-          x2d.fillStyle=g;x2d.fillRect(0,0,W,H);
-        }
-        // Secondary outer ring glow at peak
-        if(sf>.55){
-          const g2=x2d.createRadialGradient(cx,cy,Math.min(W,H)*.18*sf,cx,cy,Math.min(W,H)*.7);
-          g2.addColorStop(0,`rgba(220,240,255,${sf*.07})`);
-          g2.addColorStop(1,'rgba(0,0,0,0)');
-          x2d.fillStyle=g2;x2d.fillRect(0,0,W,H);
-        }
-        for(const s of stars){
-          const spd=sf*(9+s.spd*3.8);
-          const nx=s.x+Math.cos(s.angle)*spd;
-          const ny=s.y+Math.sin(s.angle)*spd;
-          x2d.beginPath();x2d.moveTo(s.px,s.py);x2d.lineTo(nx,ny);
-          const sg=x2d.createLinearGradient(s.px,s.py,nx,ny);
-          sg.addColorStop(0,`hsla(${s.hue},88%,64%,0)`);
-          sg.addColorStop(.55,`hsla(${s.hue},90%,76%,${s.op*sf*.75})`);
-          sg.addColorStop(1,`hsla(${s.hue},100%,95%,${s.op*sf})`);
-          x2d.strokeStyle=sg;
-          x2d.lineWidth=s.sz*(1+sf*2.8);
-          x2d.stroke();
-          s.px=s.x;s.py=s.y;s.x=nx;s.y=ny;
-          if(nx<-55||nx>W+55||ny<-55||ny>H+55){
-            const a2=Math.random()*Math.PI*2,r2=Math.random()*20+3;
-            s.x=s.px=cx+Math.cos(a2)*r2;
-            s.y=s.py=cy+Math.sin(a2)*r2;
-            s.angle=a2;
-          }
-        }
-      }
-      raf=requestAnimationFrame(frame);
-    }
-  };
-})();
-
+let _rippleTimer=null;
 function switchMode(m){
-  // Skip warp during startup (main menu still visible) or while warp is running
-  if(WarpTransition.running)return;
   const mm=document.getElementById('main-menu');
   if(mm&&mm.style.display!=='none'){setMode(m);return;}
-  WarpTransition.run(()=>setMode(m));
+  setMode(m);
+  clearTimeout(_rippleTimer);
+  document.body.classList.add('tab-ripple');
+  _rippleTimer=setTimeout(()=>document.body.classList.remove('tab-ripple'),700);
 }
 
 // Start menu music on first user interaction (AudioContext requires a gesture)
