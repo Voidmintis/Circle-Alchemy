@@ -1079,6 +1079,159 @@ body.adv-mars-bg #adv-overlay{background:radial-gradient(ellipse at 50% 80%,#200
 }
 #admin-summon-btn:hover{background:rgba(255,180,30,.28);border-color:#ffcc44;box-shadow:0 0 28px rgba(255,180,30,.4);transform:scale(1.02);}
 @keyframes admin-pulse{0%,100%{box-shadow:0 0 16px rgba(255,180,30,.15)}50%{box-shadow:0 0 28px rgba(255,180,30,.4)}}
+
+/* ══════════════════════════════════════════
+   MAIN MENU
+══════════════════════════════════════════ */
+#main-menu{
+  position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(ellipse at 50% 40%,rgba(10,18,40,.97) 0%,rgba(4,6,18,.99) 70%);
+  transition:opacity .55s ease,transform .55s ease;
+  will-change:opacity,transform;
+}
+#main-menu.mm-exit{opacity:0;transform:translateY(-28px);pointer-events:none;}
+#main-menu-inner{
+  display:flex;flex-direction:column;align-items:center;gap:0;
+  position:relative;z-index:1;
+}
+/* Logo */
+#mm-logo{text-align:center;margin-bottom:52px;}
+#mm-glyph{
+  font-size:3.2rem;margin-bottom:18px;display:block;
+  filter:drop-shadow(0 0 24px rgba(80,160,255,.7));
+  animation:mm-glyph-spin 18s linear infinite;
+}
+@keyframes mm-glyph-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+#mm-title{
+  font-family:'Orbitron',monospace;font-size:clamp(1.8rem,5vw,3rem);font-weight:900;
+  letter-spacing:.35em;color:#fff;
+  text-shadow:0 0 40px rgba(80,160,255,.6),0 0 80px rgba(80,120,255,.25);
+  margin-bottom:10px;
+}
+#mm-tagline{
+  font-family:'Rajdhani',sans-serif;font-size:clamp(.7rem,1.5vw,.9rem);
+  letter-spacing:.4em;color:rgba(100,160,255,.55);text-transform:uppercase;
+}
+/* Separator line */
+#mm-line{
+  width:180px;height:1px;margin:0 auto 48px;
+  background:linear-gradient(90deg,transparent,rgba(80,160,255,.5),transparent);
+}
+/* Buttons */
+#mm-buttons{display:flex;flex-direction:column;align-items:center;gap:14px;width:220px;}
+.mm-btn{
+  font-family:'Orbitron',monospace;font-size:.72rem;letter-spacing:.28em;
+  width:100%;padding:14px 20px;border-radius:6px;cursor:pointer;
+  border:1px solid rgba(80,160,255,.35);background:rgba(20,40,90,.4);
+  color:rgba(180,210,255,.9);text-transform:uppercase;
+  transition:all .22s ease;backdrop-filter:blur(8px);
+  position:relative;overflow:hidden;
+}
+.mm-btn::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(80,160,255,.08) 0%,transparent 60%);
+  opacity:0;transition:opacity .22s;
+}
+.mm-btn:hover{
+  border-color:rgba(80,160,255,.8);color:#fff;
+  background:rgba(30,60,130,.55);
+  box-shadow:0 0 22px rgba(60,140,255,.3),inset 0 1px 0 rgba(255,255,255,.06);
+  transform:translateY(-1px);
+}
+.mm-btn:hover::before{opacity:1;}
+.mm-btn:active{transform:translateY(0);box-shadow:none;}
+#mm-play-btn{
+  border-color:rgba(80,200,255,.5);background:rgba(20,60,110,.5);
+  box-shadow:0 0 28px rgba(60,160,255,.15);
+}
+#mm-play-btn:hover{
+  border-color:rgba(80,220,255,.9);background:rgba(20,80,150,.6);
+  box-shadow:0 0 36px rgba(60,180,255,.4),inset 0 1px 0 rgba(255,255,255,.08);
+}
+/* Settings panel */
+#mm-settings-panel{
+  width:220px;margin-top:6px;padding:16px 18px;
+  border:1px solid rgba(80,160,255,.18);border-radius:6px;
+  background:rgba(10,20,50,.6);backdrop-filter:blur(8px);
+}
+.mm-setting-row{
+  display:flex;align-items:center;justify-content:space-between;
+  font-family:'Rajdhani',sans-serif;font-size:.8rem;letter-spacing:.1em;
+  color:rgba(160,190,255,.7);padding:4px 0;
+}
+.mm-toggle{
+  font-family:'Orbitron',monospace;font-size:.52rem;letter-spacing:.12em;
+  padding:5px 10px;border-radius:4px;cursor:pointer;
+  border:1px solid rgba(80,160,255,.3);background:rgba(20,40,90,.5);
+  color:rgba(150,200,255,.8);transition:all .18s;
+}
+.mm-toggle:hover{border-color:rgba(80,160,255,.7);color:#fff;}
+/* Version badge */
+#mm-version{
+  margin-top:44px;font-family:'Rajdhani',sans-serif;font-size:.62rem;
+  letter-spacing:.22em;color:rgba(80,120,180,.35);text-transform:uppercase;
+}
+/* Warp launch — stars zoom out */
+body.mm-launching .star-layer{
+  animation:mm-warp .75s cubic-bezier(.4,0,1,.6) forwards!important;
+}
+body.mm-launching .star-layer#stars-mid{animation-delay:.04s!important;}
+body.mm-launching .star-layer#stars-near{animation-delay:.08s!important;}
+@keyframes mm-warp{
+  0%{transform:scale(1);opacity:1;}
+  100%{transform:scale(7);opacity:0;}
+}
+/* Header polish */
+header{
+  border-bottom:1px solid rgba(40,80,160,.5)!important;
+  background:rgba(5,7,18,.95)!important;
+}
+header h1{
+  text-shadow:0 0 30px rgba(80,160,255,.45),0 0 60px rgba(60,120,255,.18)!important;
+}
+.tab{
+  border-color:rgba(40,80,140,.4)!important;
+  transition:all .18s ease!important;
+}
+.tab:hover{
+  background:rgba(40,90,200,.12)!important;
+  border-color:rgba(80,150,255,.55)!important;
+  box-shadow:0 0 10px rgba(60,130,255,.15)!important;
+}
+.tab.active{
+  border-color:rgba(80,200,255,.6)!important;
+  color:#7dcfff!important;
+  background:rgba(40,120,220,.12)!important;
+  box-shadow:0 0 12px rgba(60,180,255,.2)!important;
+}
+/* Orb Fight spawn panel glass look */
+#of-spawn-panel{
+  background:rgba(4,8,24,.88)!important;
+  border:1px solid rgba(40,80,160,.35)!important;
+  backdrop-filter:blur(12px)!important;
+  box-shadow:4px 0 32px rgba(0,0,0,.5)!important;
+}
+/* Controls bar glass */
+#of-controls{
+  background:rgba(4,8,24,.9)!important;
+  border-top:1px solid rgba(40,80,160,.3)!important;
+  backdrop-filter:blur(10px)!important;
+}
+.of-ctrl-btn{
+  border-color:rgba(40,80,160,.4)!important;
+  transition:all .18s!important;
+}
+.of-ctrl-btn:hover{
+  border-color:rgba(80,160,255,.65)!important;
+  background:rgba(30,70,160,.25)!important;
+  box-shadow:0 0 10px rgba(60,130,255,.2)!important;
+}
+/* HUD glass */
+#of-hud{
+  background:rgba(4,8,24,.85)!important;
+  border-bottom:1px solid rgba(40,80,160,.3)!important;
+  backdrop-filter:blur(8px)!important;
+}
 </style>
 </head>
 <body>
@@ -1112,6 +1265,29 @@ body.adv-mars-bg #adv-overlay{background:radial-gradient(ellipse at 50% 80%,#200
   <div id="reward-desc" id="reward-desc"></div>
   <div id="reward-score"></div>
   <div id="reward-sub"></div>
+</div>
+
+<!-- ══ MAIN MENU ══ -->
+<div id="main-menu">
+  <div id="main-menu-inner">
+    <div id="mm-logo">
+      <span id="mm-glyph">◎</span>
+      <div id="mm-title">CIRCLE ALCHEMY</div>
+      <div id="mm-tagline">Harness the elements &nbsp;·&nbsp; Forge the cosmos</div>
+    </div>
+    <div id="mm-line"></div>
+    <div id="mm-buttons">
+      <button class="mm-btn" id="mm-play-btn" onclick="mmPlay()">▶ &nbsp; PLAY</button>
+      <button class="mm-btn" id="mm-settings-btn" onclick="mmToggleSettings()">⚙ &nbsp; SETTINGS</button>
+    </div>
+    <div id="mm-settings-panel" style="display:none">
+      <div class="mm-setting-row">
+        <span>Sound Effects</span>
+        <button class="mm-toggle" id="mm-sound-btn" onclick="mmToggleSound()">🔊 ON</button>
+      </div>
+    </div>
+    <div id="mm-version">v1.0 &nbsp;·&nbsp; One file. Pure chaos.</div>
+  </div>
 </div>
 
 <header id="main-header">
@@ -4836,6 +5012,32 @@ function stopBoss(){
   els.bossTier.classList.remove('show');
   const rev=infEl.reveal();if(rev)rev.classList.remove('show');
   els.status.style.color='';els.status.style.borderColor='';els.status.style.boxShadow='';
+}
+
+// ══════════════════════════════════════════
+// MAIN MENU
+// ══════════════════════════════════════════
+function mmPlay(){
+  const menu=document.getElementById('main-menu');
+  document.body.classList.add('mm-launching');
+  menu.classList.add('mm-exit');
+  setTimeout(()=>{
+    menu.style.display='none';
+    document.body.classList.remove('mm-launching');
+  },800);
+}
+function mmToggleSettings(){
+  const p=document.getElementById('mm-settings-panel');
+  const open=p.style.display==='none';
+  p.style.display=open?'block':'none';
+  document.getElementById('mm-settings-btn').style.borderColor=
+    open?'rgba(80,160,255,.6)':'rgba(80,160,255,.35)';
+}
+function mmToggleSound(){
+  const on=SFX.toggle();
+  document.getElementById('mm-sound-btn').textContent=on?'🔊 ON':'🔇 OFF';
+  const mute=document.getElementById('mute-btn');
+  if(mute)mute.textContent=on?'🔊':'🔇';
 }
 
 // ══════════════════════════════════════════
