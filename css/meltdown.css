@@ -1,0 +1,48 @@
+/* INFINITE CLONE */
+@keyframes flicker-clone{from{opacity:.35;filter:brightness(.7)}to{opacity:.75;filter:brightness(1.1)}}
+
+/* ── MELTDOWN ── */
+@keyframes orb-tremor{
+  0%,100%{transform:translate(-50%,-50%) scale(1)}
+  10%{transform:translate(calc(-50% - 6px),calc(-50% + 4px)) scale(1.04)}
+  25%{transform:translate(calc(-50% + 5px),calc(-50% - 5px)) scale(.96)}
+  40%{transform:translate(calc(-50% - 8px),calc(-50% + 3px)) scale(1.07)}
+  55%{transform:translate(calc(-50% + 7px),calc(-50% + 6px)) scale(.94)}
+  70%{transform:translate(calc(-50% - 5px),calc(-50% - 5px)) scale(1.05)}
+  85%{transform:translate(calc(-50% + 8px),calc(-50% + 2px)) scale(.97)}
+}
+@keyframes warp-distort{
+  0%,100%{filter:none}
+  25%{filter:hue-rotate(20deg) saturate(2) blur(.6px) brightness(1.1)}
+  50%{filter:hue-rotate(-30deg) saturate(3) blur(1.4px) brightness(.85)}
+  75%{filter:hue-rotate(25deg) saturate(2.5) blur(1px) brightness(1.15)}
+}
+#meltdown-overlay{
+  position:fixed;inset:0;z-index:80;pointer-events:none;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+  opacity:0;transition:opacity .4s;background:transparent;
+}
+#meltdown-overlay.show{opacity:1}
+#meltdown-line1{
+  font-family:'Orbitron',monospace;font-weight:900;
+  font-size:clamp(1.2rem,5vw,2.8rem);letter-spacing:.25em;color:#fff;
+  text-shadow:0 0 40px rgba(255,255,255,.9),0 0 80px rgba(200,150,255,.7);
+  text-align:center;padding:0 20px;opacity:0;transition:opacity .5s;
+}
+#meltdown-line2{
+  font-family:'Rajdhani',sans-serif;font-size:clamp(.7rem,2.5vw,1rem);
+  letter-spacing:.35em;color:rgba(220,180,255,.7);text-align:center;
+  padding:0 20px;opacity:0;transition:opacity .5s;
+}
+#supernova-flash{
+  position:fixed;inset:0;z-index:75;pointer-events:none;opacity:0;
+  background:radial-gradient(circle at 50% 50%,#fff 0%,rgba(255,210,120,.9) 20%,rgba(255,80,50,.6) 45%,rgba(120,0,200,.3) 70%,transparent 90%);
+}
+#space-distort{
+  position:fixed;inset:0;z-index:3;pointer-events:none;opacity:0;
+  background:radial-gradient(circle at var(--bx,50%) var(--by,50%),rgba(0,0,0,.65) 0%,transparent 70%);
+  transition:opacity 1.2s;
+}
+#space-distort.show{opacity:1}
+#gold-orb.trembling{animation:orb-tremor .09s ease-in-out infinite!important;transition:none!important}
+body.meltdown-warp{animation:warp-distort 1.6s ease-in-out infinite}

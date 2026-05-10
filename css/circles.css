@@ -1,0 +1,76 @@
+/* CIRCLES */
+.circle{position:absolute;border-radius:50%;cursor:grab;user-select:none;touch-action:none;-webkit-user-select:none;display:flex;align-items:center;justify-content:center;flex-direction:column;transition:box-shadow .2s ease,transform .15s ease;will-change:left,top}
+.circle:active{cursor:grabbing}
+.circle-label{font-family:'Orbitron',monospace;font-size:.48rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.8);pointer-events:none;text-shadow:0 1px 4px rgba(0,0,0,.9)}
+.circle-sub{font-family:'Rajdhani',sans-serif;font-size:.55rem;color:rgba(255,255,255,.45);pointer-events:none;margin-top:1px}
+#c-red{width:110px;height:110px;background:radial-gradient(circle at 35% 35%,#ff8888,#cc1133);box-shadow:0 0 25px rgba(220,30,60,.5),inset 0 1px 0 rgba(255,255,255,.2)}
+#c-blue{width:110px;height:110px;background:radial-gradient(circle at 35% 35%,#66aaff,#1133cc);box-shadow:0 0 25px rgba(30,80,230,.5),inset 0 1px 0 rgba(255,255,255,.2)}
+#c-green{width:110px;height:110px;background:radial-gradient(circle at 35% 35%,#66ffaa,#117744);box-shadow:0 0 25px rgba(20,180,80,.5),inset 0 1px 0 rgba(255,255,255,.2)}
+.circle.fading{transition:opacity .4s ease,transform .45s ease!important;opacity:0!important;transform:scale(.15)!important;pointer-events:none!important}
+.circle.hidden{display:none!important}
+.circle.knocked{transition:left .3s ease,top .3s ease!important}
+
+/* GOLD ORB */
+#gold-orb{
+  position:absolute;border-radius:50%;z-index:8;
+  opacity:0;transform:translate(-50%,-50%) scale(0);
+  background:radial-gradient(circle at 38% 35%,#fffde0,#f5c842 40%,#c87800);
+  box-shadow:0 0 60px 20px rgba(245,200,66,.7),0 0 120px 50px rgba(245,200,66,.3),inset 0 2px 0 rgba(255,255,255,.5);
+  transition:opacity .6s,transform .6s cubic-bezier(.175,.885,.32,1.4),width .8s,height .8s,background .5s;
+  display:flex;align-items:center;justify-content:center;flex-direction:column;gap:2px;cursor:pointer;
+}
+#gold-orb.visible{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.orb-label{font-family:'Orbitron',monospace;font-size:.58rem;letter-spacing:.22em;color:rgba(60,30,0,.9);text-align:center;pointer-events:none}
+#boss-phase-label{font-family:'Orbitron',monospace;font-size:.42rem;letter-spacing:.18em;pointer-events:none;margin-top:2px;opacity:.8}
+@keyframes pulse-gold{0%,100%{box-shadow:0 0 60px 20px rgba(245,200,66,.7),0 0 120px 50px rgba(245,200,66,.3)}50%{box-shadow:0 0 90px 35px rgba(245,200,66,.95),0 0 180px 80px rgba(245,200,66,.5)}}
+@keyframes pulse-perfect{0%,100%{box-shadow:0 0 90px 35px rgba(255,255,200,.9),0 0 200px 90px rgba(245,200,66,.6)}50%{box-shadow:0 0 140px 60px rgba(255,255,255,1),0 0 280px 130px rgba(255,220,100,.8)}}
+@keyframes pulse-core-std{0%,100%{box-shadow:0 0 60px 25px rgba(68,170,255,.7),0 0 130px 60px rgba(68,170,255,.3)}50%{box-shadow:0 0 100px 45px rgba(68,200,255,1),0 0 200px 90px rgba(68,170,255,.5)}}
+@keyframes diamond-pulse{
+  0%,100%{box-shadow:0 0 60px 20px rgba(180,240,255,.8),0 0 130px 60px rgba(120,200,255,.4),inset 0 0 40px rgba(255,255,255,.3)}
+  50%{box-shadow:0 0 100px 45px rgba(220,255,255,1),0 0 200px 90px rgba(160,230,255,.6),inset 0 0 60px rgba(255,255,255,.5)}
+}
+@keyframes diamond-crack{
+  0%{filter:brightness(1) saturate(1)}
+  30%{filter:brightness(1.8) saturate(.4) hue-rotate(20deg)}
+  60%{filter:brightness(2.5) saturate(0)}
+  100%{filter:brightness(4) saturate(0) blur(2px);opacity:0;transform:translate(-50%,-50%) scale(1.4)}
+}
+@keyframes diamond-shard{
+  0%{opacity:1;transform:translate(0,0) rotate(0deg) scale(1)}
+  100%{opacity:0;transform:translate(var(--sx),var(--sy)) rotate(var(--sr)) scale(.1)}
+}
+@keyframes pulse-core-over{0%,100%{box-shadow:0 0 60px 25px rgba(255,150,20,.8),0 0 130px 60px rgba(255,100,0,.4)}50%{box-shadow:0 0 110px 50px rgba(255,200,60,1),0 0 220px 100px rgba(255,130,0,.6)}}
+@keyframes pulse-core-quantum{0%,100%{box-shadow:0 0 60px 25px rgba(180,60,255,.7),0 0 130px 60px rgba(140,0,220,.3)}50%{box-shadow:0 0 110px 50px rgba(220,120,255,1),0 0 220px 100px rgba(180,60,255,.5)}}
+@keyframes pulse-core-sing{0%,100%{box-shadow:0 0 60px 25px rgba(100,0,180,.9),0 0 130px 60px rgba(60,0,120,.5),inset 0 0 40px rgba(0,0,0,1)}50%{box-shadow:0 0 100px 50px rgba(140,0,220,1),0 0 200px 90px rgba(80,0,160,.7),inset 0 0 60px rgba(0,0,0,1)}}
+@keyframes pulse-core-plasma{0%,100%{box-shadow:0 0 60px 25px rgba(255,80,0,.8),0 0 130px 60px rgba(200,40,0,.4)}50%{box-shadow:0 0 110px 50px rgba(255,160,0,1),0 0 220px 100px rgba(255,80,0,.6)}}
+@keyframes pulse-core-ion{0%,100%{box-shadow:0 0 60px 25px rgba(68,255,180,.7),0 0 130px 60px rgba(0,200,130,.3)}50%{box-shadow:0 0 110px 50px rgba(120,255,220,1),0 0 220px 100px rgba(68,255,180,.5)}}
+@keyframes pulse-core-mega{0%,100%{box-shadow:0 0 100px 50px rgba(255,240,100,.9),0 0 220px 100px rgba(255,200,0,.5)}50%{box-shadow:0 0 160px 80px rgba(255,255,200,1),0 0 320px 150px rgba(255,220,80,.8)}}
+
+/* Boss ring that spins around orb */
+#boss-ring{
+  position:absolute;border-radius:50%;pointer-events:none;z-index:7;
+  opacity:0;transform:translate(-50%,-50%);
+  border:3px solid transparent;
+  box-shadow:none;
+  transition:opacity .5s;
+}
+#boss-ring.show{opacity:1;animation:spin-ring 2s linear infinite}
+@keyframes spin-ring{from{transform:translate(-50%,-50%) rotate(0)}to{transform:translate(-50%,-50%) rotate(360deg)}}
+
+/* BLACK HOLE */
+#black-hole{position:absolute;border-radius:50%;z-index:9;opacity:0;transform:translate(-50%,-50%) scale(0);background:radial-gradient(circle at 50%,#000 20%,#0a0020 55%,transparent);transition:opacity .5s,transform .8s cubic-bezier(.175,.885,.32,1.4);pointer-events:none}
+#black-hole.visible{opacity:1;transform:translate(-50%,-50%) scale(1);animation:spin-hole 4s linear infinite}
+@keyframes spin-hole{to{filter:hue-rotate(360deg) brightness(1.2)}}
+
+/* BEAMS */
+#beam-svg{position:absolute;inset:0;pointer-events:none;z-index:3;opacity:0;transition:opacity .3s}
+#beam-svg.show{opacity:1}
+
+/* PARTICLE CANVAS */
+#particle-canvas{position:absolute;inset:0;pointer-events:none;z-index:6}
+
+/* MAGNETIC GLOW on circles when near each other */
+.circle.magnetic{
+  filter:brightness(1.3) saturate(1.5) drop-shadow(0 0 12px currentColor);
+  box-shadow:0 0 35px 8px rgba(245,200,66,.35),inset 0 1px 0 rgba(255,255,255,.3)!important;
+}
